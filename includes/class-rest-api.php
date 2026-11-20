@@ -62,7 +62,8 @@ class Rest_Api {
 				'methods'             => \WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'mailchimp_lists' ),
 				'permission_callback' => static function () {
-					return current_user_can( 'edit_pages' );
+					// Only people who can change a form's Mailchimp settings need the audience list.
+					return Forms::can_edit_admin_sections();
 				},
 			)
 		);

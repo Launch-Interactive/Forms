@@ -1460,6 +1460,13 @@
 					},
 					function ( tab ) {
 						var panelProps = { config: config, onChange: onChange };
+						if ( ( tab.name === 'notifications' || tab.name === 'mailchimp' ) && data.canEditActions === false ) {
+							return el(
+								c.Notice,
+								{ status: 'info', isDismissible: false },
+								__( 'Only administrators can change where form submissions are emailed and the Mailchimp settings. Ask an administrator if these need to change.', 'launch-forms' )
+							);
+						}
 						if ( tab.name === 'settings' ) {
 							return el( SettingsPanel, panelProps );
 						}

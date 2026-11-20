@@ -66,6 +66,7 @@ class Admin {
 			'fieldTypes'          => Form_Config::field_type_labels(),
 			'optionTypes'         => Form_Config::OPTION_TYPES,
 			'widths'              => Form_Config::width_labels(),
+			'canEditActions'      => Forms::can_edit_admin_sections(),
 			'operators'           => array(
 				'is'           => __( 'is', 'launch-forms' ),
 				'is_not'       => __( 'is not', 'launch-forms' ),

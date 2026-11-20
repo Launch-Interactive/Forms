@@ -215,4 +215,80 @@ class SecurityTest extends LF_TestCase {
 			rmdir( $dir );
 		}
 	}
+
+	private function config_with( $notification_to, $list_id ) {
+		return array(
+			'fields'        => array( $this->field( 'email', 'email' ) ),
+			'notifications' => array(
+				array(
+					'enabled' => true,
+					'name'    => 'Admin',
+					'to'      => $notification_to,
+					'subject' => 'New',
+					'message' => '{all_fields}',
+					'attach_files' => true,
+				),
+			),
+			'mailchimp'     => array( 'enabled' => true, 'list_id' => $list_id, 'email_field' => 'email' ),
+		);
+	}
+
+	private function stored_config( $form_id ) {
+		return LaunchForms\Form_Config::from_json( get_post_meta( $form_id, LaunchForms\Forms::META_KEY, true ) );
+	}
+
+	public function test_editors_cannot_change_where_submissions_are_sent() {
+		$form = $this->make_form( array( $this->field( 'email', 'email' ) ), array_diff_key( $this->config_with( 'boss@example.org', 'list1' ), array( 'fields' => 1 ) ) );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
+		$this->assertTrue( current_user_can( 'edit_post', $form->id ), 'Editors can still edit forms.' );
+
+		$changed             = $this->config_with( 'editor@evil.example', 'list2' );
+		$changed['fields'][] = $this->field( 'text', 'company' );
+		launch_forms()->forms->save_config( $form->id, $changed );
+
+		$stored = $this->stored_config( $form->id );
+		$this->assertSame( array( 'email', 'company' ), wp_list_pluck( $stored['fields'], 'name' ), 'Field changes are saved.' );
+		$this->assertSame( 'boss@example.org', $stored['notifications'][0]['to'], 'Recipients are kept.' );
+		$this->assertSame( 'list1', $stored['mailchimp']['list_id'], 'Mailchimp settings are kept.' );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		launch_forms()->forms->save_config( $form->id, $changed );
+		$stored = $this->stored_config( $form->id );
+		$this->assertSame( 'editor@evil.example', $stored['notifications'][0]['to'], 'Admins can change recipients.' );
+		$this->assertSame( 'list2', $stored['mailchimp']['list_id'] );
+	}
+
+	public function test_editors_cannot_change_recipients_through_the_rest_api() {
+		$form = $this->make_form( array( $this->field( 'email', 'email' ) ), array_diff_key( $this->config_with( 'boss@example.org', 'list1' ), array( 'fields' => 1 ) ) );
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
+
+		$changed             = $this->config_with( 'editor@evil.example', 'list2' );
+		$changed['fields'][] = $this->field( 'text', 'company' );
+		$request             = new WP_REST_Request( 'POST', '/wp/v2/launch-forms/' . $form->id );
+		$request->set_body_params( array( 'meta' => array( LaunchForms\Forms::META_KEY => wp_json_encode( $changed ) ) ) );
+		$response = rest_get_server()->dispatch( $request );
+
+		$this->assertSame( 200, $response->get_status(), 'The save itself succeeds (as in the block editor).' );
+		$stored = $this->stored_config( $form->id );
+		$this->assertCount( 2, $stored['fields'] );
+		$this->assertSame( 'boss@example.org', $stored['notifications'][0]['to'] );
+		$this->assertSame( 'list1', $stored['mailchimp']['list_id'] );
+	}
+
+	public function test_new_forms_by_editors_get_default_notifications() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
+		$id     = launch_forms()->forms->create( 'Editor form', $this->config_with( 'editor@evil.example', 'list2' ) );
+		$stored = $this->stored_config( $id );
+		$this->assertSame( '{admin_email}', $stored['notifications'][0]['to'] );
+		$this->assertFalse( (bool) $stored['mailchimp']['enabled'] );
+		$this->assertCount( 1, $stored['fields'] );
+	}
+
+	public function test_builder_knows_whether_to_show_email_settings() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
+		$this->assertFalse( launch_forms()->admin->builder_data()['canEditActions'] );
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$this->assertTrue( launch_forms()->admin->builder_data()['canEditActions'] );
+	}
 }
