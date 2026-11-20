@@ -91,3 +91,28 @@ test( 'parseConfig tolerates bad JSON and merges defaults', () => {
 	assert.equal( good.settings.captcha, 'none' );
 	assert.deepEqual( good.notifications, [], 'An explicitly empty notification list is kept.' );
 } );
+
+test( 'dropIndex counts the other items whose midpoint is above the dragged centre', () => {
+	const rects = [ { top: 0, height: 40 }, { top: 48, height: 40 }, { top: 96, height: 40 } ];
+	// Not moved: lands where it started.
+	assert.equal( h.dropIndex( rects, 0, 20 ), 0 );
+	assert.equal( h.dropIndex( rects, 1, 68 ), 1 );
+	// First item dragged past the second's midpoint (68) but not the third's (116).
+	assert.equal( h.dropIndex( rects, 0, 70 ), 1 );
+	assert.equal( h.dropIndex( rects, 0, 130 ), 2 );
+	// Last item dragged above everything.
+	assert.equal( h.dropIndex( rects, 2, 5 ), 0 );
+	assert.equal( h.dropIndex( rects, 2, 60 ), 1 );
+} );
+
+test( 'movedIndex tracks where an item ends up after moveItem', () => {
+	const list = [ 'a', 'b', 'c', 'd', 'e' ];
+	for ( let from = 0; from < list.length; from++ ) {
+		for ( let to = 0; to < list.length; to++ ) {
+			const moved = h.moveItem( list, from, to );
+			list.forEach( ( item, i ) => {
+				assert.equal( moved[ h.movedIndex( i, from, to ) ], item, `${ item } from=${ from } to=${ to }` );
+			} );
+		}
+	}
+} );

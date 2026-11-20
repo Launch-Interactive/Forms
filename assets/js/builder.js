@@ -123,6 +123,34 @@
 			return copy;
 		}
 
+		/**
+		 * Where a dragged item lands: the number of other items whose midpoint sits above
+		 * the dragged item's centre. `rects` are { top, height } in one coordinate space.
+		 */
+		function dropIndex( rects, from, center ) {
+			var to = 0;
+			rects.forEach( function ( r, i ) {
+				if ( i !== from && r.top + r.height / 2 < center ) {
+					to++;
+				}
+			} );
+			return to;
+		}
+
+		/** The new position of item `index` after moveItem( list, from, to ). */
+		function movedIndex( index, from, to ) {
+			if ( index === from ) {
+				return to;
+			}
+			if ( from < to && index > from && index <= to ) {
+				return index - 1;
+			}
+			if ( from > to && index >= to && index < from ) {
+				return index + 1;
+			}
+			return index;
+		}
+
 		/** Update every reference to a renamed field (conditions, Mailchimp, merge tags). */
 		function renameReferences( config, oldName, newName ) {
 			if ( ! oldName || oldName === newName ) {
@@ -225,6 +253,8 @@
 			optionsToText: optionsToText,
 			textToOptions: textToOptions,
 			moveItem: moveItem,
+			dropIndex: dropIndex,
+			movedIndex: movedIndex,
 			renameReferences: renameReferences,
 			removeReferences: removeReferences,
 			normalizeConfig: normalizeConfig,
@@ -240,6 +270,7 @@
 		var Fragment = wp.element.Fragment;
 		var useState = wp.element.useState;
 		var useEffect = wp.element.useEffect;
+		var useRef = wp.element.useRef;
 		var __ = wp.i18n.__;
 		var c = wp.components;
 
@@ -610,6 +641,186 @@
 			return el( 'div', { className: 'lf-builder__field-body' }, parts );
 		}
 
+		/* ---------------- drag and drop */
+
+		/** Nearest scrolling ancestor, or the document's scrolling element. */
+		function scrollParent( node ) {
+			var doc = node.ownerDocument;
+			for ( var p = node.parentElement; p && p !== doc.body; p = p.parentElement ) {
+				var overflow = doc.defaultView.getComputedStyle( p ).overflowY;
+				if ( ( overflow === 'auto' || overflow === 'scroll' ) && p.scrollHeight > p.clientHeight ) {
+					return p;
+				}
+			}
+			return doc.scrollingElement || doc.documentElement;
+		}
+
+		/**
+		 * Pointer-driven reordering for the field list. Uses pointer events rather than
+		 * HTML5 drag and drop so it works on touch screens and the block editor's own
+		 * drop zones never see the drag. Keyboard users have the Move up/down buttons.
+		 */
+		function useSortable( itemClass, onMove ) {
+			var listRef = useRef( null );
+			var dragRef = useRef( null );
+			var stateHook = useState( null );
+			var setState = stateHook[ 1 ];
+
+			function items() {
+				var list = listRef.current;
+				return list
+					? Array.prototype.filter.call( list.children, function ( n ) {
+							return n.classList.contains( itemClass );
+					  } )
+					: [];
+			}
+
+			function update() {
+				var d = dragRef.current;
+				var listTop = listRef.current.getBoundingClientRect().top;
+				var dy = d.clientY - listTop - d.startY;
+				var from = d.from;
+				var top = d.rects[ from ].top;
+				var last = d.rects[ d.rects.length - 1 ];
+				// Keep the dragged item within the list.
+				dy = Math.max( -top, Math.min( dy, last.top + last.height - d.rects[ from ].height - top ) );
+				var to = h.dropIndex( d.rects, from, top + d.rects[ from ].height / 2 + dy );
+				setState( { from: from, to: to, dy: dy, step: d.step } );
+				d.to = to;
+			}
+
+			function tick() {
+				var d = dragRef.current;
+				if ( ! d ) {
+					return;
+				}
+				var s = d.scroller;
+				var win = s.ownerDocument.defaultView;
+				var isDoc = s === s.ownerDocument.scrollingElement || s === s.ownerDocument.documentElement;
+				var bounds = isDoc ? { top: 0, bottom: win.innerHeight } : s.getBoundingClientRect();
+				var edge = 48;
+				var speed = 0;
+				if ( d.clientY < bounds.top + edge ) {
+					speed = -Math.ceil( ( bounds.top + edge - d.clientY ) / 4 );
+				} else if ( d.clientY > bounds.bottom - edge ) {
+					speed = Math.ceil( ( d.clientY - ( bounds.bottom - edge ) ) / 4 );
+				}
+				if ( speed ) {
+					var before = s.scrollTop;
+					s.scrollTop += speed;
+					if ( s.scrollTop !== before ) {
+						update();
+					}
+				}
+				d.frame = win.requestAnimationFrame( tick );
+			}
+
+			function finish( commit ) {
+				var d = dragRef.current;
+				if ( ! d ) {
+					return;
+				}
+				dragRef.current = null;
+				d.handle.removeEventListener( 'pointermove', d.onMoveEvent );
+				d.handle.removeEventListener( 'pointerup', d.onUp );
+				d.handle.removeEventListener( 'pointercancel', d.onCancel );
+				d.handle.ownerDocument.removeEventListener( 'keydown', d.onKey, true );
+				d.handle.ownerDocument.defaultView.cancelAnimationFrame( d.frame );
+				setState( null );
+				if ( commit && d.to !== d.from ) {
+					onMove( d.from, d.to );
+				}
+			}
+
+			function start( event, index ) {
+				if ( event.button !== 0 || dragRef.current ) {
+					return;
+				}
+				event.preventDefault();
+				var handle = event.currentTarget;
+				var nodes = items();
+				var listTop = listRef.current.getBoundingClientRect().top;
+				var rects = nodes.map( function ( n ) {
+					var r = n.getBoundingClientRect();
+					return { top: r.top - listTop, height: r.height };
+				} );
+				if ( rects.length < 2 ) {
+					return;
+				}
+				var gap = rects[ 1 ].top - rects[ 0 ].top - rects[ 0 ].height;
+				var d = {
+					from: index,
+					to: index,
+					rects: rects,
+					step: rects[ index ].height + gap,
+					startY: event.clientY - listTop,
+					clientY: event.clientY,
+					handle: handle,
+					scroller: scrollParent( listRef.current ),
+				};
+				d.onMoveEvent = function ( e ) {
+					d.clientY = e.clientY;
+					update();
+				};
+				d.onUp = function () {
+					finish( true );
+				};
+				d.onCancel = function () {
+					finish( false );
+				};
+				d.onKey = function ( e ) {
+					if ( e.key === 'Escape' ) {
+						e.preventDefault();
+						e.stopPropagation();
+						finish( false );
+					}
+				};
+				dragRef.current = d;
+				try {
+					handle.setPointerCapture( event.pointerId );
+				} catch ( e ) {}
+				handle.addEventListener( 'pointermove', d.onMoveEvent );
+				handle.addEventListener( 'pointerup', d.onUp );
+				handle.addEventListener( 'pointercancel', d.onCancel );
+				handle.ownerDocument.addEventListener( 'keydown', d.onKey, true );
+				d.frame = handle.ownerDocument.defaultView.requestAnimationFrame( tick );
+				setState( { from: index, to: index, dy: 0, step: d.step } );
+			}
+
+			// Abandon a drag if the list unmounts mid-way.
+			useEffect( function () {
+				return function () {
+					finish( false );
+				};
+			}, [] );
+
+			/** Inline style for item `index` while a drag is in progress. */
+			function itemStyle( index ) {
+				var s = stateHook[ 0 ];
+				if ( ! s ) {
+					return undefined;
+				}
+				var y = 0;
+				if ( index === s.from ) {
+					y = s.dy;
+				} else if ( s.from < s.to && index > s.from && index <= s.to ) {
+					y = -s.step;
+				} else if ( s.from > s.to && index >= s.to && index < s.from ) {
+					y = s.step;
+				}
+				return y ? { transform: 'translateY(' + y + 'px)' } : undefined;
+			}
+
+			return { listRef: listRef, drag: stateHook[ 0 ], start: start, itemStyle: itemStyle };
+		}
+
+		/** Six-dot drag handle icon (same glyph as the block editor's). */
+		var dragIcon = el(
+			'svg',
+			{ viewBox: '0 0 24 24', width: 24, height: 24, 'aria-hidden': true, focusable: false },
+			el( 'path', { d: 'M8 7h2V5H8v2zm0 6h2v-2H8v2zm0 6h2v-2H8v2zm6-14v2h2V5h-2zm0 8h2v-2h-2v2zm0 6h2v-2h-2v2z' } )
+		);
+
 		/* ---------------- fields tab */
 		function FieldsPanel( props ) {
 			var config = props.config;
@@ -641,20 +852,49 @@
 			var draftKey = function ( index, key ) {
 				return index + ':' + key;
 			};
+			var move = function ( from, to ) {
+				if ( to < 0 || to >= fields.length || to === from ) {
+					return;
+				}
+				setFields( h.moveItem( fields, from, to ) );
+				if ( open !== -1 ) {
+					setOpen( h.movedIndex( open, from, to ) );
+				}
+				drafts[ 1 ]( {} );
+			};
+			var sortable = useSortable( 'lf-builder__field', move );
+			var dragging = sortable.drag;
 
 			return el(
 				'div',
-				{ className: 'lf-builder__fields' },
+				{ className: 'lf-builder__fields' + ( dragging ? ' is-sorting' : '' ), ref: sortable.listRef },
 				! fields.length && el( 'p', { className: 'lf-builder__hint' }, __( 'No fields yet. Add your first field below.', 'launch-forms' ) ),
 				fields.map( function ( field, index ) {
 					var isOpen = open === index;
 					var title = field.type === 'content' ? __( 'Content', 'launch-forms' ) : field.label || field.name;
 					return el(
 						'div',
-						{ className: 'lf-builder__field' + ( isOpen ? ' is-open' : '' ), key: index },
+						{
+							className: 'lf-builder__field' + ( isOpen ? ' is-open' : '' ) + ( dragging && dragging.from === index ? ' is-dragging' : '' ),
+							key: index,
+							style: sortable.itemStyle( index ),
+						},
 						el(
 							'div',
 							{ className: 'lf-builder__field-head' },
+							fields.length > 1 &&
+								el(
+									'span',
+									{
+										className: 'lf-builder__handle',
+										title: __( 'Drag to reorder', 'launch-forms' ),
+										'aria-hidden': true,
+										onPointerDown: function ( e ) {
+											sortable.start( e, index );
+										},
+									},
+									dragIcon
+								),
 							el(
 								'button',
 								{
@@ -675,9 +915,7 @@
 								label: __( 'Move up', 'launch-forms' ),
 								disabled: index === 0,
 								onClick: function () {
-									setFields( h.moveItem( fields, index, index - 1 ) );
-									setOpen( isOpen ? index - 1 : open );
-									drafts[ 1 ]( {} );
+									move( index, index - 1 );
 								},
 							} ),
 							el( c.Button, {
@@ -685,9 +923,7 @@
 								label: __( 'Move down', 'launch-forms' ),
 								disabled: index === fields.length - 1,
 								onClick: function () {
-									setFields( h.moveItem( fields, index, index + 1 ) );
-									setOpen( isOpen ? index + 1 : open );
-									drafts[ 1 ]( {} );
+									move( index, index + 1 );
 								},
 							} ),
 							el( c.Button, {
