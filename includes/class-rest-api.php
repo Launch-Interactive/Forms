@@ -100,7 +100,7 @@ class Rest_Api {
 				'redirect'     => $result->success ? $result->redirect : '',
 				'hide_form'    => (bool) $form->settings['hide_form_on_success'],
 			),
-			$result->success ? 200 : 422
+			$result->status ? $result->status : ( $result->success ? 200 : 422 )
 		);
 	}
 

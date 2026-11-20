@@ -28,6 +28,8 @@ class Submission_Result {
 	public $redirect = '';
 	/** @var bool Silently accepted spam (honeypot). */
 	public $spam = false;
+	/** @var int HTTP status override for the REST response (0 = default). */
+	public $status = 0;
 
 	/**
 	 * Build a failure result.

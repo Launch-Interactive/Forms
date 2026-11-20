@@ -29,6 +29,17 @@ A lightweight WordPress form builder that outputs minimal, semantic HTML and tak
   define( 'LAUNCH_FORMS_PRIVATE_DIR', '/var/private/launch-forms' ); // wp-config.php
   ```
 - Files are deleted when a submission is permanently deleted, when a submission fails validation, and right after emails are sent if storage is turned off.
+- **Tools → Site Health** includes a "Launch Forms uploads are private" check. It writes a harmless test file to the private folder and requests it over HTTP, so it tells you whether your server actually blocks the folder.
+
+## Submission security
+
+- **Rate limit:** each IP address can make 10 successful submissions per 10 minutes (failed validation doesn't count). Further attempts get "Too many submissions" (HTTP 429). IPs are stored only as salted hashes. Change it with the `launch_forms_rate_limit` filter, or return `false` to turn it off. Behind a proxy or CDN that hides visitor IPs, use `launch_forms_client_ip` to pass the real IP, or every visitor will share one allowance.
+- Spam protection: honeypot on every form, plus reCAPTCHA or Turnstile per form (recommended on every public form, especially ones with file uploads or autoresponders).
+- A submission is only linked to a logged-in user when the form carried a nonce issued to them, so other sites can't post forms in a user's name. Logged-out pages contain no nonces and stay cacheable.
+- The page URL recorded with each submission is only kept if it points at this site.
+- All input is sanitised by field type and limited in length; dropdown, radio and checkbox values must be one of the configured options.
+- Emails are plain text, and every header value has line breaks removed.
+- `composer security` runs PHPCS with WordPress' security rules (escaping, nonces, input sanitising, SQL, redirects).
 
 ## Settings via wp-config.php
 
@@ -52,6 +63,8 @@ define( 'LAUNCH_FORMS_RECAPTCHA_SECRET_KEY', '...' );
 | `launch_forms_form_html` | filter | Modify rendered form HTML |
 | `launch_forms_private_dir` | filter | Change the private upload folder |
 | `launch_forms_manage_capability` | filter | Capability for submissions, downloads and settings (default `manage_options`) |
+| `launch_forms_rate_limit` | filter | `array( 'max' => 10, 'window' => 600 )`, or `false` to disable |
+| `launch_forms_client_ip` | filter | Visitor IP used for rate limiting and captcha (for trusted proxies) |
 
 The front end also dispatches `launch-forms:success` and `launch-forms:error` DOM events on the form.
 

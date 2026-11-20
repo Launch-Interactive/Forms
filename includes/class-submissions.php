@@ -263,7 +263,7 @@ class Submissions {
 			$args['link_url']  = $link_url;
 			$args['link_text'] = $link;
 		}
-		wp_die( esc_html( $message ), esc_html__( 'Download unavailable', 'launch-forms' ), $args );
+		wp_die( esc_html( $message ), esc_html__( 'Download unavailable', 'launch-forms' ), $args ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_die() escapes link_url and link_text.
 	}
 
 	/**

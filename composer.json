@@ -7,15 +7,21 @@
         "php": ">=7.4"
     },
     "require-dev": {
+        "dealerdirect/phpcodesniffer-composer-installer": "^1.0",
         "phpunit/phpunit": "^9.6",
-        "yoast/phpunit-polyfills": "^4.0",
-        "wp-phpunit/wp-phpunit": "7.1.3"
+        "wp-coding-standards/wpcs": "^3.1",
+        "wp-phpunit/wp-phpunit": "7.1.3",
+        "yoast/phpunit-polyfills": "^4.0"
     },
     "scripts": {
         "install-wp-tests": "bash bin/install-wp-tests.sh",
-        "test": "phpunit"
+        "test": "phpunit",
+        "security": "phpcs"
     },
     "config": {
-        "sort-packages": true
+        "sort-packages": true,
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
     }
 }

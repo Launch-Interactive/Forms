@@ -204,7 +204,7 @@ class Uploads {
 		if ( ! $moved ) {
 			return new \WP_Error( 'lf_upload_move', __( 'The file could not be saved.', 'launch-forms' ) );
 		}
-		@chmod( $dest, 0640 ); // phpcs:ignore WordPress.PHP.NoSilencedErrors
+		@chmod( $dest, 0640 ); // phpcs:ignore WordPress.PHP.NoSilencedErrors, WordPress.WP.AlternativeFunctions -- Direct file access is required for private storage.
 
 		return array(
 			'file' => $stored,
@@ -237,6 +237,62 @@ class Uploads {
 	public function delete( $stored ) {
 		$path = $this->path( $stored );
 		return $path ? wp_delete_file( $path ) || ! file_exists( $path ) : false;
+	}
+
+	/**
+	 * Public URL of the private directory, or '' when it is outside the web root.
+	 *
+	 * @param string $dir Directory with trailing slash.
+	 * @return string
+	 */
+	public function public_url_for_dir( $dir ) {
+		$uploads = wp_upload_dir( null, false );
+		$base    = trailingslashit( wp_normalize_path( $uploads['basedir'] ) );
+		$dir     = wp_normalize_path( $dir );
+		if ( 0 === strpos( $dir, $base ) ) {
+			return trailingslashit( $uploads['baseurl'] ) . substr( $dir, strlen( $base ) );
+		}
+		$root = trailingslashit( wp_normalize_path( ABSPATH ) );
+		if ( 0 === strpos( $dir, $root ) ) {
+			return site_url( '/' . substr( $dir, strlen( $root ) ) );
+		}
+		return '';
+	}
+
+	/**
+	 * Check whether a stored file can be downloaded straight from the web server, by writing a
+	 * harmless probe file and requesting it over HTTP.
+	 *
+	 * @return string 'protected', 'exposed', 'outside' (not under the web root) or 'unknown'.
+	 */
+	public function public_access_status() {
+		$dir = $this->get_dir();
+		$url = $this->public_url_for_dir( $dir );
+		if ( '' === $url ) {
+			return 'outside';
+		}
+		$name   = bin2hex( random_bytes( 16 ) );
+		$marker = 'launch-forms-probe-' . $name;
+		if ( false === file_put_contents( $dir . $name, $marker ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions
+			return 'unknown';
+		}
+		$response = wp_remote_get(
+			$url . $name,
+			array(
+				'timeout'     => 10,
+				'redirection' => 0,
+				'sslverify'   => false, // Loopback request to this same site.
+			)
+		);
+		wp_delete_file( $dir . $name );
+		if ( is_wp_error( $response ) ) {
+			return 'unknown';
+		}
+		$code = (int) wp_remote_retrieve_response_code( $response );
+		if ( 200 === $code ) {
+			return false !== strpos( (string) wp_remote_retrieve_body( $response ), $marker ) ? 'exposed' : 'protected';
+		}
+		return $code >= 400 ? 'protected' : 'unknown';
 	}
 
 	/**

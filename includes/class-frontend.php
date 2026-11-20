@@ -172,6 +172,7 @@ class Frontend {
 			array(
 				'page_url' => remove_query_arg( 'lf_sent', $current ),
 				'ip'       => self::client_ip(),
+				'user_id'  => self::verified_user_id( $form->id, $post ),
 			)
 		);
 		if ( ! $result->success ) {
@@ -196,6 +197,24 @@ class Frontend {
 	}
 
 	/**
+	 * The logged-in user to credit a plain POST submission to. Another site can make a visitor's
+	 * browser post a form (with their cookies), so the user is only recorded when the form carried
+	 * a nonce issued to them; otherwise the submission is anonymous.
+	 *
+	 * @param int   $form_id Form ID.
+	 * @param array $post    Raw POST data.
+	 * @return int
+	 */
+	public static function verified_user_id( $form_id, array $post ) {
+		$user_id = get_current_user_id();
+		if ( ! $user_id ) {
+			return 0;
+		}
+		$nonce = isset( $post['lf_nonce'] ) && is_string( $post['lf_nonce'] ) ? sanitize_key( $post['lf_nonce'] ) : '';
+		return wp_verify_nonce( $nonce, 'launch_forms_submit_' . (int) $form_id ) ? $user_id : 0;
+	}
+
+	/**
 	 * URL of the current request.
 	 *
 	 * @return string
@@ -207,12 +226,20 @@ class Frontend {
 	}
 
 	/**
-	 * Visitor IP (only passed to captcha providers, never stored).
+	 * Visitor IP (passed to captcha providers and hashed for rate limiting; never stored).
 	 *
 	 * @return string
 	 */
 	public static function client_ip() {
 		$ip = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
+		/**
+		 * Filters the visitor IP used for rate limiting and captcha checks. Only use a forwarded
+		 * header (e.g. CF-Connecting-IP) here if the site really is behind that proxy, as
+		 * visitors can set those headers themselves.
+		 *
+		 * @param string $ip REMOTE_ADDR.
+		 */
+		$ip = (string) apply_filters( 'launch_forms_client_ip', $ip );
 		return filter_var( $ip, FILTER_VALIDATE_IP ) ? $ip : '';
 	}
 }

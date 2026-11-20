@@ -57,6 +57,7 @@ class Processor {
 			),
 			$context
 		);
+		$context['page_url'] = self::same_site_url( (string) $context['page_url'] );
 
 		// Honeypot: pretend everything worked so bots learn nothing.
 		if ( isset( $request['lf_hp'] ) && '' !== trim( (string) ( is_scalar( $request['lf_hp'] ) ? $request['lf_hp'] : 'x' ) ) ) {
@@ -64,6 +65,12 @@ class Processor {
 			$result->success = true;
 			$result->spam    = true;
 			$result->message = wp_strip_all_tags( $form->settings['success_message'] );
+			return $this->remember( $form, $result );
+		}
+
+		if ( $this->is_rate_limited( $context['ip'] ) ) {
+			$result         = Submission_Result::failure( __( 'Too many submissions from your connection. Please wait a few minutes and try again.', 'launch-forms' ), array(), $this->validator->normalize( $form, $input ) );
+			$result->status = 429;
 			return $this->remember( $form, $result );
 		}
 
@@ -167,6 +174,8 @@ class Processor {
 		 */
 		do_action( 'launch_forms_submission', $submission_id, $form, $entries, $log );
 
+		$this->count_submission( $context['ip'] );
+
 		$result                = new Submission_Result();
 		$result->success       = true;
 		$result->message       = wp_strip_all_tags( $form->settings['success_message'] );
@@ -206,6 +215,102 @@ class Processor {
 			);
 		}
 		return $entries;
+	}
+
+	/**
+	 * Per-IP limit on successful submissions, to stop floods filling the database, the upload
+	 * folder or inboxes. Only successful submissions count, so visitors fixing validation errors
+	 * are never locked out.
+	 *
+	 * @return array{max:int,window:int}|false
+	 */
+	public static function rate_limit() {
+		/**
+		 * Filters the submission rate limit. Return false to turn it off.
+		 *
+		 * If the site is behind a proxy or CDN that hides visitor IPs, every visitor shares one
+		 * address: raise the limit, or pass the real IP through the `launch_forms_client_ip` filter.
+		 *
+		 * @param array{max:int,window:int}|false $limit Max successful submissions per IP per window (seconds).
+		 */
+		$limit = apply_filters(
+			'launch_forms_rate_limit',
+			array(
+				'max'    => 10,
+				'window' => 10 * MINUTE_IN_SECONDS,
+			)
+		);
+		if ( ! is_array( $limit ) || empty( $limit['max'] ) || empty( $limit['window'] ) ) {
+			return false;
+		}
+		return array(
+			'max'    => max( 1, (int) $limit['max'] ),
+			'window' => max( 1, (int) $limit['window'] ),
+		);
+	}
+
+	/**
+	 * Transient key for an IP (hashed, so raw IPs are never stored).
+	 *
+	 * @param string $ip IP.
+	 * @return string
+	 */
+	private static function rate_key( $ip ) {
+		return 'lf_rate_' . substr( hash_hmac( 'sha256', $ip, wp_salt( 'nonce' ) ), 0, 32 );
+	}
+
+	/**
+	 * Whether this IP has used up its allowance.
+	 *
+	 * @param string $ip IP.
+	 * @return bool
+	 */
+	private function is_rate_limited( $ip ) {
+		$limit = self::rate_limit();
+		if ( ! $limit || '' === $ip ) {
+			return false;
+		}
+		$state = get_transient( self::rate_key( $ip ) );
+		return is_array( $state ) && $state['until'] > time() && $state['count'] >= $limit['max'];
+	}
+
+	/**
+	 * Count a successful submission against an IP.
+	 *
+	 * @param string $ip IP.
+	 */
+	private function count_submission( $ip ) {
+		$limit = self::rate_limit();
+		if ( ! $limit || '' === $ip ) {
+			return;
+		}
+		$key   = self::rate_key( $ip );
+		$state = get_transient( $key );
+		if ( ! is_array( $state ) || $state['until'] <= time() ) {
+			$state = array(
+				'count' => 0,
+				'until' => time() + $limit['window'],
+			);
+		}
+		++$state['count'];
+		set_transient( $key, $state, max( 1, $state['until'] - time() ) );
+	}
+
+	/**
+	 * Keep a page URL only if it points at this site (the Referer and Host headers are
+	 * visitor-controlled, and the URL is shown to admins as a link and used in emails).
+	 *
+	 * @param string $url URL.
+	 * @return string
+	 */
+	public static function same_site_url( $url ) {
+		$url = esc_url_raw( $url, array( 'http', 'https' ) );
+		if ( '' === $url ) {
+			return '';
+		}
+		$host = strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) );
+		$home = strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
+		return '' !== $host && ( $host === $home || in_array( $host, array_map( 'strtolower', (array) apply_filters( 'allowed_redirect_hosts', array( $home ), $host ) ), true ) ) ? $url : '';
 	}
 
 	/**

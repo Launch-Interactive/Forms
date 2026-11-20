@@ -37,6 +37,7 @@ class Admin {
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_block_editor' ) );
 		add_action( 'admin_post_launch_forms_test_email', array( $this, 'handle_test_email' ) );
+		add_filter( 'site_status_tests', array( $this, 'site_health_tests' ) );
 		add_filter( 'manage_' . Forms::POST_TYPE . '_posts_columns', array( $this, 'form_columns' ) );
 		add_action( 'manage_' . Forms::POST_TYPE . '_posts_custom_column', array( $this, 'form_column' ), 10, 2 );
 	}
@@ -205,7 +206,7 @@ class Admin {
 		}
 		$s      = $this->plugin->settings->all();
 		$name   = static function ( $key ) {
-			return esc_attr( Settings::OPTION . '[' . $key . ']' );
+			return Settings::OPTION . '[' . $key . ']';
 		};
 		$notice = get_transient( 'launch_forms_test_email_' . get_current_user_id() );
 		if ( $notice ) {
@@ -225,11 +226,11 @@ class Admin {
 				<table class="form-table" role="presentation">
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Structural CSS', 'launch-forms' ); ?></th>
-						<td><label><input type="checkbox" name="<?php echo $name( 'load_css' ); ?>" value="1" <?php checked( $s['load_css'] ); ?>> <?php esc_html_e( 'Load the small layout stylesheet (forms otherwise rely entirely on your theme)', 'launch-forms' ); ?></label></td>
+						<td><label><input type="checkbox" name="<?php echo esc_attr( $name( 'load_css' ) ); ?>" value="1" <?php checked( $s['load_css'] ); ?>> <?php esc_html_e( 'Load the small layout stylesheet (forms otherwise rely entirely on your theme)', 'launch-forms' ); ?></label></td>
 					</tr>
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Uninstall', 'launch-forms' ); ?></th>
-						<td><label><input type="checkbox" name="<?php echo $name( 'delete_data_on_uninstall' ); ?>" value="1" <?php checked( $s['delete_data_on_uninstall'] ); ?>> <?php esc_html_e( 'Delete all forms, submissions and uploaded files when the plugin is deleted', 'launch-forms' ); ?></label></td>
+						<td><label><input type="checkbox" name="<?php echo esc_attr( $name( 'delete_data_on_uninstall' ) ); ?>" value="1" <?php checked( $s['delete_data_on_uninstall'] ); ?>> <?php esc_html_e( 'Delete all forms, submissions and uploaded files when the plugin is deleted', 'launch-forms' ); ?></label></td>
 					</tr>
 				</table>
 
@@ -237,22 +238,22 @@ class Admin {
 				<table class="form-table" role="presentation">
 					<tr>
 						<th scope="row"><label for="lf-rc-version"><?php esc_html_e( 'Version', 'launch-forms' ); ?></label></th>
-						<td><select id="lf-rc-version" name="<?php echo $name( 'recaptcha_version' ); ?>">
+						<td><select id="lf-rc-version" name="<?php echo esc_attr( $name( 'recaptcha_version' ) ); ?>">
 							<option value="v2" <?php selected( $s['recaptcha_version'], 'v2' ); ?>><?php esc_html_e( 'v2 checkbox', 'launch-forms' ); ?></option>
 							<option value="v3" <?php selected( $s['recaptcha_version'], 'v3' ); ?>><?php esc_html_e( 'v3 invisible (score)', 'launch-forms' ); ?></option>
 						</select></td>
 					</tr>
 					<tr>
 						<th scope="row"><label for="lf-rc-site"><?php esc_html_e( 'Site key', 'launch-forms' ); ?></label></th>
-						<td><input id="lf-rc-site" class="regular-text" type="text" name="<?php echo $name( 'recaptcha_site_key' ); ?>" value="<?php echo esc_attr( $s['recaptcha_site_key'] ); ?>"></td>
+						<td><input id="lf-rc-site" class="regular-text" type="text" name="<?php echo esc_attr( $name( 'recaptcha_site_key' ) ); ?>" value="<?php echo esc_attr( $s['recaptcha_site_key'] ); ?>"></td>
 					</tr>
 					<tr>
 						<th scope="row"><label for="lf-rc-secret"><?php esc_html_e( 'Secret key', 'launch-forms' ); ?></label></th>
-						<td><input id="lf-rc-secret" class="regular-text" type="password" autocomplete="off" name="<?php echo $name( 'recaptcha_secret_key' ); ?>" value="<?php echo esc_attr( $s['recaptcha_secret_key'] ); ?>"></td>
+						<td><input id="lf-rc-secret" class="regular-text" type="password" autocomplete="off" name="<?php echo esc_attr( $name( 'recaptcha_secret_key' ) ); ?>" value="<?php echo esc_attr( $s['recaptcha_secret_key'] ); ?>"></td>
 					</tr>
 					<tr>
 						<th scope="row"><label for="lf-rc-threshold"><?php esc_html_e( 'v3 score threshold', 'launch-forms' ); ?></label></th>
-						<td><input id="lf-rc-threshold" type="number" min="0" max="1" step="0.1" name="<?php echo $name( 'recaptcha_threshold' ); ?>" value="<?php echo esc_attr( $s['recaptcha_threshold'] ); ?>">
+						<td><input id="lf-rc-threshold" type="number" min="0" max="1" step="0.1" name="<?php echo esc_attr( $name( 'recaptcha_threshold' ) ); ?>" value="<?php echo esc_attr( $s['recaptcha_threshold'] ); ?>">
 						<p class="description"><?php esc_html_e( 'Submissions scoring below this are rejected (0 = bot, 1 = human).', 'launch-forms' ); ?></p></td>
 					</tr>
 				</table>
@@ -261,11 +262,11 @@ class Admin {
 				<table class="form-table" role="presentation">
 					<tr>
 						<th scope="row"><label for="lf-ts-site"><?php esc_html_e( 'Site key', 'launch-forms' ); ?></label></th>
-						<td><input id="lf-ts-site" class="regular-text" type="text" name="<?php echo $name( 'turnstile_site_key' ); ?>" value="<?php echo esc_attr( $s['turnstile_site_key'] ); ?>"></td>
+						<td><input id="lf-ts-site" class="regular-text" type="text" name="<?php echo esc_attr( $name( 'turnstile_site_key' ) ); ?>" value="<?php echo esc_attr( $s['turnstile_site_key'] ); ?>"></td>
 					</tr>
 					<tr>
 						<th scope="row"><label for="lf-ts-secret"><?php esc_html_e( 'Secret key', 'launch-forms' ); ?></label></th>
-						<td><input id="lf-ts-secret" class="regular-text" type="password" autocomplete="off" name="<?php echo $name( 'turnstile_secret_key' ); ?>" value="<?php echo esc_attr( $s['turnstile_secret_key'] ); ?>"></td>
+						<td><input id="lf-ts-secret" class="regular-text" type="password" autocomplete="off" name="<?php echo esc_attr( $name( 'turnstile_secret_key' ) ); ?>" value="<?php echo esc_attr( $s['turnstile_secret_key'] ); ?>"></td>
 					</tr>
 				</table>
 
@@ -273,7 +274,7 @@ class Admin {
 				<table class="form-table" role="presentation">
 					<tr>
 						<th scope="row"><label for="lf-mc-key"><?php esc_html_e( 'API key', 'launch-forms' ); ?></label></th>
-						<td><input id="lf-mc-key" class="regular-text" type="password" autocomplete="off" name="<?php echo $name( 'mailchimp_api_key' ); ?>" value="<?php echo esc_attr( $s['mailchimp_api_key'] ); ?>">
+						<td><input id="lf-mc-key" class="regular-text" type="password" autocomplete="off" name="<?php echo esc_attr( $name( 'mailchimp_api_key' ) ); ?>" value="<?php echo esc_attr( $s['mailchimp_api_key'] ); ?>">
 						<p class="description"><?php esc_html_e( 'Mailchimp → Profile → Extras → API keys. Choose the audience per form in the form builder.', 'launch-forms' ); ?></p></td>
 					</tr>
 				</table>
@@ -300,6 +301,59 @@ class Admin {
 			</form>
 		</div>
 		<?php
+	}
+
+	/**
+	 * Register the Site Health check.
+	 *
+	 * @param array $tests Tests.
+	 * @return array
+	 */
+	public function site_health_tests( $tests ) {
+		$tests['direct']['launch_forms_private_uploads'] = array(
+			'label' => __( 'Launch Forms uploads are private', 'launch-forms' ),
+			'test'  => array( $this, 'site_health_private_uploads' ),
+		);
+		return $tests;
+	}
+
+	/**
+	 * Site Health: can uploaded form files be downloaded without logging in?
+	 *
+	 * @return array
+	 */
+	public function site_health_private_uploads() {
+		$status = $this->plugin->uploads->public_access_status();
+		$badge  = array(
+			'label' => __( 'Security', 'launch-forms' ),
+			'color' => 'blue',
+		);
+		$result = array(
+			'label'       => __( 'Files uploaded through forms are not publicly accessible', 'launch-forms' ),
+			'status'      => 'good',
+			'badge'       => $badge,
+			'description' => '<p>' . esc_html__( 'Launch Forms requested a test file from its private upload folder and the web server refused it.', 'launch-forms' ) . '</p>',
+			'actions'     => '',
+			'test'        => 'launch_forms_private_uploads',
+		);
+		if ( 'outside' === $status ) {
+			$result['description'] = '<p>' . esc_html__( 'Form uploads are stored outside the public web folder, so they cannot be downloaded directly.', 'launch-forms' ) . '</p>';
+		} elseif ( 'exposed' === $status ) {
+			$result['status']      = 'critical';
+			$result['badge']['color'] = 'red';
+			$result['label']       = __( 'Files uploaded through forms can be downloaded without logging in', 'launch-forms' );
+			$result['description'] = '<p>' . esc_html__( 'Your web server ignores the .htaccess rules that protect the upload folder (common on nginx). Stored files have unguessable names, but they should still be blocked.', 'launch-forms' ) . '</p>'
+				. '<p>' . esc_html__( 'Fix it by adding this rule to the nginx server block:', 'launch-forms' ) . '</p>'
+				. '<p><code>location ~* /wp-content/uploads/launch-forms-private/ { deny all; }</code></p>'
+				. '<p>' . esc_html__( 'Or move uploads outside the web folder by adding this to wp-config.php, with a folder of your choice:', 'launch-forms' ) . '</p>'
+				. '<p><code>define( \'LAUNCH_FORMS_PRIVATE_DIR\', \'/path/outside/public_html/launch-forms\' );</code></p>';
+		} elseif ( 'unknown' === $status ) {
+			$result['status']      = 'recommended';
+			$result['badge']['color'] = 'orange';
+			$result['label']       = __( 'Launch Forms could not check whether uploaded files are private', 'launch-forms' );
+			$result['description'] = '<p>' . esc_html__( 'The site could not request a test file from itself (loopback requests may be blocked). If the site runs on nginx, make sure the launch-forms-private upload folder is denied, or set LAUNCH_FORMS_PRIVATE_DIR to a folder outside the web root.', 'launch-forms' ) . '</p>';
+		}
+		return $result;
 	}
 
 	/**

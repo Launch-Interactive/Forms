@@ -119,6 +119,11 @@ class Renderer {
 
 		$html .= $this->honeypot( $prefix );
 		$html .= '<input type="hidden" name="lf_form_id" value="' . esc_attr( $form->id ) . '">';
+		if ( is_user_logged_in() ) {
+			// Lets a plain POST be credited to the logged-in user (see Frontend::verified_user_id()).
+			// Logged-out pages stay nonce-free so they can be cached.
+			$html .= '<input type="hidden" name="lf_nonce" value="' . esc_attr( wp_create_nonce( 'launch_forms_submit_' . $form->id ) ) . '">';
+		}
 		$html .= $this->plugin->captcha->render( $form );
 		$html .= '<div class="lf-submit"><button type="submit" class="wp-element-button">' . esc_html( $form->settings['submit_label'] ) . '</button></div>';
 		$html .= '</form>';
