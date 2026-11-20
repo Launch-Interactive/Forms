@@ -1,0 +1,318 @@
+<?php
+/**
+ * Admin screens: form builder screen, settings page and test email tool.
+ *
+ * @package LaunchForms
+ */
+
+namespace LaunchForms;
+
+defined( 'ABSPATH' ) || exit;
+
+/**
+ * Admin UI.
+ */
+class Admin {
+
+	const SETTINGS_PAGE = 'launch-forms-settings';
+
+	/** @var Plugin */
+	private $plugin;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param Plugin $plugin Container.
+	 */
+	public function __construct( Plugin $plugin ) {
+		$this->plugin = $plugin;
+	}
+
+	/**
+	 * Hooks.
+	 */
+	public function register_hooks() {
+		add_action( 'admin_menu', array( $this, 'menu' ) );
+		add_action( 'add_meta_boxes_' . Forms::POST_TYPE, array( $this, 'meta_boxes' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue' ) );
+		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_block_editor' ) );
+		add_action( 'admin_post_launch_forms_test_email', array( $this, 'handle_test_email' ) );
+		add_filter( 'manage_' . Forms::POST_TYPE . '_posts_columns', array( $this, 'form_columns' ) );
+		add_action( 'manage_' . Forms::POST_TYPE . '_posts_custom_column', array( $this, 'form_column' ), 10, 2 );
+	}
+
+	/**
+	 * Settings submenu.
+	 */
+	public function menu() {
+		add_submenu_page(
+			'edit.php?post_type=' . Forms::POST_TYPE,
+			__( 'Form Settings', 'launch-forms' ),
+			__( 'Settings', 'launch-forms' ),
+			Plugin::manage_capability(),
+			self::SETTINGS_PAGE,
+			array( $this, 'render_settings_page' )
+		);
+	}
+
+	/**
+	 * Data the builder needs (used on the Forms screen and in the block editor).
+	 *
+	 * @return array
+	 */
+	public function builder_data() {
+		return array(
+			'fieldTypes'          => Form_Config::field_type_labels(),
+			'optionTypes'         => Form_Config::OPTION_TYPES,
+			'operators'           => array(
+				'is'           => __( 'is', 'launch-forms' ),
+				'is_not'       => __( 'is not', 'launch-forms' ),
+				'contains'     => __( 'contains', 'launch-forms' ),
+				'not_contains' => __( 'does not contain', 'launch-forms' ),
+				'empty'        => __( 'is empty', 'launch-forms' ),
+				'not_empty'    => __( 'is not empty', 'launch-forms' ),
+				'greater_than' => __( 'is greater than', 'launch-forms' ),
+				'less_than'    => __( 'is less than', 'launch-forms' ),
+			),
+			'defaults'            => Form_Config::defaults(),
+			'defaultFileTypes'    => Form_Config::DEFAULT_FILE_TYPES,
+			'blockedFileTypes'    => Uploads::BLOCKED_EXTENSIONS,
+			'captcha'             => array(
+				'recaptcha' => $this->plugin->captcha->is_configured( 'recaptcha' ),
+				'turnstile' => $this->plugin->captcha->is_configured( 'turnstile' ),
+			),
+			'mailchimpConfigured' => '' !== (string) $this->plugin->settings->get( 'mailchimp_api_key' ),
+			'settingsUrl'         => current_user_can( Plugin::manage_capability() ) ? admin_url( 'edit.php?post_type=' . Forms::POST_TYPE . '&page=' . self::SETTINGS_PAGE ) : '',
+			'formsUrl'            => admin_url( 'edit.php?post_type=' . Forms::POST_TYPE ),
+		);
+	}
+
+	/**
+	 * Expose builder data to the builder script.
+	 */
+	private function localize_builder() {
+		wp_add_inline_script( 'launch-forms-builder', 'window.launchFormsBuilderData = ' . wp_json_encode( $this->builder_data() ) . ';', 'before' );
+	}
+
+	/**
+	 * Enqueue the builder on the form edit screen.
+	 *
+	 * @param string $hook Hook suffix.
+	 */
+	public function enqueue( $hook ) {
+		$screen = get_current_screen();
+		if ( ! $screen || Forms::POST_TYPE !== $screen->post_type || ! in_array( $hook, array( 'post.php', 'post-new.php' ), true ) ) {
+			return;
+		}
+		wp_enqueue_script( 'launch-forms-admin', LAUNCH_FORMS_URL . 'assets/js/admin.js', array( 'launch-forms-builder' ), LAUNCH_FORMS_VERSION, true );
+		wp_enqueue_style( 'launch-forms-builder' );
+		$this->localize_builder();
+	}
+
+	/**
+	 * Builder data and styles for the block editor.
+	 */
+	public function enqueue_block_editor() {
+		wp_enqueue_style( 'launch-forms-builder' );
+		$this->localize_builder();
+	}
+
+	/**
+	 * Builder and usage boxes on the form edit screen.
+	 *
+	 * @param \WP_Post $post Post.
+	 */
+	public function meta_boxes( $post ) {
+		remove_meta_box( 'postcustom', Forms::POST_TYPE, 'normal' );
+		remove_meta_box( 'slugdiv', Forms::POST_TYPE, 'normal' );
+		add_meta_box( 'launch-forms-builder', __( 'Form builder', 'launch-forms' ), array( $this, 'render_builder_box' ), Forms::POST_TYPE, 'normal', 'high' );
+		add_meta_box( 'launch-forms-usage', __( 'Use this form', 'launch-forms' ), array( $this, 'render_usage_box' ), Forms::POST_TYPE, 'side', 'default' );
+	}
+
+	/**
+	 * Builder mount point + hidden input holding the JSON config.
+	 *
+	 * @param \WP_Post $post Post.
+	 */
+	public function render_builder_box( $post ) {
+		$config = Form_Config::from_json( get_post_meta( $post->ID, Forms::META_KEY, true ) );
+		wp_nonce_field( 'launch_forms_builder_' . $post->ID, 'launch_forms_builder_nonce' );
+		echo '<textarea name="' . esc_attr( Forms::META_KEY ) . '" id="launch-forms-config" hidden>' . esc_textarea( wp_json_encode( $config ) ) . '</textarea>';
+		echo '<div id="launch-forms-builder-root"><p>' . esc_html__( 'Loading builder…', 'launch-forms' ) . '</p></div>';
+		echo '<noscript><p>' . esc_html__( 'The form builder requires JavaScript.', 'launch-forms' ) . '</p></noscript>';
+	}
+
+	/**
+	 * Shortcode / block usage hints.
+	 *
+	 * @param \WP_Post $post Post.
+	 */
+	public function render_usage_box( $post ) {
+		if ( 'auto-draft' === $post->post_status ) {
+			echo '<p>' . esc_html__( 'Publish the form to get its shortcode.', 'launch-forms' ) . '</p>';
+			return;
+		}
+		echo '<p>' . esc_html__( 'Block editor: add the "Form" block and pick this form.', 'launch-forms' ) . '</p>';
+		echo '<p>' . esc_html__( 'Shortcode (Elementor, classic editor, widgets):', 'launch-forms' ) . '</p>';
+		echo '<p><input type="text" readonly class="widefat code" onclick="this.select()" value="' . esc_attr( '[' . Frontend::SHORTCODE . ' id="' . $post->ID . '"]' ) . '"></p>';
+		echo '<p>' . esc_html__( 'Changes apply everywhere the form is used.', 'launch-forms' ) . '</p>';
+	}
+
+	/**
+	 * Extra list columns on the Forms screen.
+	 *
+	 * @param array $columns Columns.
+	 * @return array
+	 */
+	public function form_columns( $columns ) {
+		$date = $columns['date'] ?? null;
+		unset( $columns['date'] );
+		$columns['lf_shortcode']   = __( 'Shortcode', 'launch-forms' );
+		$columns['lf_submissions'] = __( 'Submissions', 'launch-forms' );
+		if ( $date ) {
+			$columns['date'] = $date;
+		}
+		return $columns;
+	}
+
+	/**
+	 * Column content.
+	 *
+	 * @param string $column  Column.
+	 * @param int    $post_id Post ID.
+	 */
+	public function form_column( $column, $post_id ) {
+		if ( 'lf_shortcode' === $column ) {
+			echo '<code>' . esc_html( '[' . Frontend::SHORTCODE . ' id="' . $post_id . '"]' ) . '</code>';
+		}
+		if ( 'lf_submissions' === $column ) {
+			$count = $this->plugin->submissions->count_for_form( $post_id );
+			if ( current_user_can( Plugin::manage_capability() ) ) {
+				echo '<a href="' . esc_url( admin_url( 'edit.php?post_type=' . Submissions::POST_TYPE . '&lf_form=' . $post_id ) ) . '">' . esc_html( number_format_i18n( $count ) ) . '</a>';
+			} else {
+				echo esc_html( number_format_i18n( $count ) );
+			}
+		}
+	}
+
+	/**
+	 * Settings page.
+	 */
+	public function render_settings_page() {
+		if ( ! current_user_can( Plugin::manage_capability() ) ) {
+			return;
+		}
+		$s      = $this->plugin->settings->all();
+		$name   = static function ( $key ) {
+			return esc_attr( Settings::OPTION . '[' . $key . ']' );
+		};
+		$notice = get_transient( 'launch_forms_test_email_' . get_current_user_id() );
+		if ( $notice ) {
+			delete_transient( 'launch_forms_test_email_' . get_current_user_id() );
+		}
+		?>
+		<div class="wrap">
+			<h1><?php esc_html_e( 'Form Settings', 'launch-forms' ); ?></h1>
+			<?php if ( $notice ) : ?>
+				<div class="notice notice-<?php echo $notice['success'] ? 'success' : 'error'; ?> is-dismissible"><p><?php echo esc_html( $notice['message'] ); ?></p></div>
+			<?php endif; ?>
+
+			<form method="post" action="options.php">
+				<?php settings_fields( 'launch_forms' ); ?>
+
+				<h2><?php esc_html_e( 'General', 'launch-forms' ); ?></h2>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Structural CSS', 'launch-forms' ); ?></th>
+						<td><label><input type="checkbox" name="<?php echo $name( 'load_css' ); ?>" value="1" <?php checked( $s['load_css'] ); ?>> <?php esc_html_e( 'Load the small layout stylesheet (forms otherwise rely entirely on your theme)', 'launch-forms' ); ?></label></td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Uninstall', 'launch-forms' ); ?></th>
+						<td><label><input type="checkbox" name="<?php echo $name( 'delete_data_on_uninstall' ); ?>" value="1" <?php checked( $s['delete_data_on_uninstall'] ); ?>> <?php esc_html_e( 'Delete all forms, submissions and uploaded files when the plugin is deleted', 'launch-forms' ); ?></label></td>
+					</tr>
+				</table>
+
+				<h2><?php esc_html_e( 'Google reCAPTCHA', 'launch-forms' ); ?></h2>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row"><label for="lf-rc-version"><?php esc_html_e( 'Version', 'launch-forms' ); ?></label></th>
+						<td><select id="lf-rc-version" name="<?php echo $name( 'recaptcha_version' ); ?>">
+							<option value="v2" <?php selected( $s['recaptcha_version'], 'v2' ); ?>><?php esc_html_e( 'v2 checkbox', 'launch-forms' ); ?></option>
+							<option value="v3" <?php selected( $s['recaptcha_version'], 'v3' ); ?>><?php esc_html_e( 'v3 invisible (score)', 'launch-forms' ); ?></option>
+						</select></td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="lf-rc-site"><?php esc_html_e( 'Site key', 'launch-forms' ); ?></label></th>
+						<td><input id="lf-rc-site" class="regular-text" type="text" name="<?php echo $name( 'recaptcha_site_key' ); ?>" value="<?php echo esc_attr( $s['recaptcha_site_key'] ); ?>"></td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="lf-rc-secret"><?php esc_html_e( 'Secret key', 'launch-forms' ); ?></label></th>
+						<td><input id="lf-rc-secret" class="regular-text" type="password" autocomplete="off" name="<?php echo $name( 'recaptcha_secret_key' ); ?>" value="<?php echo esc_attr( $s['recaptcha_secret_key'] ); ?>"></td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="lf-rc-threshold"><?php esc_html_e( 'v3 score threshold', 'launch-forms' ); ?></label></th>
+						<td><input id="lf-rc-threshold" type="number" min="0" max="1" step="0.1" name="<?php echo $name( 'recaptcha_threshold' ); ?>" value="<?php echo esc_attr( $s['recaptcha_threshold'] ); ?>">
+						<p class="description"><?php esc_html_e( 'Submissions scoring below this are rejected (0 = bot, 1 = human).', 'launch-forms' ); ?></p></td>
+					</tr>
+				</table>
+
+				<h2><?php esc_html_e( 'Cloudflare Turnstile', 'launch-forms' ); ?></h2>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row"><label for="lf-ts-site"><?php esc_html_e( 'Site key', 'launch-forms' ); ?></label></th>
+						<td><input id="lf-ts-site" class="regular-text" type="text" name="<?php echo $name( 'turnstile_site_key' ); ?>" value="<?php echo esc_attr( $s['turnstile_site_key'] ); ?>"></td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="lf-ts-secret"><?php esc_html_e( 'Secret key', 'launch-forms' ); ?></label></th>
+						<td><input id="lf-ts-secret" class="regular-text" type="password" autocomplete="off" name="<?php echo $name( 'turnstile_secret_key' ); ?>" value="<?php echo esc_attr( $s['turnstile_secret_key'] ); ?>"></td>
+					</tr>
+				</table>
+
+				<h2><?php esc_html_e( 'Mailchimp', 'launch-forms' ); ?></h2>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row"><label for="lf-mc-key"><?php esc_html_e( 'API key', 'launch-forms' ); ?></label></th>
+						<td><input id="lf-mc-key" class="regular-text" type="password" autocomplete="off" name="<?php echo $name( 'mailchimp_api_key' ); ?>" value="<?php echo esc_attr( $s['mailchimp_api_key'] ); ?>">
+						<p class="description"><?php esc_html_e( 'Mailchimp → Profile → Extras → API keys. Choose the audience per form in the form builder.', 'launch-forms' ); ?></p></td>
+					</tr>
+				</table>
+				<p class="description"><?php esc_html_e( 'Any setting can also be defined in wp-config.php, e.g. define( \'LAUNCH_FORMS_MAILCHIMP_API_KEY\', \'...\' );', 'launch-forms' ); ?></p>
+
+				<?php submit_button(); ?>
+			</form>
+
+			<hr>
+			<h2 id="lf-test-email"><?php esc_html_e( 'Send a test email', 'launch-forms' ); ?></h2>
+			<p><?php esc_html_e( 'Check that WordPress can send email before relying on form notifications.', 'launch-forms' ); ?></p>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+				<input type="hidden" name="action" value="launch_forms_test_email">
+				<?php wp_nonce_field( 'launch_forms_test_email' ); ?>
+				<label for="lf-test-to" class="screen-reader-text"><?php esc_html_e( 'Recipient', 'launch-forms' ); ?></label>
+				<input id="lf-test-to" type="email" class="regular-text" name="to" required value="<?php echo esc_attr( wp_get_current_user()->user_email ); ?>">
+				<?php submit_button( __( 'Send test email', 'launch-forms' ), 'secondary', 'submit', false ); ?>
+				<p class="description">
+					<?php
+					/* translators: %s: from address. */
+					echo esc_html( sprintf( __( 'Emails are sent from: %s', 'launch-forms' ), $this->plugin->test_email->from_address() ) );
+					?>
+				</p>
+			</form>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Handle the test email form.
+	 */
+	public function handle_test_email() {
+		if ( ! current_user_can( Plugin::manage_capability() ) ) {
+			wp_die( esc_html__( 'You are not allowed to do this.', 'launch-forms' ), '', array( 'response' => 403 ) );
+		}
+		check_admin_referer( 'launch_forms_test_email' );
+		$to     = isset( $_POST['to'] ) ? sanitize_email( wp_unslash( $_POST['to'] ) ) : '';
+		$result = $this->plugin->test_email->send( $to );
+		set_transient( 'launch_forms_test_email_' . get_current_user_id(), $result, 60 );
+		wp_safe_redirect( admin_url( 'edit.php?post_type=' . Forms::POST_TYPE . '&page=' . self::SETTINGS_PAGE . '#lf-test-email' ) );
+		exit;
+	}
+}

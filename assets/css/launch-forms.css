@@ -1,0 +1,44 @@
+/*
+ * Launch Forms — structural CSS only. Colours, fonts, borders and spacing come from the theme.
+ * Disable entirely under Forms → Settings if your theme already handles layout.
+ */
+.lf-form .lf-field {
+	margin: 0 0 1em;
+}
+.lf-form .lf-field[hidden],
+.lf-form .lf-message[hidden] {
+	display: none !important;
+}
+.lf-form label,
+.lf-form legend {
+	display: block;
+}
+.lf-form fieldset {
+	min-width: 0;
+}
+.lf-form .lf-option label,
+.lf-form .lf-field--consent label {
+	display: inline;
+}
+.lf-form input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+.lf-form select,
+.lf-form textarea {
+	box-sizing: border-box;
+	width: 100%;
+	max-width: 100%;
+}
+.lf-form .lf-description,
+.lf-form .lf-error {
+	margin: 0.25em 0 0;
+}
+.lf-form .lf-error {
+	color: var(--lf-error-color, #b32d2e);
+}
+/* Honeypot: off-screen, not display:none (some bots skip hidden inputs). */
+.lf-hp {
+	position: absolute !important;
+	left: -9999px !important;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+}

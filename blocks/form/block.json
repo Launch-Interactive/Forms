@@ -1,0 +1,25 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "launch-forms/form",
+	"title": "Form",
+	"category": "widgets",
+	"icon": "feedback",
+	"description": "Insert a reusable form. Build a new one right here or pick one you built on the Forms screen.",
+	"keywords": [ "form", "contact", "launch forms", "signup" ],
+	"textdomain": "launch-forms",
+	"attributes": {
+		"formId": {
+			"type": "integer",
+			"default": 0
+		}
+	},
+	"supports": {
+		"html": false,
+		"className": true,
+		"customClassName": true
+	},
+	"editorScript": "launch-forms-block-editor",
+	"editorStyle": "launch-forms-builder",
+	"style": "launch-forms"
+}

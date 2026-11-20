@@ -1,0 +1,93 @@
+'use strict';
+
+const test = require( 'node:test' );
+const assert = require( 'node:assert/strict' );
+const h = require( '../../assets/js/builder.js' );
+
+test( 'slugify mirrors PHP Form_Config::sanitize_name', () => {
+	assert.equal( h.slugify( 'Your Name!' ), 'your_name' );
+	assert.equal( h.slugify( 'Émail address' ), 'email_address' );
+	assert.equal( h.slugify( '1st choice' ), 'f_1st_choice' );
+	assert.equal( h.slugify( '  --  ' ), '' );
+	assert.equal( h.slugify( 'x'.repeat( 100 ) ).length, 64 );
+} );
+
+test( 'uniqueName avoids collisions, ignoring the field being edited', () => {
+	const fields = [ { name: 'email' }, { name: 'email_2' } ];
+	assert.equal( h.uniqueName( 'email', fields, -1 ), 'email_3' );
+	assert.equal( h.uniqueName( 'email', fields, 0 ), 'email' );
+	assert.equal( h.uniqueName( 'phone', fields, -1 ), 'phone' );
+} );
+
+test( 'createField produces sane defaults per type', () => {
+	const labels = { text: 'Text', select: 'Dropdown', file: 'File upload', content: 'Content', number: 'Number' };
+	const text = h.createField( 'text', [], labels );
+	assert.equal( text.name, 'text' );
+	assert.equal( text.conditions.enabled, false );
+	assert.equal( h.createField( 'text', [ text ], labels ).name, 'text_2' );
+	assert.equal( h.createField( 'select', [], labels ).options.length, 2 );
+	assert.deepEqual( h.createField( 'file', [], labels ).allowed_types, [ 'jpg', 'jpeg', 'png', 'pdf' ] );
+	assert.equal( h.createField( 'content', [], labels ).label, '' );
+	assert.equal( h.createField( 'number', [], labels ).min, '' );
+} );
+
+test( 'options text round-trip', () => {
+	const options = h.textToOptions( 'Red|r\nBlue\n\n  Green | g  ' );
+	assert.deepEqual( options, [
+		{ label: 'Red', value: 'r' },
+		{ label: 'Blue', value: 'Blue' },
+		{ label: 'Green', value: 'g' },
+	] );
+	assert.equal( h.optionsToText( options ), 'Red|r\nBlue\nGreen|g' );
+} );
+
+test( 'moveItem', () => {
+	assert.deepEqual( h.moveItem( [ 1, 2, 3 ], 0, 2 ), [ 2, 3, 1 ] );
+	assert.deepEqual( h.moveItem( [ 1, 2, 3 ], 0, -1 ), [ 1, 2, 3 ] );
+} );
+
+test( 'renameReferences updates conditions, mailchimp and merge tags', () => {
+	const config = {
+		fields: [
+			{ name: 'email' },
+			{ name: 'note', conditions: { enabled: true, rules: [ { field: 'email', operator: 'not_empty', value: '' } ] } },
+		],
+		notifications: [ { to: '{field:email}', subject: 'From {field:email}', message: '{all_fields}', reply_to: '{field:email}', from_name: '' } ],
+		mailchimp: { email_field: 'email', consent_field: '', merge_fields: [ { tag: 'EMAIL2', field: 'email' } ] },
+	};
+	const out = h.renameReferences( config, 'email', 'work_email' );
+	assert.equal( out.fields[ 1 ].conditions.rules[ 0 ].field, 'work_email' );
+	assert.equal( out.notifications[ 0 ].to, '{field:work_email}' );
+	assert.equal( out.notifications[ 0 ].subject, 'From {field:work_email}' );
+	assert.equal( out.notifications[ 0 ].reply_to, '{field:work_email}' );
+	assert.equal( out.mailchimp.email_field, 'work_email' );
+	assert.equal( out.mailchimp.merge_fields[ 0 ].field, 'work_email' );
+	assert.equal( config.mailchimp.email_field, 'email', 'Input is not mutated.' );
+	assert.equal( h.renameReferences( config, 'email', 'email' ), config );
+} );
+
+test( 'removeReferences drops rules and mailchimp mappings', () => {
+	const config = {
+		fields: [ { name: 'a' }, { name: 'b', conditions: { enabled: true, rules: [ { field: 'a', operator: 'empty' } ] } } ],
+		mailchimp: { email_field: 'a', consent_field: 'a', merge_fields: [ { tag: 'X', field: 'a' } ] },
+	};
+	const out = h.removeReferences( config, 'a' );
+	assert.deepEqual( out.fields[ 1 ].conditions.rules, [] );
+	assert.equal( out.fields[ 1 ].conditions.enabled, false );
+	assert.equal( out.mailchimp.email_field, '' );
+	assert.equal( out.mailchimp.consent_field, '' );
+	assert.deepEqual( out.mailchimp.merge_fields, [] );
+} );
+
+test( 'parseConfig tolerates bad JSON and merges defaults', () => {
+	const defaults = { settings: { submit_label: 'Submit', captcha: 'none' }, notifications: [ { to: '{admin_email}' } ], mailchimp: { enabled: false } };
+	const bad = h.parseConfig( '{not json', defaults );
+	assert.deepEqual( bad.fields, [] );
+	assert.equal( bad.settings.submit_label, 'Submit' );
+	assert.equal( bad.notifications.length, 1 );
+	const good = h.parseConfig( '{"fields":[{"name":"x"}],"settings":{"submit_label":"Go"},"notifications":[]}', defaults );
+	assert.equal( good.fields[ 0 ].name, 'x' );
+	assert.equal( good.settings.submit_label, 'Go' );
+	assert.equal( good.settings.captcha, 'none' );
+	assert.deepEqual( good.notifications, [], 'An explicitly empty notification list is kept.' );
+} );

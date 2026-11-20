@@ -1,0 +1,116 @@
+/* Launch Forms builder (admin + block editor only). */
+.lf-builder {
+	font-size: 13px;
+}
+.lf-builder__tabs .components-tab-panel__tabs {
+	border-bottom: 1px solid #ddd;
+	margin-bottom: 16px;
+}
+.lf-builder__field {
+	border: 1px solid #ddd;
+	border-radius: 2px;
+	margin-bottom: 8px;
+	background: #fff;
+}
+.lf-builder__field.is-open {
+	border-color: #949494;
+}
+.lf-builder__field-head {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	padding: 4px 4px 4px 0;
+}
+.lf-builder__field-title {
+	flex: 1;
+	display: flex;
+	align-items: baseline;
+	flex-wrap: wrap;
+	gap: 8px;
+	text-align: left;
+	background: none;
+	border: 0;
+	padding: 8px 12px;
+	cursor: pointer;
+	font: inherit;
+	color: inherit;
+}
+.lf-builder__meta {
+	color: #757575;
+	font-size: 12px;
+}
+.lf-builder__badge {
+	background: #f0f0f0;
+	border-radius: 2px;
+	padding: 0 6px;
+	font-size: 11px;
+}
+.lf-builder__field-body {
+	border-top: 1px solid #eee;
+	padding: 12px;
+	display: grid;
+	gap: 12px;
+}
+.lf-builder__row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	align-items: flex-end;
+}
+.lf-builder__row > * {
+	flex: 1 1 160px;
+	min-width: 0;
+}
+.lf-builder__row > .components-button {
+	flex: 0 0 auto;
+}
+.lf-builder__conditions {
+	display: grid;
+	gap: 12px;
+	padding: 12px;
+	background: #f6f7f7;
+}
+.lf-builder__add {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	margin-top: 12px;
+}
+.lf-builder__add > :first-child {
+	max-width: 260px;
+}
+.lf-builder__panel {
+	display: grid;
+	gap: 16px;
+}
+.lf-builder__card {
+	border: 1px solid #ddd;
+	padding: 12px;
+	display: grid;
+	gap: 12px;
+	background: #fff;
+}
+.lf-builder__hint {
+	color: #757575;
+	margin: 0;
+}
+.lf-builder__hint code {
+	margin: 0 4px 4px 0;
+	display: inline-block;
+}
+.lf-block-editor {
+	display: grid;
+	gap: 16px;
+	padding: 16px;
+	border: 1px dashed #949494;
+	background: #fff;
+	color: #1e1e1e;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+.lf-block-picker {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	align-items: flex-end;
+	width: 100%;
+}
