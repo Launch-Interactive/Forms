@@ -88,6 +88,11 @@
 	display: flex;
 	flex-wrap: wrap;
 	gap: 12px;
+	/* Top-align so help text under one control doesn't push its neighbours down. */
+	align-items: flex-start;
+}
+/* Condition rules have no help text; bottom-align so the remove button lines up with the inputs. */
+.lf-builder__row.lf-builder__rule {
 	align-items: flex-end;
 }
 .lf-builder__row > * {
