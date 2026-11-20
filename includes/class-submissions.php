@@ -39,6 +39,7 @@ class Submissions {
 		add_action( 'init', array( $this, 'register' ) );
 		add_action( 'before_delete_post', array( $this, 'delete_files' ) );
 		add_action( 'admin_post_launch_forms_download', array( $this, 'handle_download' ) );
+		add_action( 'admin_post_nopriv_launch_forms_download', array( $this, 'handle_logged_out_download' ) );
 		add_filter( 'manage_' . self::POST_TYPE . '_posts_columns', array( $this, 'columns' ) );
 		add_action( 'manage_' . self::POST_TYPE . '_posts_custom_column', array( $this, 'column' ), 10, 2 );
 		add_action( 'restrict_manage_posts', array( $this, 'form_filter' ) );
@@ -240,16 +241,72 @@ class Submissions {
 	}
 
 	/**
+	 * Logged-out visitors following a download link are sent to the login screen, then back.
+	 *
+	 * Without this, admin-post.php answers with a blank 400 error page.
+	 */
+	public function handle_logged_out_download() {
+		auth_redirect();
+	}
+
+	/**
+	 * Stop a download with a readable explanation and a way back.
+	 *
+	 * @param string $message  Explanation.
+	 * @param int    $status   HTTP status.
+	 * @param string $link_url Where to go next.
+	 * @param string $link     Link text.
+	 */
+	private function download_error( $message, $status, $link_url = '', $link = '' ) {
+		$args = array( 'response' => $status );
+		if ( $link_url ) {
+			$args['link_url']  = $link_url;
+			$args['link_text'] = $link;
+		}
+		wp_die( esc_html( $message ), esc_html__( 'Download unavailable', 'launch-forms' ), $args );
+	}
+
+	/**
 	 * admin-post handler that streams a private file to an authorised user.
 	 */
 	public function handle_download() {
 		$submission_id = isset( $_GET['submission'] ) ? absint( $_GET['submission'] ) : 0;
 		$file          = isset( $_GET['file'] ) ? sanitize_key( wp_unslash( $_GET['file'] ) ) : '';
-		check_admin_referer( 'launch_forms_download_' . $submission_id );
+
+		if ( ! current_user_can( Plugin::manage_capability() ) ) {
+			$this->download_error(
+				__( 'Your account does not have permission to download files from form submissions. Ask a site administrator if you need this file.', 'launch-forms' ),
+				403,
+				admin_url(),
+				__( 'Go to the dashboard', 'launch-forms' )
+			);
+			return;
+		}
+
+		$is_submission = self::POST_TYPE === get_post_type( $submission_id );
+		$back_url      = $is_submission ? (string) get_edit_post_link( $submission_id, 'raw' ) : admin_url( 'edit.php?post_type=' . self::POST_TYPE );
+		$back_text     = $is_submission ? __( 'Open the submission', 'launch-forms' ) : __( 'View all submissions', 'launch-forms' );
+
+		$nonce = isset( $_GET['_wpnonce'] ) ? sanitize_key( wp_unslash( $_GET['_wpnonce'] ) ) : '';
+		if ( ! wp_verify_nonce( $nonce, 'launch_forms_download_' . $submission_id ) ) {
+			$this->download_error(
+				__( 'This download link has expired. Download links only work for the person who opened them and for a limited time. Open the submission again to get a fresh link.', 'launch-forms' ),
+				403,
+				$back_url,
+				$back_text
+			);
+			return;
+		}
 
 		$download = $this->resolve_download( $submission_id, $file );
 		if ( is_wp_error( $download ) ) {
-			wp_die( esc_html( $download->get_error_message() ), '', array( 'response' => (int) ( $download->get_error_data()['status'] ?? 403 ) ) );
+			$this->download_error(
+				__( 'This file is no longer available. It may have been deleted, or the submission it belonged to was removed.', 'launch-forms' ),
+				(int) ( $download->get_error_data()['status'] ?? 404 ),
+				$back_url,
+				$back_text
+			);
+			return;
 		}
 
 		nocache_headers();

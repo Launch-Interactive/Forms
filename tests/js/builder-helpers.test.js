@@ -29,6 +29,7 @@ test( 'createField produces sane defaults per type', () => {
 	assert.deepEqual( h.createField( 'file', [], labels ).allowed_types, [ 'jpg', 'jpeg', 'png', 'pdf' ] );
 	assert.equal( h.createField( 'content', [], labels ).label, '' );
 	assert.equal( h.createField( 'number', [], labels ).min, '' );
+	assert.equal( text.width, 'full' );
 } );
 
 test( 'options text round-trip', () => {

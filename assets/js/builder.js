@@ -62,6 +62,7 @@
 				placeholder: '',
 				description: '',
 				default: '',
+				width: 'full',
 				css_class: '',
 				conditions: { enabled: false, action: 'show', match: 'all', rules: [] },
 			};
@@ -276,6 +277,7 @@
 
 		var typeLabels = data.fieldTypes || {};
 		var operators = data.operators || {};
+		var WIDTH_BADGES = { half: '1/2', third: '1/3', 'two-thirds': '2/3', quarter: '1/4', 'three-quarters': '3/4' };
 		var PLACEHOLDER_TYPES = [ 'text', 'email', 'url', 'tel', 'number', 'textarea', 'select' ];
 
 		function set( obj, key, value ) {
@@ -623,7 +625,28 @@
 				parts.push( el( 'div', { className: 'lf-builder__row', key: 'toggles' }, toggles ) );
 			}
 
-			parts.push( el( 'div', { key: 'css' }, text( 'css_class', __( 'CSS class(es)', 'launch-forms' ) ) ) );
+			var widths = data.widths || {};
+			parts.push(
+				el(
+					'div',
+					{ className: 'lf-builder__row', key: 'css' },
+					type !== 'hidden' &&
+						el( c.SelectControl, {
+							__nextHasNoMarginBottom: true,
+							__next40pxDefaultSize: true,
+							label: __( 'Width', 'launch-forms' ),
+							help: __( 'Fields narrower than full width sit side by side. They stack on small screens.', 'launch-forms' ),
+							value: field.width || 'full',
+							options: Object.keys( widths ).map( function ( k ) {
+								return { label: widths[ k ], value: k };
+							} ),
+							onChange: function ( v ) {
+								change( 'width', v );
+							},
+						} ),
+					text( 'css_class', __( 'CSS class(es)', 'launch-forms' ) )
+				)
+			);
 
 			if ( type !== 'hidden' ) {
 				parts.push(
@@ -908,6 +931,7 @@
 								el( 'strong', null, title ),
 								field.required ? ' *' : '',
 								el( 'span', { className: 'lf-builder__meta' }, ( typeLabels[ field.type ] || field.type ) + ( field.type !== 'content' ? ' · ' + field.name : '' ) ),
+								WIDTH_BADGES[ field.width ] ? el( 'span', { className: 'lf-builder__badge', title: ( data.widths || {} )[ field.width ] }, WIDTH_BADGES[ field.width ] ) : null,
 								field.conditions && field.conditions.enabled ? el( 'span', { className: 'lf-builder__badge' }, __( 'conditional', 'launch-forms' ) ) : null
 							),
 							el( c.Button, {

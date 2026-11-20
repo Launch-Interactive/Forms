@@ -5,6 +5,41 @@
 .lf-form .lf-field {
 	margin: 0 0 1em;
 }
+/*
+ * Side-by-side fields. Each field takes a share of the row; the gap between fields
+ * can be changed with --lf-gap. Everything stacks when the form is narrower than 480px.
+ */
+.lf-form .lf-fields {
+	--lf-gap: 1em;
+	display: flex;
+	flex-wrap: wrap;
+	column-gap: var(--lf-gap);
+	container-type: inline-size;
+}
+.lf-form .lf-fields > * {
+	flex: 0 0 100%;
+	min-width: 0;
+}
+.lf-form .lf-fields > .lf-field--half {
+	flex-basis: calc((100% - var(--lf-gap)) / 2);
+}
+.lf-form .lf-fields > .lf-field--third {
+	flex-basis: calc((100% - 2 * var(--lf-gap)) / 3);
+}
+.lf-form .lf-fields > .lf-field--two-thirds {
+	flex-basis: calc((200% - var(--lf-gap)) / 3);
+}
+.lf-form .lf-fields > .lf-field--quarter {
+	flex-basis: calc((100% - 3 * var(--lf-gap)) / 4);
+}
+.lf-form .lf-fields > .lf-field--three-quarters {
+	flex-basis: calc((300% - var(--lf-gap)) / 4);
+}
+@container (max-width: 480px) {
+	.lf-form .lf-fields > .lf-field {
+		flex-basis: 100%;
+	}
+}
 .lf-form .lf-field[hidden],
 .lf-form .lf-message[hidden] {
 	display: none !important;

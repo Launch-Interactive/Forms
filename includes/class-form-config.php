@@ -24,7 +24,28 @@ class Form_Config {
 
 	const OPERATORS = array( 'is', 'is_not', 'contains', 'not_contains', 'empty', 'not_empty', 'greater_than', 'less_than' );
 
+	/**
+	 * Field widths, as a share of the form's width. Fields next to each other share a row.
+	 */
+	const WIDTHS = array( 'full', 'half', 'third', 'two-thirds', 'quarter', 'three-quarters' );
+
 	const DEFAULT_FILE_TYPES = array( 'jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx', 'txt' );
+
+	/**
+	 * Field width labels for the builder.
+	 *
+	 * @return array<string,string>
+	 */
+	public static function width_labels() {
+		return array(
+			'full'           => __( 'Full width', 'launch-forms' ),
+			'half'           => __( 'Half (1/2)', 'launch-forms' ),
+			'third'          => __( 'One third (1/3)', 'launch-forms' ),
+			'two-thirds'     => __( 'Two thirds (2/3)', 'launch-forms' ),
+			'quarter'        => __( 'Quarter (1/4)', 'launch-forms' ),
+			'three-quarters' => __( 'Three quarters (3/4)', 'launch-forms' ),
+		);
+	}
 
 	/**
 	 * Human readable field type labels.
@@ -210,6 +231,7 @@ class Form_Config {
 			'placeholder' => sanitize_text_field( (string) ( $raw['placeholder'] ?? '' ) ),
 			'description' => sanitize_text_field( (string) ( $raw['description'] ?? '' ) ),
 			'default'     => 'textarea' === $type ? sanitize_textarea_field( (string) ( $raw['default'] ?? '' ) ) : sanitize_text_field( (string) ( $raw['default'] ?? '' ) ),
+			'width'       => 'hidden' !== $type && in_array( $raw['width'] ?? '', self::WIDTHS, true ) ? $raw['width'] : 'full',
 			'css_class'   => implode( ' ', array_filter( array_map( 'sanitize_html_class', preg_split( '/\s+/', (string) ( $raw['css_class'] ?? '' ) ) ) ) ),
 			'conditions'  => self::sanitize_conditions( (array) ( $raw['conditions'] ?? array() ) ),
 		);

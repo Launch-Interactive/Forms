@@ -88,6 +88,45 @@ class SubmissionsTest extends LF_TestCase {
 		$this->assertStringContainsString( '_wpnonce=', $url );
 	}
 
+	/**
+	 * Run the download handler with the given query and return the wp_die exception.
+	 */
+	private function download_die( array $query ) {
+		$_GET = $query;
+		try {
+			launch_forms()->submissions->handle_download();
+		} catch ( WPDieException $e ) {
+			return $e;
+		} finally {
+			$_GET = array();
+		}
+		$this->fail( 'Expected the download to be refused.' );
+	}
+
+	public function test_logged_out_download_links_go_to_login_instead_of_a_blank_error() {
+		$this->assertNotFalse( has_action( 'admin_post_nopriv_launch_forms_download', array( launch_forms()->submissions, 'handle_logged_out_download' ) ) );
+	}
+
+	public function test_download_refusals_explain_themselves() {
+		$id = $this->submission_with_file( $record );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
+		$nonce = wp_create_nonce( 'launch_forms_download_' . $id );
+		$e     = $this->download_die( array( 'submission' => $id, 'file' => $record['file'], '_wpnonce' => $nonce ) );
+		$this->assertStringContainsString( 'does not have permission', $e->getMessage() );
+		$this->assertSame( 403, $e->getCode() );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$e = $this->download_die( array( 'submission' => $id, 'file' => $record['file'], '_wpnonce' => 'stale' ) );
+		$this->assertStringContainsString( 'expired', $e->getMessage() );
+		$this->assertSame( 403, $e->getCode() );
+
+		$nonce = wp_create_nonce( 'launch_forms_download_' . $id );
+		$e     = $this->download_die( array( 'submission' => $id, 'file' => str_repeat( 'b', 32 ), '_wpnonce' => $nonce ) );
+		$this->assertStringContainsString( 'no longer available', $e->getMessage() );
+		$this->assertSame( 404, $e->getCode() );
+	}
+
 	public function test_files_deleted_with_submission_but_not_on_trash() {
 		$id   = $this->submission_with_file( $record );
 		$path = launch_forms()->uploads->path( $record['file'] );

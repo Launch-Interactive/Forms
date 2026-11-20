@@ -35,6 +35,21 @@ class RendererTest extends LF_TestCase {
 		$this->assertSame( 'Submit', trim( $x->query( '//button[@type="submit"]' )->item( 0 )->textContent ) );
 	}
 
+	public function test_fields_are_wrapped_and_carry_their_width() {
+		$form = $this->make_form(
+			array(
+				$this->field( 'text', 'first', array( 'width' => 'half' ) ),
+				$this->field( 'text', 'last', array( 'width' => 'half' ) ),
+				$this->field( 'textarea', 'message' ),
+			)
+		);
+		$x = $this->dom( $this->render( $form ) );
+		$this->assertSame( 3, $x->query( '//form/div[@class="lf-fields"]/div[contains(@class,"lf-field ")]' )->length );
+		$this->assertSame( 2, $x->query( '//div[contains(concat(" ",@class," ")," lf-field--half ")]' )->length );
+		$this->assertSame( 0, $x->query( '//div[contains(@class,"lf-field--full")]' )->length, 'Full width is the default and adds no class.' );
+		$this->assertSame( 0, $x->query( '//div[@class="lf-fields"]//button' )->length, 'Submit button stays outside the field row.' );
+	}
+
 	public function test_labels_are_associated_with_inputs() {
 		$x = $this->dom( $this->render( $this->contact_form() ) );
 		foreach ( $x->query( '//input[@name="lf[name]"] | //input[@name="lf[email]"] | //textarea[@name="lf[message]"]' ) as $input ) {

@@ -19,6 +19,22 @@ class FormConfigTest extends LF_TestCase {
 		$this->assertSame( 'none', $config['settings']['captcha'] );
 	}
 
+	public function test_width_is_limited_to_known_values() {
+		$config = Form_Config::sanitize(
+			array(
+				'fields' => array(
+					array( 'type' => 'text', 'label' => 'First', 'width' => 'half' ),
+					array( 'type' => 'text', 'label' => 'Last', 'width' => 'two-thirds' ),
+					array( 'type' => 'text', 'label' => 'Bad', 'width' => '50%"><script>' ),
+					array( 'type' => 'text', 'label' => 'None' ),
+					array( 'type' => 'hidden', 'label' => 'Ref', 'width' => 'half' ),
+				),
+			)
+		);
+		$this->assertSame( array( 'half', 'two-thirds', 'full', 'full', 'full' ), wp_list_pluck( $config['fields'], 'width' ) );
+		$this->assertSame( Form_Config::WIDTHS, array_keys( Form_Config::width_labels() ) );
+	}
+
 	public function test_unknown_field_types_are_dropped() {
 		$config = Form_Config::sanitize(
 			array(
