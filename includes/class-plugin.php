@@ -43,6 +43,8 @@ final class Plugin {
 	public $rest;
 	/** @var Test_Email */
 	public $test_email;
+	/** @var Smtp */
+	public $smtp;
 	/** @var Admin */
 	public $admin;
 
@@ -79,7 +81,8 @@ final class Plugin {
 		$this->renderer      = new Renderer( $this );
 		$this->frontend      = new Frontend( $this );
 		$this->rest          = new Rest_Api( $this );
-		$this->test_email    = new Test_Email();
+		$this->smtp          = new Smtp( $this->settings );
+		$this->test_email    = new Test_Email( $this->smtp );
 		$this->admin         = new Admin( $this );
 	}
 
@@ -94,6 +97,7 @@ final class Plugin {
 
 		add_action( 'init', array( $this, 'load_textdomain' ) );
 		$this->settings->register_hooks();
+		$this->smtp->register_hooks();
 		$this->forms->register_hooks();
 		$this->submissions->register_hooks();
 		$this->frontend->register_hooks();

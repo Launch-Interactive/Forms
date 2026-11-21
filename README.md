@@ -12,6 +12,7 @@ A lightweight WordPress form builder that outputs minimal, semantic HTML and tak
 - **Conditional logic**: show or hide a field when all or any rules match (`is`, `is not`, `contains`, `empty`, `>`, `<`, and so on). It is evaluated live in the browser and again on the server, so hidden fields are never validated or stored. Chained conditions are supported.
 - **Submissions** are stored under **Forms → Submissions** (admins only), with a per-form filter, an action log, and secure file downloads. Storage can be turned off per form.
 - **Email notifications**: multiple per form, with merge tags (`{field:key}`, `{all_fields}`, `{form_title}`, `{site_name}`, `{admin_email}`, `{page_url}`, `{date}`, `{submission_id}`). Supports Reply-To and From, autoresponders (`{field:email}` as recipient), and optional attachment of uploaded files.
+- **SMTP**: **Forms → Settings → Email (SMTP)** sends all WordPress email through your email provider's SMTP server (host, port, TLS/SSL, username and password, From address and name, optional forced From). The password is stored encrypted with a key derived from the site's salts and is never shown again.
 - **Test email**: **Forms → Settings → Send a test email** shows the exact `wp_mail()` failure reason when sending fails.
 - **Mailchimp**: per-form audience, email field, merge fields, tags, double opt-in, and an optional "only if this box is ticked" consent field.
 - **Spam protection**: a built-in honeypot, plus optional Google reCAPTCHA (v2 checkbox or v3 score) or Cloudflare Turnstile per form.
@@ -49,7 +50,10 @@ Any setting can be defined as a constant, which keeps secrets out of the databas
 define( 'LAUNCH_FORMS_MAILCHIMP_API_KEY', 'xxxx-us21' );
 define( 'LAUNCH_FORMS_TURNSTILE_SECRET_KEY', '...' );
 define( 'LAUNCH_FORMS_RECAPTCHA_SECRET_KEY', '...' );
+define( 'LAUNCH_FORMS_SMTP_PASSWORD', '...' ); // Also SMTP_HOST, SMTP_PORT, SMTP_USERNAME, ...
 ```
+
+If the security keys (salts) in wp-config.php change, a saved SMTP password can no longer be decrypted; the settings page says so and asks for it again.
 
 ## Hooks
 
@@ -64,6 +68,7 @@ define( 'LAUNCH_FORMS_RECAPTCHA_SECRET_KEY', '...' );
 | `launch_forms_private_dir` | filter | Change the private upload folder |
 | `launch_forms_manage_capability` | filter | Capability for submissions, downloads and settings (default `manage_options`) |
 | `launch_forms_rate_limit` | filter | `array( 'max' => 10, 'window' => 600 )`, or `false` to disable |
+| `launch_forms_smtp_configured` | action | Adjust PHPMailer after SMTP is configured |
 | `launch_forms_client_ip` | filter | Visitor IP used for rate limiting and captcha (for trusted proxies) |
 
 The front end also dispatches `launch-forms:success` and `launch-forms:error` DOM events on the form.

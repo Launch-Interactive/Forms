@@ -14,6 +14,31 @@ defined( 'ABSPATH' ) || exit;
  */
 class Test_Email {
 
+	/** @var Smtp|null */
+	private $smtp;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param Smtp|null $smtp SMTP settings, to say how the email was sent.
+	 */
+	public function __construct( ?Smtp $smtp = null ) {
+		$this->smtp = $smtp;
+	}
+
+	/**
+	 * How email is being sent, for messages.
+	 *
+	 * @return string
+	 */
+	public function transport_label() {
+		if ( $this->smtp && $this->smtp->is_enabled() ) {
+			/* translators: %s: SMTP host:port. */
+			return sprintf( __( 'SMTP server %s', 'launch-forms' ), $this->smtp->server_label() );
+		}
+		return __( "the web server's built-in mail function", 'launch-forms' );
+	}
+
 	/**
 	 * Send a test email.
 	 *
@@ -44,6 +69,8 @@ class Test_Email {
 				sprintf( __( 'Sent: %s', 'launch-forms' ), wp_date( 'Y-m-d H:i:s T' ) ),
 				/* translators: %s: from address. */
 				sprintf( __( 'From address: %s', 'launch-forms' ), $this->from_address() ),
+				/* translators: %s: e.g. "SMTP server smtp.example.com:587". */
+				sprintf( __( 'Sent using: %s', 'launch-forms' ), $this->transport_label() ),
 			)
 		);
 
@@ -58,16 +85,20 @@ class Test_Email {
 		if ( $sent ) {
 			return array(
 				'success' => true,
-				/* translators: %s: email address. */
-				'message' => sprintf( __( 'Test email sent to %s. If it does not arrive within a few minutes, check your spam folder and consider an SMTP plugin.', 'launch-forms' ), $to ),
+				/* translators: 1: email address, 2: e.g. "SMTP server smtp.example.com:587". */
+				'message' => sprintf( __( 'Test email sent to %1$s using %2$s. If it does not arrive within a few minutes, check your spam folder.', 'launch-forms' ), $to, $this->transport_label() ),
 			);
 		}
 
 		$reason = $error instanceof \WP_Error ? $error->get_error_message() : __( 'wp_mail() returned false.', 'launch-forms' );
+		$reason = rtrim( trim( wp_strip_all_tags( $reason ) ), '.' );
 		return array(
 			'success' => false,
-			/* translators: %s: error message. */
-			'message' => sprintf( __( 'The test email could not be sent: %s. Your server may not be configured to send mail; an SMTP plugin usually fixes this.', 'launch-forms' ), $reason ),
+			'message' => $this->smtp && $this->smtp->is_enabled()
+				/* translators: 1: SMTP host:port, 2: error message. */
+				? sprintf( __( 'The test email could not be sent through %1$s: %2$s. Check the SMTP host, port, encryption, username and password.', 'launch-forms' ), $this->smtp->server_label(), $reason )
+				/* translators: %s: error message. */
+				: sprintf( __( 'The test email could not be sent: %s. Your server may not be able to send mail; set up SMTP above to send through your email provider instead.', 'launch-forms' ), $reason ),
 		);
 	}
 

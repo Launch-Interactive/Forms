@@ -215,6 +215,7 @@ class Admin {
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Form Settings', 'launch-forms' ); ?></h1>
+			<?php settings_errors(); // Shows "Settings saved." (only automatic on Settings menu pages). ?>
 			<?php if ( $notice ) : ?>
 				<div class="notice notice-<?php echo $notice['success'] ? 'success' : 'error'; ?> is-dismissible"><p><?php echo esc_html( $notice['message'] ); ?></p></div>
 			<?php endif; ?>
@@ -279,6 +280,88 @@ class Admin {
 					</tr>
 				</table>
 				<p class="description"><?php esc_html_e( 'Any setting can also be defined in wp-config.php, e.g. define( \'LAUNCH_FORMS_MAILCHIMP_API_KEY\', \'...\' );', 'launch-forms' ); ?></p>
+
+				<h2 id="lf-smtp"><?php esc_html_e( 'Email (SMTP)', 'launch-forms' ); ?></h2>
+				<p><?php esc_html_e( 'Send all WordPress email (form notifications, password resets, everything) through your email provider\'s SMTP server instead of the web server. This usually stops emails going missing or landing in spam.', 'launch-forms' ); ?></p>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Use SMTP', 'launch-forms' ); ?></th>
+						<td><label><input type="checkbox" name="<?php echo esc_attr( $name( 'smtp_enabled' ) ); ?>" value="1" <?php checked( $s['smtp_enabled'] ); ?>> <?php esc_html_e( 'Send email through the SMTP server below', 'launch-forms' ); ?></label></td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="lf-smtp-host"><?php esc_html_e( 'SMTP host', 'launch-forms' ); ?></label></th>
+						<td><input id="lf-smtp-host" class="regular-text" type="text" name="<?php echo esc_attr( $name( 'smtp_host' ) ); ?>" value="<?php echo esc_attr( $s['smtp_host'] ); ?>" placeholder="smtp.example.com" autocomplete="off" spellcheck="false"></td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="lf-smtp-encryption"><?php esc_html_e( 'Encryption', 'launch-forms' ); ?></label></th>
+						<td><select id="lf-smtp-encryption" name="<?php echo esc_attr( $name( 'smtp_encryption' ) ); ?>">
+							<?php foreach ( Settings::smtp_encryptions() as $value => $label ) : ?>
+								<option value="<?php echo esc_attr( $value ); ?>" <?php selected( $s['smtp_encryption'], $value ); ?>><?php echo esc_html( $label ); ?></option>
+							<?php endforeach; ?>
+						</select></td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="lf-smtp-port"><?php esc_html_e( 'Port', 'launch-forms' ); ?></label></th>
+						<td><input id="lf-smtp-port" class="small-text" type="number" min="1" max="65535" name="<?php echo esc_attr( $name( 'smtp_port' ) ); ?>" value="<?php echo esc_attr( $s['smtp_port'] ); ?>"></td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Authentication', 'launch-forms' ); ?></th>
+						<td><label><input type="checkbox" name="<?php echo esc_attr( $name( 'smtp_auth' ) ); ?>" value="1" <?php checked( $s['smtp_auth'] ); ?>> <?php esc_html_e( 'The server needs a username and password (almost always on)', 'launch-forms' ); ?></label></td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="lf-smtp-user"><?php esc_html_e( 'Username', 'launch-forms' ); ?></label></th>
+						<td><input id="lf-smtp-user" class="regular-text" type="text" name="<?php echo esc_attr( $name( 'smtp_username' ) ); ?>" value="<?php echo esc_attr( $s['smtp_username'] ); ?>" autocomplete="off" spellcheck="false">
+						<p class="description"><?php esc_html_e( 'Usually your full email address.', 'launch-forms' ); ?></p></td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="lf-smtp-pass"><?php esc_html_e( 'Password', 'launch-forms' ); ?></label></th>
+						<td>
+							<?php if ( defined( 'LAUNCH_FORMS_SMTP_PASSWORD' ) ) : ?>
+								<p><?php esc_html_e( 'Set in wp-config.php (LAUNCH_FORMS_SMTP_PASSWORD).', 'launch-forms' ); ?></p>
+							<?php else : ?>
+								<input id="lf-smtp-pass" class="regular-text" type="password" name="<?php echo esc_attr( $name( 'smtp_password_new' ) ); ?>" value="" autocomplete="new-password" placeholder="<?php echo $this->plugin->settings->has_smtp_password() ? esc_attr__( 'Saved. Leave blank to keep it.', 'launch-forms' ) : ''; ?>">
+								<?php if ( $this->plugin->settings->has_smtp_password() ) : ?>
+									<p><label><input type="checkbox" name="<?php echo esc_attr( $name( 'smtp_password_clear' ) ); ?>" value="1"> <?php esc_html_e( 'Remove the saved password', 'launch-forms' ); ?></label></p>
+									<?php if ( '' === $this->plugin->settings->smtp_password() ) : ?>
+										<p class="description" style="color:#b32d2e"><?php esc_html_e( 'The saved password can no longer be read (the security keys in wp-config.php have changed). Please enter it again.', 'launch-forms' ); ?></p>
+									<?php endif; ?>
+								<?php endif; ?>
+								<p class="description"><?php esc_html_e( 'Stored encrypted and never shown again. With Gmail or Microsoft 365 you may need an app password.', 'launch-forms' ); ?></p>
+							<?php endif; ?>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="lf-smtp-from"><?php esc_html_e( 'From email', 'launch-forms' ); ?></label></th>
+						<td><input id="lf-smtp-from" class="regular-text" type="email" name="<?php echo esc_attr( $name( 'smtp_from_email' ) ); ?>" value="<?php echo esc_attr( $s['smtp_from_email'] ); ?>" placeholder="<?php echo esc_attr( $this->plugin->test_email->from_address() ); ?>">
+						<p class="description"><?php esc_html_e( 'Use an address your SMTP account is allowed to send from, otherwise the server may reject emails or they may be marked as spam.', 'launch-forms' ); ?></p></td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="lf-smtp-from-name"><?php esc_html_e( 'From name', 'launch-forms' ); ?></label></th>
+						<td><input id="lf-smtp-from-name" class="regular-text" type="text" name="<?php echo esc_attr( $name( 'smtp_from_name' ) ); ?>" value="<?php echo esc_attr( $s['smtp_from_name'] ); ?>" placeholder="<?php echo esc_attr( wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ) ); ?>"></td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Force From', 'launch-forms' ); ?></th>
+						<td><label><input type="checkbox" name="<?php echo esc_attr( $name( 'smtp_force_from' ) ); ?>" value="1" <?php checked( $s['smtp_force_from'] ); ?>> <?php esc_html_e( 'Use this From email and name on every email, even when a plugin or form notification sets its own', 'launch-forms' ); ?></label>
+						<p class="description"><?php esc_html_e( 'Recommended: most SMTP providers only accept their own addresses. Replies still go to the Reply-To address set in each notification.', 'launch-forms' ); ?></p></td>
+					</tr>
+				</table>
+				<p class="description"><?php esc_html_e( 'Save, then use "Send a test email" below to check the settings.', 'launch-forms' ); ?></p>
+				<script>
+				( function () {
+					// Switch to the usual port when the encryption changes, unless a custom port was typed.
+					var enc = document.getElementById( 'lf-smtp-encryption' );
+					var port = document.getElementById( 'lf-smtp-port' );
+					var ports = { tls: '587', ssl: '465', none: '25' };
+					if ( enc && port ) {
+						enc.addEventListener( 'change', function () {
+							if ( [ '587', '465', '25', '' ].indexOf( port.value ) !== -1 ) {
+								port.value = ports[ enc.value ];
+							}
+						} );
+					}
+				} )();
+				</script>
+
 
 				<?php submit_button(); ?>
 			</form>
