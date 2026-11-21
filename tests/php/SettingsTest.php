@@ -13,6 +13,16 @@ class SettingsTest extends LF_TestCase {
 		$this->assertSame( 'v2', $all['recaptcha_version'] );
 		$this->assertSame( '', $all['mailchimp_api_key'] );
 		$this->assertFalse( $all['delete_data_on_uninstall'] );
+		$this->assertSame( '*', $all['required_marker'] );
+	}
+
+	public function test_required_marker_is_plain_short_text() {
+		$s = launch_forms()->settings;
+		$this->assertSame( '(required)', $s->sanitize( array( 'required_marker' => '  (required) ' ) )['required_marker'] );
+		$this->assertSame( 'req', $s->sanitize( array( 'required_marker' => '<em>req</em>' ) )['required_marker'] );
+		$this->assertSame( 50, mb_strlen( $s->sanitize( array( 'required_marker' => str_repeat( 'é', 80 ) ) )['required_marker'] ) );
+		$this->assertSame( '', $s->sanitize( array( 'required_marker' => '' ) )['required_marker'], 'Can be emptied.' );
+		$this->assertSame( '*', $s->sanitize( array() )['required_marker'], 'Missing falls back to the default.' );
 	}
 
 	public function test_sanitize() {

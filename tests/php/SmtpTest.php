@@ -173,6 +173,21 @@ class SmtpTest extends LF_TestCase {
 		$this->assertStringContainsString( 'Sent using: SMTP server smtp.example.com:587', tests_retrieve_phpmailer_instance()->get_sent()->body );
 	}
 
+	public function test_smtp_details_are_hidden_until_custom_smtp_is_ticked() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$page = static function () {
+			ob_start();
+			launch_forms()->admin->render_settings_page();
+			return ob_get_clean();
+		};
+		$html = $page();
+		$this->assertStringContainsString( 'Use Custom SMTP', $html );
+		$this->assertStringContainsString( '<div id="lf-smtp-details" hidden>', $html );
+
+		$this->enable();
+		$this->assertStringContainsString( '<div id="lf-smtp-details">', $page() );
+	}
+
 	public function test_settings_page_never_prints_the_password() {
 		$this->enable();
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );

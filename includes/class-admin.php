@@ -230,6 +230,11 @@ class Admin {
 						<td><label><input type="checkbox" name="<?php echo esc_attr( $name( 'load_css' ) ); ?>" value="1" <?php checked( $s['load_css'] ); ?>> <?php esc_html_e( 'Load the small layout stylesheet (forms otherwise rely entirely on your theme)', 'launch-forms' ); ?></label></td>
 					</tr>
 					<tr>
+						<th scope="row"><label for="lf-required-marker"><?php esc_html_e( 'Required field marker', 'launch-forms' ); ?></label></th>
+						<td><input id="lf-required-marker" class="regular-text" type="text" maxlength="50" name="<?php echo esc_attr( $name( 'required_marker' ) ); ?>" value="<?php echo esc_attr( $s['required_marker'] ); ?>">
+						<p class="description"><?php esc_html_e( 'Shown after the label of required fields on every form, e.g. * or (required). Leave empty to show nothing; browsers and screen readers still know the field is required.', 'launch-forms' ); ?></p></td>
+					</tr>
+					<tr>
 						<th scope="row"><?php esc_html_e( 'Uninstall', 'launch-forms' ); ?></th>
 						<td><label><input type="checkbox" name="<?php echo esc_attr( $name( 'delete_data_on_uninstall' ) ); ?>" value="1" <?php checked( $s['delete_data_on_uninstall'] ); ?>> <?php esc_html_e( 'Delete all forms, submissions and uploaded files when the plugin is deleted', 'launch-forms' ); ?></label></td>
 					</tr>
@@ -285,9 +290,12 @@ class Admin {
 				<p><?php esc_html_e( 'Send all WordPress email (form notifications, password resets, everything) through your email provider\'s SMTP server instead of the web server. This usually stops emails going missing or landing in spam.', 'launch-forms' ); ?></p>
 				<table class="form-table" role="presentation">
 					<tr>
-						<th scope="row"><?php esc_html_e( 'Use SMTP', 'launch-forms' ); ?></th>
-						<td><label><input type="checkbox" name="<?php echo esc_attr( $name( 'smtp_enabled' ) ); ?>" value="1" <?php checked( $s['smtp_enabled'] ); ?>> <?php esc_html_e( 'Send email through the SMTP server below', 'launch-forms' ); ?></label></td>
+						<th scope="row"><?php esc_html_e( 'Custom SMTP', 'launch-forms' ); ?></th>
+						<td><label><input type="checkbox" id="lf-smtp-enabled" name="<?php echo esc_attr( $name( 'smtp_enabled' ) ); ?>" value="1" aria-controls="lf-smtp-details" <?php checked( $s['smtp_enabled'] ); ?>> <?php esc_html_e( 'Use Custom SMTP', 'launch-forms' ); ?></label></td>
 					</tr>
+				</table>
+				<div id="lf-smtp-details"<?php echo $s['smtp_enabled'] ? '' : ' hidden'; ?>>
+				<table class="form-table" role="presentation">
 					<tr>
 						<th scope="row"><label for="lf-smtp-host"><?php esc_html_e( 'SMTP host', 'launch-forms' ); ?></label></th>
 						<td><input id="lf-smtp-host" class="regular-text" type="text" name="<?php echo esc_attr( $name( 'smtp_host' ) ); ?>" value="<?php echo esc_attr( $s['smtp_host'] ); ?>" placeholder="smtp.example.com" autocomplete="off" spellcheck="false"></td>
@@ -346,8 +354,18 @@ class Admin {
 					</tr>
 				</table>
 				<p class="description"><?php esc_html_e( 'Save, then use "Send a test email" below to check the settings.', 'launch-forms' ); ?></p>
+				</div>
 				<script>
 				( function () {
+					// Only show the SMTP details while "Use Custom SMTP" is ticked.
+					var toggle = document.getElementById( 'lf-smtp-enabled' );
+					var details = document.getElementById( 'lf-smtp-details' );
+					if ( toggle && details ) {
+						toggle.addEventListener( 'change', function () {
+							details.hidden = ! toggle.checked;
+						} );
+					}
+
 					// Switch to the usual port when the encryption changes, unless a custom port was typed.
 					var enc = document.getElementById( 'lf-smtp-encryption' );
 					var port = document.getElementById( 'lf-smtp-port' );

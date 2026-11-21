@@ -69,6 +69,33 @@ class RendererTest extends LF_TestCase {
 		$this->assertSame( 2, $x->query( '//span[@class="lf-required"]' )->length );
 	}
 
+	public function test_required_marker_comes_from_settings() {
+		$form   = $this->contact_form();
+		$marker = function () use ( $form ) {
+			launch_forms()->renderer->reset();
+			$spans = $this->dom( $this->render( $form ) )->query( '//label[@for="lf-' . $form->id . '-1-name"]/span[@class="lf-required"]' );
+			return $spans->length ? $spans->item( 0 )->textContent : null;
+		};
+		$this->assertSame( '*', $marker(), 'Default.' );
+
+		launch_forms()->settings->update( array( 'required_marker' => '(required)' ) );
+		$this->assertSame( '(required)', $marker() );
+		$this->assertStringContainsString( 'Name <span class="lf-required" aria-hidden="true">(required)</span>', $this->render( $form ) );
+
+		launch_forms()->settings->update( array( 'required_marker' => '' ) );
+		$this->assertNull( $marker(), 'Empty shows nothing.' );
+		launch_forms()->renderer->reset();
+		$this->assertStringContainsString( 'required', $this->render( $form ), 'Inputs still carry the required attribute.' );
+
+		add_filter(
+			'launch_forms_required_marker',
+			static function () {
+				return '<b>must</b>';
+			}
+		);
+		$this->assertSame( '<b>must</b>', $marker(), 'Filtered markers are escaped, not rendered as HTML.' );
+	}
+
 	public function test_hidden_form_id_and_honeypot() {
 		$form = $this->contact_form();
 		$x    = $this->dom( $this->render( $form ) );

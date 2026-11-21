@@ -233,7 +233,7 @@ class Renderer {
 			$common['disabled'] = true;
 		}
 
-		$required_mark = $field['required'] ? ' <span class="lf-required" aria-hidden="true">*</span>' : '';
+		$required_mark = $field['required'] ? $this->required_mark( $field ) : '';
 		$label         = esc_html( $field['label'] ) . $required_mark;
 
 		// Choice groups use fieldset/legend.
@@ -371,6 +371,28 @@ class Renderer {
 			$out .= true === $value ? ' ' . esc_attr( $key ) : ' ' . esc_attr( $key ) . '="' . esc_attr( (string) $value ) . '"';
 		}
 		return $out;
+	}
+
+	/**
+	 * The marker after a required field's label: "*" by default, or the text set under
+	 * Forms → Settings, e.g. "(required)". Hidden from screen readers, which already announce
+	 * the field as required from its `required` attribute.
+	 *
+	 * @param array $field Field.
+	 * @return string HTML ('' when the marker is empty).
+	 */
+	private function required_mark( array $field ) {
+		/**
+		 * Filters the text shown after required field labels.
+		 *
+		 * @param string $marker Marker text from settings (default "*").
+		 * @param array  $field  Field.
+		 */
+		$marker = (string) apply_filters( 'launch_forms_required_marker', (string) $this->plugin->settings->get( 'required_marker' ), $field );
+		if ( '' === $marker ) {
+			return '';
+		}
+		return ' <span class="lf-required" aria-hidden="true">' . esc_html( $marker ) . '</span>';
 	}
 
 	/**

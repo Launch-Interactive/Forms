@@ -31,6 +31,7 @@ class Settings {
 	public static function defaults() {
 		return array(
 			'load_css'                 => true,
+			'required_marker'          => '*',
 			'recaptcha_version'        => 'v2',
 			'recaptcha_site_key'       => '',
 			'recaptcha_secret_key'     => '',
@@ -219,6 +220,7 @@ class Settings {
 
 		return array(
 			'load_css'                 => ! empty( $input['load_css'] ),
+			'required_marker'          => mb_substr( trim( sanitize_text_field( (string) ( $input['required_marker'] ?? $defaults['required_marker'] ) ) ), 0, 50 ),
 			'recaptcha_version'        => ( $input['recaptcha_version'] ?? 'v2' ) === 'v3' ? 'v3' : 'v2',
 			'recaptcha_site_key'       => $key( $input['recaptcha_site_key'] ?? '' ),
 			'recaptcha_secret_key'     => $key( $input['recaptcha_secret_key'] ?? '' ),
