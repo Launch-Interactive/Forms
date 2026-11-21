@@ -37,7 +37,6 @@ A lightweight WordPress form builder that outputs minimal, semantic HTML and tak
 - Spam protection: honeypot on every form, plus reCAPTCHA or Turnstile per form (recommended on every public form, especially ones with file uploads or autoresponders).
 - A submission is only linked to a logged-in user when the form carried a nonce issued to them, so other sites can't post forms in a user's name. Logged-out pages contain no nonces and stay cacheable.
 - The page URL recorded with each submission is only kept if it points at this site.
-- Editors can build and edit forms, but only users with the manage capability (administrators by default) can change notification emails and Mailchimp settings, since those decide where submissions and attached files go. This is enforced on save, including through the block editor and REST API; other changes an editor makes are still saved.
 - All input is sanitised by field type and limited in length; dropdown, radio and checkbox values must be one of the configured options.
 - Emails are plain text, and every header value has line breaks removed.
 - `composer security` runs PHPCS with WordPress' security rules (escaping, nonces, input sanitising, SQL, redirects).

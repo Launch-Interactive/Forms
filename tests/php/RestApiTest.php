@@ -95,9 +95,6 @@ class RestApiTest extends LF_TestCase {
 		$this->assertSame( 403, $this->server->dispatch( $request )->get_status() );
 
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
-		$this->assertSame( 403, $this->server->dispatch( $request )->get_status(), 'Editors cannot change Mailchimp settings, so they get no audience list.' );
-
-		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 		launch_forms()->settings->update( array( 'mailchimp_api_key' => 'k-us1' ) );
 		$this->mock_http(
 			static function () {

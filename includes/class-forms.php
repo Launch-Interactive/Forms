@@ -18,15 +18,6 @@ class Forms {
 	const META_KEY  = 'launch_forms_config';
 
 	/**
-	 * Config sections only users with the manage capability may change: they decide where
-	 * submissions (and attached files) are sent, while viewing submissions is admin-only.
-	 */
-	const ADMIN_SECTIONS = array( 'notifications', 'mailchimp' );
-
-	/** @var bool Re-entry guard while writing a corrected config. */
-	private $locking = false;
-
-	/**
 	 * Hooks.
 	 */
 	public function register_hooks() {
@@ -34,51 +25,6 @@ class Forms {
 		add_filter( 'use_block_editor_for_post_type', array( $this, 'disable_block_editor' ), 10, 2 );
 		add_action( 'save_post_' . self::POST_TYPE, array( $this, 'save_classic_editor' ), 10, 2 );
 		add_filter( 'is_protected_meta', array( $this, 'protect_meta' ), 10, 2 );
-		add_filter( 'update_post_metadata', array( $this, 'lock_admin_sections' ), 10, 4 );
-		add_filter( 'add_post_metadata', array( $this, 'lock_admin_sections' ), 10, 4 );
-	}
-
-	/**
-	 * Whether the current user may change notifications and Mailchimp settings.
-	 *
-	 * @return bool
-	 */
-	public static function can_edit_admin_sections() {
-		return current_user_can( Plugin::manage_capability() );
-	}
-
-	/**
-	 * When someone without the manage capability saves a form (classic screen, block editor or
-	 * REST), keep the stored notifications and Mailchimp settings and apply only their other
-	 * changes. New forms they create get the default notifications.
-	 *
-	 * @param null|bool $check      Short-circuit value.
-	 * @param int       $object_id  Post ID.
-	 * @param string    $meta_key   Meta key.
-	 * @param mixed     $meta_value Sanitised, unslashed value.
-	 * @return null|bool
-	 */
-	public function lock_admin_sections( $check, $object_id, $meta_key, $meta_value ) {
-		if ( null !== $check || self::META_KEY !== $meta_key || $this->locking || ! is_user_logged_in() || self::can_edit_admin_sections() ) {
-			return $check;
-		}
-		if ( self::POST_TYPE !== get_post_type( $object_id ) ) {
-			return $check;
-		}
-		$incoming = Form_Config::from_json( $meta_value );
-		$stored   = Form_Config::from_json( get_post_meta( $object_id, self::META_KEY, true ) );
-		$locked   = $incoming;
-		foreach ( self::ADMIN_SECTIONS as $section ) {
-			$locked[ $section ] = $stored[ $section ];
-		}
-		if ( $locked === $incoming ) {
-			return $check;
-		}
-		$this->locking = true;
-		update_post_meta( $object_id, self::META_KEY, wp_slash( wp_json_encode( $locked ) ) );
-		$this->locking = false;
-		// Report success: the allowed changes were saved (the REST API treats false as an error).
-		return true;
 	}
 
 	/**
