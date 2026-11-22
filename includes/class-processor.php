@@ -64,7 +64,7 @@ class Processor {
 			$result          = new Submission_Result();
 			$result->success = true;
 			$result->spam    = true;
-			$result->message = wp_strip_all_tags( $form->settings['success_message'] );
+			$result->message = $this->success_text( $form, array(), array() );
 			return $this->remember( $form, $result );
 		}
 
@@ -178,8 +178,13 @@ class Processor {
 
 		$result                = new Submission_Result();
 		$result->success       = true;
-		$result->message       = wp_strip_all_tags( $form->settings['success_message'] );
+		$result->message       = $this->success_text( $form, $entries, $context );
 		$result->submission_id = $submission_id;
+		$result->entries       = $entries;
+		$result->context       = array(
+			'submission_id' => $submission_id,
+			'page_url'      => $context['page_url'],
+		);
 		$result->redirect      = $form->settings['redirect_url'];
 		$result->values        = $values;
 		return $this->remember( $form, $result );
@@ -311,6 +316,18 @@ class Processor {
 		$host = strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) );
 		$home = strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
 		return '' !== $host && ( $host === $home || in_array( $host, array_map( 'strtolower', (array) apply_filters( 'allowed_redirect_hosts', array( $home ), $host ) ), true ) ) ? $url : '';
+	}
+
+	/**
+	 * Plain-text success message with merge tags filled in.
+	 *
+	 * @param Form  $form    Form.
+	 * @param array $entries Entries.
+	 * @param array $context Context.
+	 * @return string
+	 */
+	private function success_text( Form $form, array $entries, array $context ) {
+		return trim( wp_strip_all_tags( $this->plugin->notifications->replace_tags( $form->settings['success_message'], $form, $entries, $context ) ) );
 	}
 
 	/**

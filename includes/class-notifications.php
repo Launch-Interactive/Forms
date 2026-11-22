@@ -122,15 +122,17 @@ class Notifications {
 	}
 
 	/**
-	 * Replace merge tags.
+	 * Replace merge tags in one pass, so text a visitor typed (e.g. "{admin_email}") is never
+	 * itself treated as a tag. Unknown or empty {field:...} tags become ''.
 	 *
-	 * @param string $text    Text.
-	 * @param Form   $form    Form.
-	 * @param array  $entries Entries.
-	 * @param array  $context Context.
+	 * @param string        $text    Text.
+	 * @param Form          $form    Form.
+	 * @param array         $entries Entries.
+	 * @param array         $context Context.
+	 * @param callable|null $escape  Applied to every inserted value (e.g. 'esc_html' for HTML output).
 	 * @return string
 	 */
-	public function replace_tags( $text, Form $form, array $entries, array $context = array() ) {
+	public function replace_tags( $text, Form $form, array $entries, array $context = array(), $escape = null ) {
 		$text = (string) $text;
 		if ( false === strpos( $text, '{' ) ) {
 			return $text;
@@ -140,26 +142,30 @@ class Notifications {
 			$by_name[ $entry['name'] ] = $entry;
 		}
 
-		$text = preg_replace_callback(
-			'/\{field:([a-z0-9_]+)\}/',
-			static function ( $m ) use ( $by_name ) {
-				return isset( $by_name[ $m[1] ] ) ? self::entry_text( $by_name[ $m[1] ] ) : '';
+		$values = array(
+			'all_fields'    => $this->all_fields( $entries ),
+			'form_title'    => $form->title,
+			'form_id'       => (string) $form->id,
+			'site_name'     => wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ),
+			'site_url'      => home_url( '/' ),
+			'admin_email'   => (string) get_option( 'admin_email' ),
+			'submission_id' => (string) ( $context['submission_id'] ?? '' ),
+			'page_url'      => (string) ( $context['page_url'] ?? '' ),
+			'date'          => wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ) ),
+		);
+
+		return preg_replace_callback(
+			'/\{(field:([a-z0-9_]+)|' . implode( '|', array_keys( $values ) ) . ')\}/',
+			static function ( $m ) use ( $by_name, $values, $escape ) {
+				if ( isset( $m[2] ) && '' !== $m[2] ) {
+					$value = isset( $by_name[ $m[2] ] ) ? self::entry_text( $by_name[ $m[2] ] ) : '';
+				} else {
+					$value = $values[ $m[1] ];
+				}
+				return $escape ? (string) call_user_func( $escape, $value ) : $value;
 			},
 			$text
 		);
-
-		$replacements = array(
-			'{all_fields}'    => $this->all_fields( $entries ),
-			'{form_title}'    => $form->title,
-			'{form_id}'       => (string) $form->id,
-			'{site_name}'     => wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ),
-			'{site_url}'      => home_url( '/' ),
-			'{admin_email}'   => (string) get_option( 'admin_email' ),
-			'{submission_id}' => (string) ( $context['submission_id'] ?? '' ),
-			'{page_url}'      => (string) ( $context['page_url'] ?? '' ),
-			'{date}'          => wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ) ),
-		);
-		return strtr( $text, $replacements );
 	}
 
 	/**

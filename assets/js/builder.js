@@ -152,6 +152,19 @@
 			return index;
 		}
 
+		/** Merge tags available for a config: general tags plus one per field. */
+		function mergeTags( config ) {
+			return [ '{all_fields}', '{form_title}', '{site_name}', '{admin_email}', '{page_url}', '{date}' ].concat(
+				( config.fields || [] )
+					.filter( function ( f ) {
+						return f.type !== 'content';
+					} )
+					.map( function ( f ) {
+						return '{field:' + f.name + '}';
+					} )
+			);
+		}
+
 		/** Update every reference to a renamed field (conditions, Mailchimp, merge tags). */
 		function renameReferences( config, oldName, newName ) {
 			if ( ! oldName || oldName === newName ) {
@@ -194,6 +207,9 @@
 					} );
 				} ),
 				mailchimp: mc,
+				settings: Object.assign( {}, config.settings || {}, {
+					success_message: replaceTag( ( config.settings || {} ).success_message ),
+				} ),
 			} );
 		}
 
@@ -254,6 +270,7 @@
 			optionsToText: optionsToText,
 			textToOptions: textToOptions,
 			moveItem: moveItem,
+			mergeTags: mergeTags,
 			dropIndex: dropIndex,
 			movedIndex: movedIndex,
 			renameReferences: renameReferences,
@@ -1082,15 +1099,29 @@
 						change( 'submit_label', v );
 					},
 				} ),
-				el( c.TextareaControl, {
-					__nextHasNoMarginBottom: true,
-					label: __( 'Success message', 'launch-forms' ),
-					rows: 3,
-					value: s.success_message,
-					onChange: function ( v ) {
-						change( 'success_message', v );
-					},
-				} ),
+				el(
+					'div',
+					null,
+					el( c.TextareaControl, {
+						__nextHasNoMarginBottom: true,
+						label: __( 'Success message', 'launch-forms' ),
+						help: __( 'Basic HTML is allowed. Merge tags are replaced with what the visitor entered, e.g. "A confirmation email was sent to {field:email}."', 'launch-forms' ),
+						rows: 4,
+						value: s.success_message,
+						onChange: function ( v ) {
+							change( 'success_message', v );
+						},
+					} ),
+					el(
+						'p',
+						{ className: 'lf-builder__hint' },
+						__( 'Merge tags:', 'launch-forms' ),
+						' ',
+						h.mergeTags( props.config ).map( function ( t ) {
+							return el( 'code', { key: t }, t );
+						} )
+					)
+				),
 				el( c.TextControl, {
 					__nextHasNoMarginBottom: true,
 					__next40pxDefaultSize: true,
@@ -1149,15 +1180,7 @@
 			var setList = function ( next ) {
 				props.onChange( Object.assign( {}, config, { notifications: next } ) );
 			};
-			var tags = [ '{all_fields}', '{form_title}', '{site_name}', '{admin_email}', '{page_url}', '{date}' ].concat(
-				config.fields
-					.filter( function ( f ) {
-						return f.type !== 'content';
-					} )
-					.map( function ( f ) {
-						return '{field:' + f.name + '}';
-					} )
-			);
+			var tags = h.mergeTags( config );
 
 			return el(
 				'div',

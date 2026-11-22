@@ -80,7 +80,7 @@ class Renderer {
 		$sent    = isset( $_GET['lf_sent'] ) && (int) $_GET['lf_sent'] === $form->id; // phpcs:ignore WordPress.Security.NonceVerification
 		$message = '';
 		if ( $sent || ( $result && $result->success ) ) {
-			$message = $this->success_message( $form );
+			$message = $result && $result->success ? $this->success_message( $form, $result ) : $this->redirected_message( $form );
 			if ( $form->settings['hide_form_on_success'] ) {
 				return '<div id="' . esc_attr( $html_id ) . '" class="lf-message lf-message--success" role="status">' . $message . '</div>';
 			}
@@ -138,13 +138,41 @@ class Renderer {
 	}
 
 	/**
-	 * Rendered success message HTML.
+	 * Rendered success message HTML, with merge tags such as {field:email} filled in from the
+	 * submission (or removed when there is no submission to take them from).
+	 *
+	 * @param Form                   $form   Form.
+	 * @param Submission_Result|null $result Successful submission.
+	 * @return string
+	 */
+	public function success_message( Form $form, ?Submission_Result $result = null ) {
+		// Visitor values are escaped as they're inserted into the admin's (already filtered) HTML.
+		$html = $this->plugin->notifications->replace_tags(
+			wp_kses_post( $form->settings['success_message'] ),
+			$form,
+			$result ? $result->entries : array(),
+			$result ? $result->context : array(),
+			'esc_html'
+		);
+		return wpautop( $html );
+	}
+
+	/**
+	 * Success message after a no-JavaScript submission redirected back to the page. If the
+	 * message used merge tags, the filled-in version was kept briefly under a random token.
 	 *
 	 * @param Form $form Form.
 	 * @return string
 	 */
-	public function success_message( Form $form ) {
-		return wpautop( wp_kses_post( $form->settings['success_message'] ) );
+	private function redirected_message( Form $form ) {
+		$token = isset( $_GET['lf_msg'] ) ? sanitize_key( wp_unslash( $_GET['lf_msg'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
+		if ( '' !== $token ) {
+			$stored = get_transient( Frontend::MESSAGE_TRANSIENT . $token );
+			if ( is_array( $stored ) && (int) ( $stored['form'] ?? 0 ) === $form->id && isset( $stored['html'] ) ) {
+				return (string) $stored['html'];
+			}
+		}
+		return $this->success_message( $form );
 	}
 
 	/**

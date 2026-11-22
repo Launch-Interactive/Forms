@@ -30,6 +30,10 @@ class Submission_Result {
 	public $spam = false;
 	/** @var int HTTP status override for the REST response (0 = default). */
 	public $status = 0;
+	/** @var array[] Stored entries (for merge tags in the success message). */
+	public $entries = array();
+	/** @var array Context: submission_id, page_url (for merge tags). */
+	public $context = array();
 
 	/**
 	 * Build a failure result.

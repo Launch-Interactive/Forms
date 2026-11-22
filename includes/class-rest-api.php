@@ -95,7 +95,7 @@ class Rest_Api {
 			array(
 				'success'      => $result->success,
 				'message'      => $result->message,
-				'message_html' => $result->success ? $this->plugin->renderer->success_message( $form ) : '',
+				'message_html' => $result->success ? $this->plugin->renderer->success_message( $form, $result ) : '',
 				'errors'       => (object) $result->errors,
 				'redirect'     => $result->success ? $result->redirect : '',
 				'hide_form'    => (bool) $form->settings['hide_form_on_success'],

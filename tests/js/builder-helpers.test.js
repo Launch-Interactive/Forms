@@ -117,3 +117,20 @@ test( 'movedIndex tracks where an item ends up after moveItem', () => {
 		}
 	}
 } );
+
+test( 'mergeTags lists general tags and one per field (not content blocks)', () => {
+	const tags = h.mergeTags( { fields: [ { name: 'email', type: 'email' }, { name: 'intro', type: 'content' } ] } );
+	assert.ok( tags.includes( '{all_fields}' ) );
+	assert.ok( tags.includes( '{field:email}' ) );
+	assert.ok( ! tags.includes( '{field:intro}' ) );
+} );
+
+test( 'renaming a field updates the success message tags', () => {
+	const out = h.renameReferences(
+		{ fields: [ { name: 'email' } ], notifications: [], mailchimp: {}, settings: { success_message: 'Sent to {field:email}.', submit_label: 'Go' } },
+		'email',
+		'work_email'
+	);
+	assert.equal( out.settings.success_message, 'Sent to {field:work_email}.' );
+	assert.equal( out.settings.submit_label, 'Go' );
+} );

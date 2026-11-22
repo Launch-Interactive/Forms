@@ -16,6 +16,9 @@ class Frontend {
 
 	const SHORTCODE = 'launch_form';
 
+	/** Transient prefix for filled-in success messages carried across the no-JS redirect. */
+	const MESSAGE_TRANSIENT = 'lf_msg_';
+
 	/** @var Plugin */
 	private $plugin;
 
@@ -170,7 +173,7 @@ class Frontend {
 			wp_unslash( $post ),
 			Uploads::normalize_files( $files['lf'] ?? null ),
 			array(
-				'page_url' => remove_query_arg( 'lf_sent', $current ),
+				'page_url' => remove_query_arg( array( 'lf_sent', 'lf_msg' ), $current ),
 				'ip'       => self::client_ip(),
 				'user_id'  => self::verified_user_id( $form->id, $post ),
 			)
@@ -193,7 +196,22 @@ class Frontend {
 			}
 			return $result->redirect;
 		}
-		return add_query_arg( 'lf_sent', $form->id, remove_query_arg( 'lf_sent', $current ) ) . '#lf-form-' . $form->id;
+		$args = array( 'lf_sent' => $form->id );
+		if ( false !== strpos( $form->settings['success_message'], '{' ) && ! $result->spam ) {
+			// The message uses merge tags: keep the filled-in version for a few minutes under an
+			// unguessable token, since the submitted values are gone after the redirect.
+			$token = bin2hex( random_bytes( 16 ) );
+			set_transient(
+				self::MESSAGE_TRANSIENT . $token,
+				array(
+					'form' => $form->id,
+					'html' => $this->plugin->renderer->success_message( $form, $result ),
+				),
+				10 * MINUTE_IN_SECONDS
+			);
+			$args['lf_msg'] = $token;
+		}
+		return add_query_arg( $args, remove_query_arg( array( 'lf_sent', 'lf_msg' ), $current ) ) . '#lf-form-' . $form->id;
 	}
 
 	/**
