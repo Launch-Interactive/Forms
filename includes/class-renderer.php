@@ -356,6 +356,17 @@ class Renderer {
 				$control = '<select' . self::attrs( $input ) . '>' . $options . '</select>';
 				break;
 
+			case 'country':
+				unset( $input['placeholder'] );
+				$input['autocomplete'] = 'country-name';
+				$current               = is_array( $value ) ? '' : (string) $value;
+				$options               = '<option value="">' . esc_html( '' !== $field['placeholder'] ? $field['placeholder'] : __( '— Select —', 'launch-forms' ) ) . '</option>';
+				foreach ( Countries::all() as $code => $country ) {
+					$options .= '<option value="' . esc_attr( $country ) . '" data-code="' . esc_attr( $code ) . '"' . selected( $current, $country, false ) . '>' . esc_html( $country ) . '</option>';
+				}
+				$control = '<select' . self::attrs( $input ) . '>' . $options . '</select>';
+				break;
+
 			case 'file':
 				$input['type']   = 'file';
 				$input['accept'] = implode( ',', array_map( static function ( $ext ) {

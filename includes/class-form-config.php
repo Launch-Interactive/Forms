@@ -18,7 +18,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Form_Config {
 
-	const FIELD_TYPES = array( 'text', 'email', 'url', 'tel', 'number', 'textarea', 'select', 'radio', 'checkbox', 'consent', 'date', 'hidden', 'file', 'content', 'recaptcha', 'turnstile' );
+	const FIELD_TYPES = array( 'text', 'email', 'url', 'tel', 'number', 'textarea', 'select', 'radio', 'checkbox', 'consent', 'date', 'country', 'hidden', 'file', 'content', 'recaptcha', 'turnstile' );
 
 	/** Spam check widgets placed as fields. A form may have one. */
 	const CAPTCHA_TYPES = array( 'recaptcha', 'turnstile' );
@@ -71,6 +71,7 @@ class Form_Config {
 			'checkbox' => __( 'Checkboxes', 'launch-forms' ),
 			'consent'  => __( 'Single checkbox / consent', 'launch-forms' ),
 			'date'     => __( 'Date', 'launch-forms' ),
+			'country'  => __( 'Country', 'launch-forms' ),
 			'hidden'   => __( 'Hidden', 'launch-forms' ),
 			'file'     => __( 'File upload', 'launch-forms' ),
 			'content'   => __( 'Text / HTML content', 'launch-forms' ),
@@ -292,6 +293,9 @@ class Form_Config {
 		}
 		if ( 'hidden' === $type ) {
 			$field['required'] = false;
+		}
+		if ( 'country' === $type && ! Countries::is_valid( $field['default'] ) ) {
+			$field['default'] = '';
 		}
 		if ( in_array( $type, self::CAPTCHA_TYPES, true ) ) {
 			// Always shown and always checked: a captcha hidden by conditional logic would let

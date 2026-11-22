@@ -172,6 +172,12 @@ class Validator {
 			case 'consent':
 				$value = '1';
 				break;
+
+			case 'country':
+				if ( ! Countries::is_valid( $value ) ) {
+					return __( 'Please choose a country from the list.', 'launch-forms' );
+				}
+				break;
 		}
 
 		return null;

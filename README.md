@@ -8,7 +8,9 @@ A lightweight WordPress form builder that outputs minimal, semantic HTML and tak
 - **Shortcode** for Elementor, classic content, widgets and other builders: `[launch_form id="123"]` (optional `class="..."`).
 - **Minimal output**: labels, fieldsets/legends, ARIA error wiring, no inline styles. The submit button uses `wp-element-button`, so block themes style it through theme.json. The structural stylesheet is under 2 KB and can be turned off in settings.
 - **Side-by-side fields**: give each field a width (full, 1/2, 1/3, 2/3, 1/4, 3/4); fields next to each other share a row and stack when the form is narrower than 480px. Classes are `lf-field--half` and so on; change the spacing with the `--lf-gap` CSS variable on `.lf-fields`.
-- **Field types**: text, email, URL, phone, number, paragraph, dropdown (single/multi), radio, checkboxes, consent checkbox, date, hidden, file upload, HTML content.
+- **Field types**: text, email, URL, phone, number, paragraph, dropdown (single/multi), radio, checkboxes, consent checkbox, date, country, hidden, file upload, HTML content.
+- **Country field**: a dropdown of all countries (ISO 3166-1, sorted by name) with an optional default country. It stores the country's name, uses `autocomplete="country-name"` so browsers can fill it in, and rejects anything not in the list. Limit or rename the list with the `launch_forms_countries` filter.
+- **Reordering fields**: drag a field by its handle, or tab to the handle and press the up and down arrow keys.
 - **Conditional logic**: show or hide a field when all or any rules match (`is`, `is not`, `contains`, `empty`, `>`, `<`, and so on). It is evaluated live in the browser and again on the server, so hidden fields are never validated or stored. Chained conditions are supported.
 - **Submissions** are stored under **Forms → Submissions** (admins only), with a per-form filter, an action log, and secure file downloads. Storage can be turned off per form.
 - **Success message merge tags**: the success message can use the same merge tags as emails, e.g. `A confirmation email was sent to {field:email}.` Visitor values are HTML-escaped. Without JavaScript, the filled-in message is carried across the redirect for 10 minutes under a random token (the values never appear in the URL).
@@ -72,6 +74,7 @@ If the security keys (salts) in wp-config.php change, a saved SMTP password can 
 | `launch_forms_rate_limit` | filter | `array( 'max' => 10, 'window' => 600 )`, or `false` to disable |
 | `launch_forms_required_marker` | filter | Text after required field labels (default from settings, `*`) |
 | `launch_forms_smtp_configured` | action | Adjust PHPMailer after SMTP is configured |
+| `launch_forms_countries` | filter | Countries offered by Country fields (ISO code => name) |
 | `launch_forms_client_ip` | filter | Visitor IP used for rate limiting and captcha (for trusted proxies) |
 
 The front end also dispatches `launch-forms:success` and `launch-forms:error` DOM events on the form.

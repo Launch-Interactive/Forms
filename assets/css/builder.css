@@ -38,8 +38,14 @@
 	cursor: grab;
 	touch-action: none;
 }
-.lf-builder__handle:hover {
+.lf-builder__handle:hover,
+.lf-builder__handle:focus {
 	color: #1e1e1e;
+}
+.lf-builder__handle:focus-visible {
+	outline: 2px solid var(--wp-admin-theme-color, #3858e9);
+	outline-offset: -2px;
+	border-radius: 2px;
 }
 .lf-builder__handle svg {
 	fill: currentColor;

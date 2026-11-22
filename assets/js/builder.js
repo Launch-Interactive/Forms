@@ -328,7 +328,18 @@
 		var typeLabels = data.fieldTypes || {};
 		var operators = data.operators || {};
 		var WIDTH_BADGES = { half: '1/2', third: '1/3', 'two-thirds': '2/3', quarter: '1/4', 'three-quarters': '3/4' };
-		var PLACEHOLDER_TYPES = [ 'text', 'email', 'url', 'tel', 'number', 'textarea', 'select' ];
+		var PLACEHOLDER_TYPES = [ 'text', 'email', 'url', 'tel', 'number', 'textarea', 'select', 'country' ];
+		var countryOptions = ( data.countries || [] ).map( function ( name ) {
+			return { label: name, value: name };
+		} );
+
+		/** Choices a field offers, for picking a value in conditional logic. */
+		function choicesFor( field ) {
+			if ( ! field ) {
+				return [];
+			}
+			return field.type === 'country' ? countryOptions : field.options || [];
+		}
 
 		function set( obj, key, value ) {
 			var copy = Object.assign( {}, obj );
@@ -426,14 +437,14 @@
 							var valueControl = null;
 							if ( needsValue ) {
 								valueControl =
-									controller && controller.options && controller.options.length
+									choicesFor( controller ).length
 										? el( c.SelectControl, {
 												__nextHasNoMarginBottom: true,
 												__next40pxDefaultSize: true,
 												label: __( 'Value', 'launch-forms' ),
 												value: rule.value,
 												options: [ { label: '—', value: '' } ].concat(
-													controller.options.map( function ( o ) {
+													choicesFor( controller ).map( function ( o ) {
 														return { label: o.label, value: o.value };
 													} )
 												),
@@ -600,7 +611,21 @@
 			if ( PLACEHOLDER_TYPES.indexOf( type ) !== -1 ) {
 				row.push( el( 'div', { key: 'ph' }, text( 'placeholder', __( 'Placeholder', 'launch-forms' ) ) ) );
 			}
-			if ( type !== 'file' && ! noInput ) {
+			if ( type === 'country' ) {
+				row.push(
+					el( c.SelectControl, {
+						key: 'def',
+						__nextHasNoMarginBottom: true,
+						__next40pxDefaultSize: true,
+						label: __( 'Default country', 'launch-forms' ),
+						value: field.default || '',
+						options: [ { label: __( 'None', 'launch-forms' ), value: '' } ].concat( countryOptions ),
+						onChange: function ( v ) {
+							change( 'default', v );
+						},
+					} )
+				);
+			} else if ( type !== 'file' && ! noInput ) {
 				row.push(
 					el(
 						'div',
@@ -749,7 +774,8 @@
 		/**
 		 * Pointer-driven reordering for the field list. Uses pointer events rather than
 		 * HTML5 drag and drop so it works on touch screens and the block editor's own
-		 * drop zones never see the drag. Keyboard users have the Move up/down buttons.
+		 * drop zones never see the drag. Keyboard users focus the handle and press the
+		 * up and down arrow keys.
 		 */
 		function useSortable( itemClass, onMove ) {
 			var listRef = useRef( null );
@@ -956,6 +982,22 @@
 			var sortable = useSortable( 'lf-builder__field', move );
 			var dragging = sortable.drag;
 
+			// Keep keyboard focus on the handle of the field that was just moved.
+			var refocus = useRef( null );
+			useEffect( function () {
+				var to = refocus.current;
+				var list = sortable.listRef.current;
+				refocus.current = null;
+				if ( to === null || ! list ) {
+					return;
+				}
+				var item = list.querySelectorAll( '.lf-builder__field' )[ to ];
+				var handle = item && item.querySelector( '.lf-builder__handle' );
+				if ( handle ) {
+					handle.focus();
+				}
+			} );
+
 			return el(
 				'div',
 				{ className: 'lf-builder__fields' + ( dragging ? ' is-sorting' : '' ), ref: sortable.listRef },
@@ -978,10 +1020,40 @@
 									'span',
 									{
 										className: 'lf-builder__handle',
+										role: 'button',
+										tabIndex: 0,
 										title: __( 'Drag to reorder', 'launch-forms' ),
-										'aria-hidden': true,
+										'aria-label': wp.i18n.sprintf(
+											/* translators: %s: field name. */
+											__( 'Reorder %s. Use the up and down arrow keys to move it.', 'launch-forms' ),
+											title
+										),
 										onPointerDown: function ( e ) {
 											sortable.start( e, index );
+										},
+										onKeyDown: function ( e ) {
+											var step = { ArrowUp: -1, ArrowDown: 1 }[ e.key ];
+											if ( ! step || e.altKey || e.ctrlKey || e.metaKey ) {
+												return;
+											}
+											e.preventDefault();
+											var to = index + step;
+											if ( to < 0 || to >= fields.length ) {
+												return;
+											}
+											move( index, to );
+											refocus.current = to;
+											if ( wp.a11y && wp.a11y.speak ) {
+												wp.a11y.speak(
+													wp.i18n.sprintf(
+														/* translators: 1: field name, 2: new position, 3: number of fields. */
+														__( '%1$s moved to position %2$d of %3$d.', 'launch-forms' ),
+														title,
+														to + 1,
+														fields.length
+													)
+												);
+											}
 										},
 									},
 									dragIcon
@@ -1002,22 +1074,6 @@
 								WIDTH_BADGES[ field.width ] ? el( 'span', { className: 'lf-builder__badge', title: ( data.widths || {} )[ field.width ] }, WIDTH_BADGES[ field.width ] ) : null,
 								field.conditions && field.conditions.enabled ? el( 'span', { className: 'lf-builder__badge' }, __( 'conditional', 'launch-forms' ) ) : null
 							),
-							el( c.Button, {
-								icon: 'arrow-up-alt2',
-								label: __( 'Move up', 'launch-forms' ),
-								disabled: index === 0,
-								onClick: function () {
-									move( index, index - 1 );
-								},
-							} ),
-							el( c.Button, {
-								icon: 'arrow-down-alt2',
-								label: __( 'Move down', 'launch-forms' ),
-								disabled: index === fields.length - 1,
-								onClick: function () {
-									move( index, index + 1 );
-								},
-							} ),
 							el( c.Button, {
 								icon: 'admin-page',
 								label: __( 'Duplicate', 'launch-forms' ),

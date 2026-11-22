@@ -65,7 +65,7 @@ class Frontend {
 			)
 		);
 
-		wp_register_script( 'launch-forms-builder', LAUNCH_FORMS_URL . 'assets/js/builder.js', array( 'wp-element', 'wp-components', 'wp-i18n', 'wp-api-fetch' ), $ver, true );
+		wp_register_script( 'launch-forms-builder', LAUNCH_FORMS_URL . 'assets/js/builder.js', array( 'wp-element', 'wp-components', 'wp-i18n', 'wp-api-fetch', 'wp-a11y' ), $ver, true );
 		wp_register_style( 'launch-forms-builder', LAUNCH_FORMS_URL . 'assets/css/builder.css', array( 'wp-components', 'dashicons' ), $ver ); // Dashicons: the block editor canvas iframe doesn't load them.
 		wp_register_script(
 			'launch-forms-block-editor',
