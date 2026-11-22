@@ -93,17 +93,29 @@ test( 'parseConfig tolerates bad JSON and merges defaults', () => {
 	assert.deepEqual( good.notifications, [], 'An explicitly empty notification list is kept.' );
 } );
 
-test( 'dropIndex counts the other items whose midpoint is above the dragged centre', () => {
+test( 'dropIndex: an item passes another when its leading edge crosses that item\'s midpoint', () => {
+	// Three 40px items with 8px gaps: tops 0, 48, 96; midpoints 20, 68, 116.
 	const rects = [ { top: 0, height: 40 }, { top: 48, height: 40 }, { top: 96, height: 40 } ];
-	// Not moved: lands where it started.
-	assert.equal( h.dropIndex( rects, 0, 20 ), 0 );
-	assert.equal( h.dropIndex( rects, 1, 68 ), 1 );
-	// First item dragged past the second's midpoint (68) but not the third's (116).
-	assert.equal( h.dropIndex( rects, 0, 70 ), 1 );
-	assert.equal( h.dropIndex( rects, 0, 130 ), 2 );
-	// Last item dragged above everything.
-	assert.equal( h.dropIndex( rects, 2, 5 ), 0 );
-	assert.equal( h.dropIndex( rects, 2, 60 ), 1 );
+	assert.equal( h.dropIndex( rects, 0, 0 ), 0, 'Not moved.' );
+	assert.equal( h.dropIndex( rects, 0, 27 ), 0, 'Bottom edge (67) short of the next midpoint.' );
+	assert.equal( h.dropIndex( rects, 0, 28 ), 1, 'Bottom edge reaches 68.' );
+	assert.equal( h.dropIndex( rects, 1, 20 ), 0, 'Moving up: top edge reaches the first midpoint.' );
+	assert.equal( h.dropIndex( rects, 1, 21 ), 1 );
+} );
+
+test( 'dropIndex: items can be dragged to the very bottom and top while kept inside the list', () => {
+	const rects = [ { top: 0, height: 40 }, { top: 48, height: 40 }, { top: 96, height: 40 } ];
+	// The builder clamps the dragged item so it never goes past the list's edges.
+	const lowest = ( from ) => rects[ 2 ].top + rects[ 2 ].height - rects[ from ].height;
+	assert.equal( h.dropIndex( rects, 0, lowest( 0 ) ), 2, 'Top item to the bottom (the reported bug).' );
+	assert.equal( h.dropIndex( rects, 1, lowest( 1 ) ), 2 );
+	assert.equal( h.dropIndex( rects, 2, 0 ), 0, 'Bottom item to the top.' );
+
+	// A tall (expanded) item above a short last item, and a short item below a tall one.
+	const mixed = [ { top: 0, height: 300 }, { top: 308, height: 40 }, { top: 356, height: 40 } ];
+	assert.equal( h.dropIndex( mixed, 0, 396 - 300 ), 2, 'Expanded item to the bottom.' );
+	assert.equal( h.dropIndex( mixed, 2, 0 ), 0, 'Short item past a tall one to the top.' );
+	assert.equal( h.dropIndex( mixed, 2, 200 ), 1, 'Not yet past the tall item\'s midpoint (150).' );
 } );
 
 test( 'movedIndex tracks where an item ends up after moveItem', () => {

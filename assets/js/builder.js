@@ -140,16 +140,25 @@
 		}
 
 		/**
-		 * Where a dragged item lands: the number of other items whose midpoint sits above
-		 * the dragged item's centre. `rects` are { top, height } in one coordinate space.
+		 * Where a dragged item lands, given its current top edge. Moving down, it passes each
+		 * item whose midpoint its bottom edge has reached; moving up, each item whose midpoint
+		 * its top edge has reached. (Using the item's centre instead meant it could never pass
+		 * the last item when kept inside the list.) `rects` are { top, height } in one space.
 		 */
-		function dropIndex( rects, from, center ) {
-			var to = 0;
-			rects.forEach( function ( r, i ) {
-				if ( i !== from && r.top + r.height / 2 < center ) {
-					to++;
+		function dropIndex( rects, from, top ) {
+			var start = rects[ from ].top;
+			var bottom = top + rects[ from ].height;
+			var to = from;
+			var i;
+			if ( top > start ) {
+				for ( i = from + 1; i < rects.length && bottom >= rects[ i ].top + rects[ i ].height / 2; i++ ) {
+					to = i;
 				}
-			} );
+			} else if ( top < start ) {
+				for ( i = from - 1; i >= 0 && top <= rects[ i ].top + rects[ i ].height / 2; i-- ) {
+					to = i;
+				}
+			}
 			return to;
 		}
 
@@ -766,7 +775,7 @@
 				var last = d.rects[ d.rects.length - 1 ];
 				// Keep the dragged item within the list.
 				dy = Math.max( -top, Math.min( dy, last.top + last.height - d.rects[ from ].height - top ) );
-				var to = h.dropIndex( d.rects, from, top + d.rects[ from ].height / 2 + dy );
+				var to = h.dropIndex( d.rects, from, top + dy );
 				setState( { from: from, to: to, dy: dy, step: d.step } );
 				d.to = to;
 			}
