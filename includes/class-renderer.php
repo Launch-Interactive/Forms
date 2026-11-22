@@ -277,7 +277,7 @@ class Renderer {
 		}
 
 		$required_mark = $field['required'] ? $this->required_mark( $field ) : '';
-		$label         = esc_html( $field['label'] ) . $required_mark;
+		$label         = ( 'consent' === $type ? wp_kses( $field['label'], Form_Config::LABEL_HTML ) : esc_html( $field['label'] ) ) . $required_mark;
 
 		// Choice groups use fieldset/legend.
 		if ( 'radio' === $type || 'checkbox' === $type ) {

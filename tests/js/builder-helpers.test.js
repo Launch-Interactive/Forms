@@ -12,6 +12,12 @@ test( 'slugify mirrors PHP Form_Config::sanitize_name', () => {
 	assert.equal( h.slugify( 'x'.repeat( 100 ) ).length, 64 );
 } );
 
+test( 'labels with links (consent) give clean titles and keys', () => {
+	const label = 'I agree to the <a href="#terms">terms &amp; conditions</a>';
+	assert.equal( h.stripTags( label ), 'I agree to the terms & conditions' );
+	assert.equal( h.slugify( label ), 'i_agree_to_the_terms_conditions' );
+} );
+
 test( 'uniqueName avoids collisions, ignoring the field being edited', () => {
 	const fields = [ { name: 'email' }, { name: 'email_2' } ];
 	assert.equal( h.uniqueName( 'email', fields, -1 ), 'email_3' );

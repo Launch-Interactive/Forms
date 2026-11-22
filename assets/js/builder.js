@@ -32,8 +32,21 @@
 			return CAPTCHA_TYPES.indexOf( field.type ) !== -1;
 		}
 
+		/** Text of a label that may contain HTML (consent labels can link to the terms). */
+		function stripTags( value ) {
+			return String( value || '' )
+				.replace( /<[^>]*>/g, '' )
+				.replace( /&nbsp;/g, ' ' )
+				.replace( /&amp;/g, '&' )
+				.replace( /&lt;/g, '<' )
+				.replace( /&gt;/g, '>' )
+				.replace( /&quot;/g, '"' )
+				.replace( /&#0?39;/g, "'" )
+				.trim();
+		}
+
 		function slugify( value ) {
-			var slug = String( value || '' )
+			var slug = stripTags( value )
 				.normalize( 'NFD' )
 				.replace( /[̀-ͯ]/g, '' )
 				.toLowerCase()
@@ -298,6 +311,7 @@
 			isInput: isInput,
 			isCaptcha: isCaptcha,
 			slugify: slugify,
+			stripTags: stripTags,
 			uniqueName: uniqueName,
 			createField: createField,
 			optionsToText: optionsToText,
@@ -355,7 +369,7 @@
 						return h.isInput( f ) && ( ! filter || filter( f ) );
 					} )
 					.map( function ( f ) {
-						return { label: ( f.label || f.name ) + ' (' + f.name + ')', value: f.name };
+						return { label: ( h.stripTags( f.label ) || f.name ) + ' (' + f.name + ')', value: f.name };
 					} )
 			);
 		}
@@ -563,6 +577,10 @@
 							__nextHasNoMarginBottom: true,
 							__next40pxDefaultSize: true,
 							label: __( 'Label', 'launch-forms' ),
+							help:
+								type === 'consent'
+									? __( 'Links allowed, e.g. I agree to the <a href="/terms">terms and conditions</a>. Add target="_blank" to open in a new tab.', 'launch-forms' )
+									: undefined,
 							value: field.label,
 							onChange: props.onLabelChange,
 						} ),
@@ -1004,7 +1022,7 @@
 				! fields.length && el( 'p', { className: 'lf-builder__hint' }, __( 'No fields yet. Add your first field below.', 'launch-forms' ) ),
 				fields.map( function ( field, index ) {
 					var isOpen = open === index;
-					var title = field.type === 'content' ? __( 'Content', 'launch-forms' ) : h.isCaptcha( field ) ? typeLabels[ field.type ] || field.type : field.label || field.name;
+					var title = field.type === 'content' ? __( 'Content', 'launch-forms' ) : h.isCaptcha( field ) ? typeLabels[ field.type ] || field.type : h.stripTags( field.label ) || field.name;
 					return el(
 						'div',
 						{

@@ -216,7 +216,7 @@ class Processor {
 			}
 			$entries[] = array(
 				'name'  => $name,
-				'label' => $field['label'],
+				'label' => Form_Config::plain_label( $field['label'] ),
 				'type'  => $field['type'],
 				'value' => $value,
 			);

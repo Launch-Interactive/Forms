@@ -35,6 +35,20 @@ class Form_Config {
 	 */
 	const WIDTHS = array( 'full', 'half', 'third', 'two-thirds', 'quarter', 'three-quarters' );
 
+	/** Inline HTML allowed in a consent checkbox's label, e.g. a link to the terms. */
+	const LABEL_HTML = array(
+		'a'      => array(
+			'href'   => true,
+			'target' => true,
+			'rel'    => true,
+			'title'  => true,
+		),
+		'strong' => array(),
+		'em'     => array(),
+		'b'      => array(),
+		'i'      => array(),
+	);
+
 	const DEFAULT_FILE_TYPES = array( 'jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx', 'txt' );
 
 	/**
@@ -248,10 +262,10 @@ class Form_Config {
 			return null;
 		}
 
-		$label = sanitize_text_field( (string) ( $raw['label'] ?? '' ) );
+		$label = self::sanitize_label( (string) ( $raw['label'] ?? '' ), $type );
 		$name  = self::sanitize_name( (string) ( $raw['name'] ?? '' ) );
 		if ( '' === $name ) {
-			$name = self::sanitize_name( $label );
+			$name = self::sanitize_name( self::plain_label( $label ) );
 		}
 		if ( '' === $name ) {
 			$name = $type;
@@ -312,6 +326,40 @@ class Form_Config {
 		}
 
 		return $field;
+	}
+
+	/**
+	 * Sanitise a field label. Consent checkboxes may contain links and bold or italic text
+	 * (see LABEL_HTML); every other label is plain text.
+	 *
+	 * @param string $label Raw label.
+	 * @param string $type  Field type.
+	 * @return string
+	 */
+	public static function sanitize_label( $label, $type ) {
+		if ( 'consent' !== $type ) {
+			return sanitize_text_field( $label );
+		}
+		$label = trim( (string) preg_replace( '/\s+/', ' ', wp_kses( $label, self::LABEL_HTML ) ) );
+
+		// Links that open a new tab can't control this page.
+		$tags = new \WP_HTML_Tag_Processor( $label );
+		while ( $tags->next_tag( 'a' ) ) {
+			if ( '_blank' === strtolower( (string) $tags->get_attribute( 'target' ) ) ) {
+				$tags->set_attribute( 'rel', 'noopener noreferrer' );
+			}
+		}
+		return $tags->get_updated_html();
+	}
+
+	/**
+	 * A label as plain text, for emails, the submissions screen and exports.
+	 *
+	 * @param string $label Stored label.
+	 * @return string
+	 */
+	public static function plain_label( $label ) {
+		return trim( html_entity_decode( wp_strip_all_tags( (string) $label ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ) );
 	}
 
 	/**
