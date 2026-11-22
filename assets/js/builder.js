@@ -20,6 +20,17 @@
 		'use strict';
 
 		var OPTION_TYPES = [ 'select', 'radio', 'checkbox' ];
+		var CAPTCHA_TYPES = [ 'recaptcha', 'turnstile' ];
+		/** Types that show something but collect no value (mirrors Form_Config::NON_INPUT_TYPES). */
+		var NON_INPUT_TYPES = [ 'content', 'recaptcha', 'turnstile' ];
+
+		function isInput( field ) {
+			return NON_INPUT_TYPES.indexOf( field.type ) === -1;
+		}
+
+		function isCaptcha( field ) {
+			return CAPTCHA_TYPES.indexOf( field.type ) !== -1;
+		}
 
 		function slugify( value ) {
 			var slug = String( value || '' )
@@ -89,6 +100,10 @@
 				field.name = uniqueName( 'content', fields || [], -1 );
 				field.content = '';
 			}
+			if ( CAPTCHA_TYPES.indexOf( type ) !== -1 ) {
+				field.label = '';
+				field.name = uniqueName( type, fields || [], -1 );
+			}
 			return field;
 		}
 
@@ -156,9 +171,7 @@
 		function mergeTags( config ) {
 			return [ '{all_fields}', '{form_title}', '{site_name}', '{admin_email}', '{page_url}', '{date}' ].concat(
 				( config.fields || [] )
-					.filter( function ( f ) {
-						return f.type !== 'content';
-					} )
+					.filter( isInput )
 					.map( function ( f ) {
 						return '{field:' + f.name + '}';
 					} )
@@ -244,9 +257,16 @@
 		function normalizeConfig( config, defaults ) {
 			defaults = defaults || {};
 			config = config && typeof config === 'object' ? config : {};
+			var fields = Array.isArray( config.fields ) ? config.fields : [];
+			var settings = Object.assign( {}, defaults.settings || {}, config.settings || {} );
+			// Older forms picked a captcha in settings; it is now a field (as the server does on save).
+			if ( CAPTCHA_TYPES.indexOf( settings.captcha ) !== -1 && ! fields.some( isCaptcha ) ) {
+				fields = fields.concat( [ createField( settings.captcha, fields, {} ) ] );
+			}
+			settings.captcha = 'none';
 			return {
-				fields: Array.isArray( config.fields ) ? config.fields : [],
-				settings: Object.assign( {}, defaults.settings || {}, config.settings || {} ),
+				fields: fields,
+				settings: settings,
 				notifications: Array.isArray( config.notifications ) ? config.notifications : ( defaults.notifications || [] ).slice(),
 				mailchimp: Object.assign( {}, defaults.mailchimp || {}, config.mailchimp || {} ),
 			};
@@ -264,6 +284,10 @@
 
 		return {
 			OPTION_TYPES: OPTION_TYPES,
+			CAPTCHA_TYPES: CAPTCHA_TYPES,
+			NON_INPUT_TYPES: NON_INPUT_TYPES,
+			isInput: isInput,
+			isCaptcha: isCaptcha,
 			slugify: slugify,
 			uniqueName: uniqueName,
 			createField: createField,
@@ -308,7 +332,7 @@
 			return choices.concat(
 				fields
 					.filter( function ( f ) {
-						return f.type !== 'content' && ( ! filter || filter( f ) );
+						return h.isInput( f ) && ( ! filter || filter( f ) );
 					} )
 					.map( function ( f ) {
 						return { label: ( f.label || f.name ) + ' (' + f.name + ')', value: f.name };
@@ -320,7 +344,7 @@
 		function ConditionsEditor( props ) {
 			var field = props.field;
 			var others = props.fields.filter( function ( f ) {
-				return f.name !== field.name && f.type !== 'content';
+				return f.name !== field.name && h.isInput( f );
 			} );
 			var cond = field.conditions || { enabled: false, action: 'show', match: 'all', rules: [] };
 			var update = function ( next ) {
@@ -475,6 +499,8 @@
 		function FieldEditor( props ) {
 			var field = props.field;
 			var type = field.type;
+			var noInput = ! h.isInput( field );
+			var captcha = h.isCaptcha( field );
 			var change = function ( key, value ) {
 				props.onChange( set( field, key, value ) );
 			};
@@ -492,7 +518,23 @@
 			};
 
 			var parts = [];
-			if ( type !== 'content' ) {
+			if ( captcha ) {
+				var configured = !! ( data.captcha && data.captcha[ type ] );
+				parts.push(
+					el(
+						c.Notice,
+						{ key: 'captcha', status: configured ? 'info' : 'warning', isDismissible: false },
+						configured
+							? __( 'The spam check appears here in the form. It is always shown and checked on the server, so it cannot use conditional logic.', 'launch-forms' )
+							: __( 'Add the site and secret keys in Forms → Settings. Until then this field is not shown and the form is submitted without this check.', 'launch-forms' ),
+						! configured && data.settingsUrl ? el( Fragment, null, ' ', el( 'a', { href: data.settingsUrl, target: '_blank', rel: 'noreferrer' }, __( 'Open settings', 'launch-forms' ) ) ) : null
+					)
+				);
+				if ( type === 'recaptcha' && data.recaptchaVersion === 'v3' ) {
+					parts.push( el( 'p', { key: 'v3', className: 'lf-builder__hint' }, __( 'reCAPTCHA v3 is invisible, so its position only matters for where errors appear. Google shows its badge in the corner of the page.', 'launch-forms' ) ) );
+				}
+			}
+			if ( ! noInput ) {
 				parts.push(
 					el(
 						'div',
@@ -549,7 +591,7 @@
 			if ( PLACEHOLDER_TYPES.indexOf( type ) !== -1 ) {
 				row.push( el( 'div', { key: 'ph' }, text( 'placeholder', __( 'Placeholder', 'launch-forms' ) ) ) );
 			}
-			if ( type !== 'file' && type !== 'content' ) {
+			if ( type !== 'file' && ! noInput ) {
 				row.push(
 					el(
 						'div',
@@ -607,12 +649,12 @@
 				);
 			}
 
-			if ( type !== 'content' && type !== 'hidden' ) {
+			if ( ! noInput && type !== 'hidden' ) {
 				parts.push( el( 'div', { key: 'desc' }, text( 'description', __( 'Help text', 'launch-forms' ) ) ) );
 			}
 
 			var toggles = [];
-			if ( type !== 'content' && type !== 'hidden' ) {
+			if ( ! noInput && type !== 'hidden' ) {
 				toggles.push(
 					el( c.ToggleControl, {
 						key: 'req',
@@ -665,7 +707,7 @@
 				)
 			);
 
-			if ( type !== 'hidden' ) {
+			if ( type !== 'hidden' && ! captcha ) {
 				parts.push(
 					el( ConditionsEditor, {
 						key: 'cond',
@@ -911,7 +953,7 @@
 				! fields.length && el( 'p', { className: 'lf-builder__hint' }, __( 'No fields yet. Add your first field below.', 'launch-forms' ) ),
 				fields.map( function ( field, index ) {
 					var isOpen = open === index;
-					var title = field.type === 'content' ? __( 'Content', 'launch-forms' ) : field.label || field.name;
+					var title = field.type === 'content' ? __( 'Content', 'launch-forms' ) : h.isCaptcha( field ) ? typeLabels[ field.type ] || field.type : field.label || field.name;
 					return el(
 						'div',
 						{
@@ -947,7 +989,7 @@
 								},
 								el( 'strong', null, title ),
 								field.required ? ' *' : '',
-								el( 'span', { className: 'lf-builder__meta' }, ( typeLabels[ field.type ] || field.type ) + ( field.type !== 'content' ? ' · ' + field.name : '' ) ),
+								el( 'span', { className: 'lf-builder__meta' }, h.isCaptcha( field ) ? __( 'Spam check', 'launch-forms' ) : ( typeLabels[ field.type ] || field.type ) + ( h.isInput( field ) ? ' · ' + field.name : '' ) ),
 								WIDTH_BADGES[ field.width ] ? el( 'span', { className: 'lf-builder__badge', title: ( data.widths || {} )[ field.width ] }, WIDTH_BADGES[ field.width ] ) : null,
 								field.conditions && field.conditions.enabled ? el( 'span', { className: 'lf-builder__badge' }, __( 'conditional', 'launch-forms' ) ) : null
 							),
@@ -1056,9 +1098,15 @@
 						label: __( 'Field type', 'launch-forms' ),
 						hideLabelFromVision: true,
 						value: addType[ 0 ],
-						options: Object.keys( typeLabels ).map( function ( k ) {
-							return { label: typeLabels[ k ], value: k };
-						} ),
+						options: Object.keys( typeLabels )
+							.filter( function ( k ) {
+								// One spam check per form.
+								return h.CAPTCHA_TYPES.indexOf( k ) === -1 || ! fields.some( h.isCaptcha );
+							} )
+							.map( function ( k ) {
+								var missing = h.CAPTCHA_TYPES.indexOf( k ) !== -1 && ! ( data.captcha && data.captcha[ k ] );
+								return { label: typeLabels[ k ] + ( missing ? ' ' + __( '(keys not set)', 'launch-forms' ) : '' ), value: k };
+							} ),
 						onChange: addType[ 1 ],
 					} ),
 					el(
@@ -1066,7 +1114,11 @@
 						{
 							variant: 'primary',
 							onClick: function () {
-								setFields( fields.concat( [ h.createField( addType[ 0 ], fields, typeLabels ) ] ) );
+								var type = h.CAPTCHA_TYPES.indexOf( addType[ 0 ] ) !== -1 && fields.some( h.isCaptcha ) ? 'text' : addType[ 0 ];
+								setFields( fields.concat( [ h.createField( type, fields, typeLabels ) ] ) );
+								if ( type !== addType[ 0 ] ) {
+									addType[ 1 ]( 'text' );
+								}
 								setOpen( fields.length );
 							},
 						},
@@ -1082,10 +1134,7 @@
 			var change = function ( key, value ) {
 				props.onChange( Object.assign( {}, props.config, { settings: set( s, key, value ) } ) );
 			};
-			var captchaOptions = [ { label: __( 'None', 'launch-forms' ), value: 'none' } ];
-			captchaOptions.push( { label: 'Google reCAPTCHA' + ( data.captcha && data.captcha.recaptcha ? '' : ' ' + __( '(not configured)', 'launch-forms' ) ), value: 'recaptcha' } );
-			captchaOptions.push( { label: 'Cloudflare Turnstile' + ( data.captcha && data.captcha.turnstile ? '' : ' ' + __( '(not configured)', 'launch-forms' ) ), value: 'turnstile' } );
-			var captchaMissing = s.captcha !== 'none' && ! ( data.captcha && data.captcha[ s.captcha ] );
+			var captchaField = ( props.config.fields || [] ).filter( h.isCaptcha )[ 0 ];
 
 			return el(
 				'div',
@@ -1150,23 +1199,22 @@
 						change( 'store_submissions', v );
 					},
 				} ),
-				el( c.SelectControl, {
-					__nextHasNoMarginBottom: true,
-					__next40pxDefaultSize: true,
-					label: __( 'Spam protection (in addition to the built-in honeypot)', 'launch-forms' ),
-					value: s.captcha,
-					options: captchaOptions,
-					onChange: function ( v ) {
-						change( 'captcha', v );
-					},
-				} ),
-				captchaMissing &&
+				el(
+					'div',
+					null,
+					el( 'p', { className: 'lf-builder__label' }, __( 'Spam protection', 'launch-forms' ) ),
 					el(
-						c.Notice,
-						{ status: 'warning', isDismissible: false },
-						__( 'Add the site and secret keys in Forms → Settings, otherwise this form is submitted without a captcha.', 'launch-forms' ),
-						data.settingsUrl ? el( Fragment, null, ' ', el( 'a', { href: data.settingsUrl, target: '_blank', rel: 'noreferrer' }, __( 'Open settings', 'launch-forms' ) ) ) : null
+						'p',
+						{ className: 'lf-builder__hint' },
+						captchaField
+							? wp.i18n.sprintf(
+									/* translators: %s: Google reCAPTCHA or Cloudflare Turnstile. */
+									__( 'Every form has a hidden honeypot. This form also uses %s; move or remove it on the Fields tab.', 'launch-forms' ),
+									typeLabels[ captchaField.type ] || captchaField.type
+							  )
+							: __( 'Every form has a hidden honeypot. For stronger protection, add a Google reCAPTCHA or Cloudflare Turnstile field on the Fields tab and drag it where you want it.', 'launch-forms' )
 					)
+				)
 			);
 		}
 

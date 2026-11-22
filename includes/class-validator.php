@@ -29,7 +29,7 @@ class Validator {
 		foreach ( $form->fields as $field ) {
 			$name = $field['name'];
 			$type = $field['type'];
-			if ( 'content' === $type ) {
+			if ( in_array( $type, Form_Config::NON_INPUT_TYPES, true ) ) {
 				continue;
 			}
 			if ( 'file' === $type ) {
@@ -69,7 +69,7 @@ class Validator {
 
 		foreach ( $form->fields as $field ) {
 			$name = $field['name'];
-			if ( 'content' === $field['type'] || 'file' === $field['type'] || empty( $visibility[ $name ] ) ) {
+			if ( in_array( $field['type'], Form_Config::NON_INPUT_TYPES, true ) || 'file' === $field['type'] || empty( $visibility[ $name ] ) ) {
 				continue;
 			}
 			$value = $raw[ $name ];

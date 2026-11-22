@@ -47,13 +47,15 @@ class Captcha {
 	}
 
 	/**
-	 * The active provider for a form ('none' when not selected or not configured).
+	 * The active provider for a form: the type of its captcha field ('none' when it has no
+	 * captcha field, or the provider's keys aren't set under Forms → Settings).
 	 *
 	 * @param Form $form Form.
 	 * @return string
 	 */
 	public function provider_for( Form $form ) {
-		$provider = $form->settings['captcha'];
+		$field    = $form->captcha_field();
+		$provider = $field ? $field['type'] : 'none';
 		return $this->is_configured( $provider ) ? $provider : 'none';
 	}
 

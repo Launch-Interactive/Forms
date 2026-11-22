@@ -20,17 +20,33 @@ class CaptchaTest extends LF_TestCase {
 				'recaptcha_threshold'  => 0.5,
 			)
 		);
-		return $this->contact_form( array( 'settings' => array( 'captcha' => 'recaptcha' ) ) );
+		return $this->form_with( 'recaptcha' );
+	}
+
+	/**
+	 * Name, captcha, email, message: the captcha sits between fields.
+	 */
+	private function form_with( $type, array $captcha = array() ) {
+		return $this->make_form(
+			array(
+				$this->field( 'text', 'name', array( 'required' => true ) ),
+				array_merge( array( 'type' => $type ), $captcha ),
+				$this->field( 'email', 'email', array( 'required' => true ) ),
+				$this->field( 'textarea', 'message' ),
+			)
+		);
 	}
 
 	private function turnstile_form() {
 		launch_forms()->settings->update( array( 'turnstile_site_key' => 'ts-site', 'turnstile_secret_key' => 'ts-secret' ) );
-		return $this->contact_form( array( 'settings' => array( 'captcha' => 'turnstile' ) ) );
+		return $this->form_with( 'turnstile' );
 	}
 
 	public function test_no_captcha_when_not_selected_or_not_configured() {
-		$form = $this->contact_form( array( 'settings' => array( 'captcha' => 'recaptcha' ) ) );
+		$this->assertSame( 'none', $this->captcha()->provider_for( $this->contact_form() ), 'No captcha field.' );
+		$form = $this->form_with( 'recaptcha' );
 		$this->assertSame( 'none', $this->captcha()->provider_for( $form ), 'Keys missing → disabled.' );
+		$this->assertStringNotContainsString( 'lf-field--captcha', launch_forms()->renderer->render( $form ), 'Field not shown without keys.' );
 		$this->assertSame( '', $this->captcha()->render( $form ) );
 		$this->assertTrue( $this->captcha()->verify( $form, array() ) );
 		$this->assertSame( array(), $this->http_requests );
@@ -130,5 +146,91 @@ class CaptchaTest extends LF_TestCase {
 			}
 		);
 		$this->assertWPError( $this->captcha()->verify( $this->turnstile_form(), array( 'cf-turnstile-response' => 'tok' ) ) );
+	}
+
+	public function test_captcha_renders_where_it_is_placed_with_its_width() {
+		launch_forms()->settings->update( array( 'turnstile_site_key' => 'ts-site', 'turnstile_secret_key' => 'ts-secret' ) );
+		$form = $this->form_with( 'turnstile', array( 'width' => 'half', 'css_class' => 'my-captcha' ) );
+		$html = launch_forms()->renderer->render( $form );
+
+		$name    = strpos( $html, 'name="lf[name]"' );
+		$captcha = strpos( $html, 'class="cf-turnstile"' );
+		$email   = strpos( $html, 'name="lf[email]"' );
+		$this->assertTrue( $name < $captcha && $captcha < $email, 'Between Name and Email, as placed.' );
+		$this->assertSame( 1, substr_count( $html, 'cf-turnstile' ), 'Not also added at the end.' );
+		$this->assertMatchesRegularExpression( '/<div class="lf-field lf-field--turnstile lf-field--half my-captcha lf-field--captcha" data-lf-name="turnstile"><div class="lf-captcha"><div class="cf-turnstile"/', $html );
+		$this->assertLessThan( strpos( $html, 'type="submit"' ), $captcha );
+	}
+
+	public function test_only_one_captcha_and_never_conditional() {
+		$config = LaunchForms\Form_Config::sanitize(
+			array(
+				'fields' => array(
+					array( 'type' => 'text', 'name' => 'name' ),
+					array(
+						'type'       => 'recaptcha',
+						'required'   => true,
+						'conditions' => array( 'enabled' => true, 'rules' => array( array( 'field' => 'name', 'operator' => 'empty', 'value' => '' ) ) ),
+					),
+					array( 'type' => 'turnstile' ),
+					array( 'type' => 'recaptcha' ),
+					array(
+						'type'       => 'text',
+						'name'       => 'other',
+						'conditions' => array( 'enabled' => true, 'rules' => array( array( 'field' => 'recaptcha', 'operator' => 'not_empty', 'value' => '' ) ) ),
+					),
+				),
+			)
+		);
+		$this->assertSame( array( 'text', 'recaptcha', 'text' ), wp_list_pluck( $config['fields'], 'type' ) );
+		$this->assertFalse( $config['fields'][1]['conditions']['enabled'], 'A hidden captcha would let bots skip it.' );
+		$this->assertSame( array(), $config['fields'][1]['conditions']['rules'] );
+		$this->assertFalse( $config['fields'][1]['required'] );
+		$this->assertFalse( $config['fields'][2]['conditions']['enabled'], 'Rules cannot depend on a captcha.' );
+	}
+
+	public function test_forms_using_the_old_captcha_setting_get_a_field_at_the_end() {
+		$config = LaunchForms\Form_Config::sanitize(
+			array(
+				'fields'   => array( array( 'type' => 'text', 'name' => 'name' ), array( 'type' => 'email', 'name' => 'email' ) ),
+				'settings' => array( 'captcha' => 'turnstile' ),
+			)
+		);
+		$this->assertSame( array( 'text', 'email', 'turnstile' ), wp_list_pluck( $config['fields'], 'type' ) );
+		$this->assertSame( 'none', $config['settings']['captcha'] );
+
+		$again = LaunchForms\Form_Config::sanitize( $config );
+		$this->assertCount( 3, $again['fields'], 'Migrating twice changes nothing.' );
+
+		$placed = LaunchForms\Form_Config::sanitize(
+			array(
+				'fields'   => array( array( 'type' => 'recaptcha' ), array( 'type' => 'text', 'name' => 'name' ) ),
+				'settings' => array( 'captcha' => 'turnstile' ),
+			)
+		);
+		$this->assertSame( array( 'recaptcha', 'text' ), wp_list_pluck( $placed['fields'], 'type' ), 'An existing captcha field wins.' );
+	}
+
+	public function test_failed_check_shows_the_error_at_the_captcha() {
+		$form = $this->recaptcha_form();
+		$this->mock_http(
+			static function () {
+				return array( 'body' => array( 'success' => false ) );
+			}
+		);
+		$result = launch_forms()->processor->process( $form, array( 'lf' => array( 'name' => 'Ann', 'email' => 'ann@example.com' ), 'g-recaptcha-response' => 'bad' ) );
+		$this->assertFalse( $result->success );
+		$this->assertArrayHasKey( 'recaptcha', $result->errors );
+
+		$html = launch_forms()->renderer->render( $form );
+		$this->assertMatchesRegularExpression( '/data-lf-name="recaptcha">.*class="g-recaptcha".*<p class="lf-error"[^>]*>Please complete the spam check/s', $html );
+		$this->assertStringContainsString( 'value="Ann"', $html, 'What they typed is kept.' );
+	}
+
+	public function test_captcha_fields_collect_no_value() {
+		$form   = $this->form_with( 'turnstile' );
+		$result = launch_forms()->processor->process( $form, array( 'lf' => array( 'name' => 'Ann', 'email' => 'ann@example.com', 'turnstile' => 'sneaky' ) ) );
+		$this->assertTrue( $result->success, 'Keys not set, so no check runs.' );
+		$this->assertSame( array( 'name', 'email', 'message' ), wp_list_pluck( launch_forms()->submissions->get_entries( $result->submission_id ), 'name' ) );
 	}
 }

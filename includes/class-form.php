@@ -75,6 +75,20 @@ class Form {
 	}
 
 	/**
+	 * The form's captcha field, if it has one.
+	 *
+	 * @return array|null
+	 */
+	public function captcha_field() {
+		foreach ( $this->fields as $field ) {
+			if ( in_array( $field['type'], Form_Config::CAPTCHA_TYPES, true ) ) {
+				return $field;
+			}
+		}
+		return null;
+	}
+
+	/**
 	 * Export as the config array.
 	 *
 	 * @return array

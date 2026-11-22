@@ -79,6 +79,7 @@ class Admin {
 			'defaults'            => Form_Config::defaults(),
 			'defaultFileTypes'    => Form_Config::DEFAULT_FILE_TYPES,
 			'blockedFileTypes'    => Uploads::BLOCKED_EXTENSIONS,
+			'recaptchaVersion'    => (string) $this->plugin->settings->get( 'recaptcha_version' ),
 			'captcha'             => array(
 				'recaptcha' => $this->plugin->captcha->is_configured( 'recaptcha' ),
 				'turnstile' => $this->plugin->captcha->is_configured( 'turnstile' ),

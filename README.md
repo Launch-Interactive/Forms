@@ -17,7 +17,7 @@ A lightweight WordPress form builder that outputs minimal, semantic HTML and tak
 - **SMTP**: tick **Use Custom SMTP** under **Forms → Settings → Email (SMTP)** to send all WordPress email through your email provider's SMTP server (host, port, TLS/SSL, username and password, From address and name, optional forced From). The password is stored encrypted with a key derived from the site's salts and is never shown again.
 - **Test email**: **Forms → Settings → Send a test email** shows the exact `wp_mail()` failure reason when sending fails.
 - **Mailchimp**: per-form audience, email field, merge fields, tags, double opt-in, and an optional "only if this box is ticked" consent field.
-- **Spam protection**: a built-in honeypot, plus optional Google reCAPTCHA (v2 checkbox or v3 score) or Cloudflare Turnstile per form.
+- **Spam protection**: a built-in honeypot on every form, plus Google reCAPTCHA (v2 checkbox or v3 score) or Cloudflare Turnstile as a **field**: add it from the field list and drag it where you want it (with a width, like any field). One per form; it is always shown and checked, so it can't use conditional logic, and a failed check is reported at the widget. Keys go in **Forms → Settings**; until they are set the field isn't shown. Forms that chose a captcha in the old per-form setting get the field added at the end automatically.
 - **Works without JavaScript**: forms submit with a plain POST when JavaScript is unavailable; otherwise they submit with AJAX through the REST API.
 
 ## Upload security

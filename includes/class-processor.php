@@ -76,7 +76,9 @@ class Processor {
 
 		$captcha = $this->plugin->captcha->verify( $form, $request, $context['ip'] );
 		if ( is_wp_error( $captcha ) ) {
-			return $this->remember( $form, Submission_Result::failure( $captcha->get_error_message(), array(), $this->validator->normalize( $form, $input ) ) );
+			// Show the error at the captcha itself as well as at the top of the form.
+			$field = $form->captcha_field();
+			return $this->remember( $form, Submission_Result::failure( $captcha->get_error_message(), $field ? array( $field['name'] => $captcha->get_error_message() ) : array(), $this->validator->normalize( $form, $input ) ) );
 		}
 
 		$validation = $this->validator->validate( $form, $input, $files );

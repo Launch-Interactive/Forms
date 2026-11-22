@@ -136,7 +136,8 @@
 				return;
 			}
 			wrapper.classList.add( 'lf-field--error' );
-			var control = wrapper.querySelector( 'input, select, textarea' );
+			// A captcha's only control is its hidden token box, which can't take focus.
+			var control = wrapper.classList.contains( 'lf-field--captcha' ) ? null : wrapper.querySelector( 'input, select, textarea' );
 			var isGroup = wrapper.tagName === 'FIELDSET';
 			// Option inputs are "<prefix>-<name>-<index>"; the group's base id drops the index.
 			var base = control && control.id ? ( isGroup ? control.id.replace( /-\d+$/, '' ) : control.id ) : form.id + '-' + name;

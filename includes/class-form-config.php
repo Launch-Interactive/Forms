@@ -18,7 +18,13 @@ defined( 'ABSPATH' ) || exit;
  */
 class Form_Config {
 
-	const FIELD_TYPES = array( 'text', 'email', 'url', 'tel', 'number', 'textarea', 'select', 'radio', 'checkbox', 'consent', 'date', 'hidden', 'file', 'content' );
+	const FIELD_TYPES = array( 'text', 'email', 'url', 'tel', 'number', 'textarea', 'select', 'radio', 'checkbox', 'consent', 'date', 'hidden', 'file', 'content', 'recaptcha', 'turnstile' );
+
+	/** Spam check widgets placed as fields. A form may have one. */
+	const CAPTCHA_TYPES = array( 'recaptcha', 'turnstile' );
+
+	/** Types that show something but collect no value. */
+	const NON_INPUT_TYPES = array( 'content', 'recaptcha', 'turnstile' );
 
 	const OPTION_TYPES = array( 'select', 'radio', 'checkbox' );
 
@@ -67,7 +73,9 @@ class Form_Config {
 			'date'     => __( 'Date', 'launch-forms' ),
 			'hidden'   => __( 'Hidden', 'launch-forms' ),
 			'file'     => __( 'File upload', 'launch-forms' ),
-			'content'  => __( 'Text / HTML content', 'launch-forms' ),
+			'content'   => __( 'Text / HTML content', 'launch-forms' ),
+			'recaptcha' => __( 'Google reCAPTCHA', 'launch-forms' ),
+			'turnstile' => __( 'Cloudflare Turnstile', 'launch-forms' ),
 		);
 	}
 
@@ -145,9 +153,19 @@ class Form_Config {
 	public static function sanitize( array $data ) {
 		$defaults = self::defaults();
 
-		$fields = array();
-		$names  = array();
-		foreach ( (array) ( $data['fields'] ?? array() ) as $raw ) {
+		$fields      = array();
+		$names       = array();
+		$has_captcha = false;
+		$raw_fields  = (array) ( $data['fields'] ?? array() );
+
+		// Forms saved before captchas became fields chose one in settings: add it as the last
+		// field, which is where it used to appear.
+		$legacy = (string) ( $data['settings']['captcha'] ?? 'none' );
+		if ( in_array( $legacy, self::CAPTCHA_TYPES, true ) && ! array_filter( $raw_fields, array( self::class, 'is_captcha_raw' ) ) ) {
+			$raw_fields[] = array( 'type' => $legacy );
+		}
+
+		foreach ( $raw_fields as $raw ) {
 			if ( ! is_array( $raw ) ) {
 				continue;
 			}
@@ -155,18 +173,33 @@ class Form_Config {
 			if ( null === $field ) {
 				continue;
 			}
+			if ( in_array( $field['type'], self::CAPTCHA_TYPES, true ) ) {
+				if ( $has_captcha ) {
+					continue; // One spam check per form.
+				}
+				$has_captcha = true;
+			}
 			$field['name'] = self::unique_name( $field['name'], $names );
 			$names[]       = $field['name'];
 			$fields[]      = $field;
 		}
+		$input_names = wp_list_pluck(
+			array_filter(
+				$fields,
+				static function ( $f ) {
+					return ! in_array( $f['type'], self::NON_INPUT_TYPES, true );
+				}
+			),
+			'name'
+		);
 
 		// Conditions may only reference fields that exist (and not the field itself).
 		foreach ( $fields as &$field ) {
 			$field['conditions']['rules'] = array_values(
 				array_filter(
 					$field['conditions']['rules'],
-					static function ( $rule ) use ( $names, $field ) {
-						return in_array( $rule['field'], $names, true ) && $rule['field'] !== $field['name'];
+					static function ( $rule ) use ( $input_names, $field ) {
+						return in_array( $rule['field'], $input_names, true ) && $rule['field'] !== $field['name'];
 					}
 				)
 			);
@@ -183,7 +216,7 @@ class Form_Config {
 			'redirect_url'         => esc_url_raw( (string) $settings['redirect_url'] ),
 			'store_submissions'    => self::bool( $settings['store_submissions'] ),
 			'hide_form_on_success' => self::bool( $settings['hide_form_on_success'] ),
-			'captcha'              => in_array( $settings['captcha'], array( 'none', 'recaptcha', 'turnstile' ), true ) ? $settings['captcha'] : 'none',
+			'captcha'              => 'none', // Legacy: captchas are now fields (migrated above).
 		);
 
 		$notifications = array();
@@ -260,6 +293,19 @@ class Form_Config {
 		if ( 'hidden' === $type ) {
 			$field['required'] = false;
 		}
+		if ( in_array( $type, self::CAPTCHA_TYPES, true ) ) {
+			// Always shown and always checked: a captcha hidden by conditional logic would let
+			// bots skip it.
+			$field['required']    = false;
+			$field['placeholder'] = '';
+			$field['default']     = '';
+			$field['conditions']  = array(
+				'enabled' => false,
+				'action'  => 'show',
+				'match'   => 'all',
+				'rules'   => array(),
+			);
+		}
 
 		return $field;
 	}
@@ -278,6 +324,16 @@ class Form_Config {
 			$value = 'f_' . $value;
 		}
 		return substr( $value, 0, 64 );
+	}
+
+	/**
+	 * Whether a raw field definition is a captcha.
+	 *
+	 * @param mixed $raw Raw field.
+	 * @return bool
+	 */
+	private static function is_captcha_raw( $raw ) {
+		return is_array( $raw ) && in_array( $raw['type'] ?? '', self::CAPTCHA_TYPES, true );
 	}
 
 	/**

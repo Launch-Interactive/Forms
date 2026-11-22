@@ -26,6 +26,9 @@ class Renderer {
 	 */
 	private $instances = array();
 
+	/** @var Form|null Form being rendered (captcha fields need it). */
+	private $current_form = null;
+
 	/**
 	 * Constructor.
 	 *
@@ -110,12 +113,14 @@ class Renderer {
 			$html .= '<div class="lf-message lf-message--error" role="alert">' . esc_html( $result->message ) . '</div>';
 		}
 
-		$html .= '<div class="lf-fields">';
+		$html              .= '<div class="lf-fields">';
+		$this->current_form = $form;
 		foreach ( $form->fields as $field ) {
 			$value = array_key_exists( $field['name'], $values ) ? $values[ $field['name'] ] : null;
 			$html .= $this->render_field( $field, $prefix, $value, $errors[ $field['name'] ] ?? '', $visibility[ $field['name'] ] ?? true );
 		}
-		$html .= '</div>';
+		$this->current_form = null;
+		$html              .= '</div>';
 
 		$html .= $this->honeypot( $prefix );
 		$html .= '<input type="hidden" name="lf_form_id" value="' . esc_attr( $form->id ) . '">';
@@ -124,7 +129,6 @@ class Renderer {
 			// Logged-out pages stay nonce-free so they can be cached.
 			$html .= '<input type="hidden" name="lf_nonce" value="' . esc_attr( wp_create_nonce( 'launch_forms_submit_' . $form->id ) ) . '">';
 		}
-		$html .= $this->plugin->captcha->render( $form );
 		$html .= '<div class="lf-submit"><button type="submit" class="wp-element-button">' . esc_html( $form->settings['submit_label'] ) . '</button></div>';
 		$html .= '</form>';
 
@@ -230,6 +234,17 @@ class Renderer {
 
 		if ( 'content' === $type ) {
 			return '<div' . self::attrs( $wrapper ) . '>' . wp_kses_post( $field['content'] ) . '</div>';
+		}
+
+		if ( in_array( $type, Form_Config::CAPTCHA_TYPES, true ) ) {
+			// Rendered only when the provider's keys are set (otherwise no check runs either).
+			$widget = $this->current_form && $this->plugin->captcha->provider_for( $this->current_form ) === $type ? $this->plugin->captcha->render( $this->current_form ) : '';
+			if ( '' === $widget ) {
+				return '';
+			}
+			$wrapper['class'] .= ' lf-field--captcha';
+			$error_html        = $error ? '<p class="lf-error" id="' . esc_attr( $id . '-error' ) . '">' . esc_html( $error ) . '</p>' : '';
+			return '<div' . self::attrs( $wrapper ) . '>' . $widget . $error_html . '</div>';
 		}
 
 		$describedby = array();

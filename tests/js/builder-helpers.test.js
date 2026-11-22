@@ -134,3 +134,21 @@ test( 'renaming a field updates the success message tags', () => {
 	assert.equal( out.settings.success_message, 'Sent to {field:work_email}.' );
 	assert.equal( out.settings.submit_label, 'Go' );
 } );
+
+test( 'captcha fields: created without a label, not inputs, excluded from merge tags', () => {
+	const field = h.createField( 'turnstile', [], { turnstile: 'Cloudflare Turnstile' } );
+	assert.equal( field.label, '' );
+	assert.equal( field.name, 'turnstile' );
+	assert.ok( h.isCaptcha( field ) );
+	assert.ok( ! h.isInput( field ) );
+	assert.ok( ! h.mergeTags( { fields: [ field ] } ).includes( '{field:turnstile}' ) );
+} );
+
+test( 'normalizeConfig moves the old captcha setting into a field once', () => {
+	const config = h.normalizeConfig( { fields: [ { type: 'text', name: 'name' } ], settings: { captcha: 'recaptcha' } }, {} );
+	assert.deepEqual( config.fields.map( ( f ) => f.type ), [ 'text', 'recaptcha' ] );
+	assert.equal( config.settings.captcha, 'none' );
+	assert.equal( h.normalizeConfig( config, {} ).fields.length, 2 );
+	const placed = h.normalizeConfig( { fields: [ { type: 'turnstile', name: 'turnstile' } ], settings: { captcha: 'recaptcha' } }, {} );
+	assert.deepEqual( placed.fields.map( ( f ) => f.type ), [ 'turnstile' ] );
+} );
