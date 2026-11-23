@@ -76,7 +76,6 @@ class AdminTest extends LF_TestCase {
 		$this->assertContains( 'launch-forms-builder', $scripts->registered['launch-forms-block-editor']->deps );
 		$this->assertContains( 'wp-core-data', $scripts->registered['launch-forms-block-editor']->deps );
 		$this->assertContains( 'wp-server-side-render', $scripts->registered['launch-forms-block-editor']->deps );
-		$this->assertContains( 'launch-forms-conditional', $scripts->registered['launch-forms']->deps );
 	}
 
 	public function test_block_editor_assets_inline_builder_data() {

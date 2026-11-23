@@ -75,6 +75,20 @@ class Form {
 	}
 
 	/**
+	 * Whether any field shows or hides itself based on other answers.
+	 *
+	 * @return bool
+	 */
+	public function has_conditions() {
+		foreach ( $this->fields as $field ) {
+			if ( ! empty( $field['conditions']['enabled'] ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
 	 * The form's captcha field, if it has one.
 	 *
 	 * @return array|null

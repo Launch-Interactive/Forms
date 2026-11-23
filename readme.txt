@@ -4,7 +4,7 @@ Tags: form, contact form, form builder, mailchimp, turnstile
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.7.0
+Stable tag: 1.7.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -105,6 +105,9 @@ Yes. Forms submit normally when JavaScript isn't available, and conditional logi
 
 == Changelog ==
 
+= 1.7.1 =
+* Improved: the conditional logic script loads only on forms that use conditional logic, and no longer delays the page.
+
 = 1.7.0 =
 * New: send a Google Analytics (gtag.js) or Google Tag Manager event when a form is submitted, set per form with no code.
 
@@ -148,5 +151,5 @@ Yes. Forms submit normally when JavaScript isn't available, and conditional logi
 
 == Upgrade Notice ==
 
-= 1.7.0 =
-Adds Google Analytics and Google Tag Manager events for form submissions.
+= 1.7.1 =
+Loads less JavaScript on forms that don't use conditional logic.

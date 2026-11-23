@@ -51,16 +51,16 @@ class Frontend {
 		$css = $this->plugin->settings->get( 'load_css' ) ? LAUNCH_FORMS_URL . 'assets/css/launch-forms.css' : false;
 		wp_register_style( 'launch-forms', $css, array(), $ver );
 
-		wp_register_script( 'launch-forms-conditional', LAUNCH_FORMS_URL . 'assets/js/conditional-logic.js', array(), $ver, array( 'in_footer' => true ) );
-		wp_register_script( 'launch-forms', LAUNCH_FORMS_URL . 'assets/js/frontend.js', array( 'launch-forms-conditional' ), $ver, array( 'in_footer' => true, 'strategy' => 'defer' ) );
+		// The conditional logic script is added as a dependency only when a form on the page uses it (see enqueue_assets()).
+		wp_register_script( 'launch-forms-conditional', LAUNCH_FORMS_URL . 'assets/js/conditional-logic.js', array(), $ver, array( 'in_footer' => true, 'strategy' => 'defer' ) );
+		wp_register_script( 'launch-forms', LAUNCH_FORMS_URL . 'assets/js/frontend.js', array(), $ver, array( 'in_footer' => true, 'strategy' => 'defer' ) );
 		wp_localize_script(
 			'launch-forms',
 			'launchFormsConfig',
 			array(
 				'restUrl' => esc_url_raw( rest_url( 'launch-forms/v1/forms/' ) ),
 				'i18n'    => array(
-					'error'   => __( 'Something went wrong. Please try again.', 'launch-forms' ),
-					'sending' => __( 'Sending…', 'launch-forms' ),
+					'error' => __( 'Something went wrong. Please try again.', 'launch-forms' ),
 				),
 			)
 		);
@@ -131,6 +131,13 @@ class Frontend {
 		}
 		wp_enqueue_style( 'launch-forms' );
 		wp_enqueue_script( 'launch-forms' );
+		if ( $form->has_conditions() ) {
+			// Make frontend.js depend on the conditional logic script, so it's printed (and run) first.
+			$script = wp_scripts()->query( 'launch-forms', 'registered' );
+			if ( $script && ! in_array( 'launch-forms-conditional', $script->deps, true ) ) {
+				$script->deps[] = 'launch-forms-conditional';
+			}
+		}
 		if ( is_user_logged_in() ) {
 			wp_add_inline_script( 'launch-forms', 'window.launchFormsConfig&&(window.launchFormsConfig.nonce=' . wp_json_encode( wp_create_nonce( 'wp_rest' ) ) . ');', 'before' );
 		}
