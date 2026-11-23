@@ -317,7 +317,7 @@ class Processor {
 		}
 		$host = strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) );
 		$home = strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
-		return '' !== $host && ( $host === $home || in_array( $host, array_map( 'strtolower', (array) apply_filters( 'allowed_redirect_hosts', array( $home ), $host ) ), true ) ) ? $url : '';
+		return '' !== $host && ( $host === $home || in_array( $host, array_map( 'strtolower', (array) apply_filters( 'allowed_redirect_hosts', array( $home ), $host ) ), true ) ) ? $url : ''; // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Core filter, applied the way wp_validate_redirect() does.
 	}
 
 	/**

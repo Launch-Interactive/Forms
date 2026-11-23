@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Captcha {
 
-	const RECAPTCHA_VERIFY = 'https://www.google.com/recaptcha/api/siteverify';
+	const RECAPTCHA_VERIFY = 'https://www.google.com/recaptcha/api/siteverify'; // phpcs:ignore PluginCheck.CodeAnalysis.Offloading.OffloadedContent -- Server-side verification API, not offloaded content.
 	const TURNSTILE_VERIFY = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 	const RECAPTCHA_ACTION = 'launch_forms_submit';
 
@@ -88,7 +88,8 @@ class Captcha {
 	 */
 	public function enqueue( $provider ) {
 		if ( 'turnstile' === $provider ) {
-			wp_enqueue_script( 'launch-forms-turnstile', 'https://challenges.cloudflare.com/turnstile/v0/api.js', array(), null, array( 'in_footer' => true, 'strategy' => 'defer' ) ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion
+			// Turnstile must be loaded from Cloudflare; self-hosting it is not supported. Disclosed in readme.txt.
+			wp_enqueue_script( 'launch-forms-turnstile', 'https://challenges.cloudflare.com/turnstile/v0/api.js', array(), null, array( 'in_footer' => true, 'strategy' => 'defer' ) ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion, PluginCheck.CodeAnalysis.EnqueuedResourceOffloading.OffloadedContent
 			return;
 		}
 		$src    = 'https://www.google.com/recaptcha/api.js';
@@ -97,7 +98,8 @@ class Captcha {
 			$src    = add_query_arg( 'render', rawurlencode( (string) $this->settings->get( 'recaptcha_site_key' ) ), $src );
 			$handle = 'launch-forms-recaptcha-v3';
 		}
-		wp_enqueue_script( $handle, $src, array(), null, array( 'in_footer' => true, 'strategy' => 'defer' ) ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion
+		// reCAPTCHA must be loaded from Google; self-hosting it is not supported. Disclosed in readme.txt.
+		wp_enqueue_script( $handle, $src, array(), null, array( 'in_footer' => true, 'strategy' => 'defer' ) ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion, PluginCheck.CodeAnalysis.EnqueuedResourceOffloading.OffloadedContent
 	}
 
 	/**

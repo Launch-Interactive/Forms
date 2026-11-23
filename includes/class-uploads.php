@@ -195,16 +195,56 @@ class Uploads {
 			return $info;
 		}
 
-		$dir    = $this->get_dir();
+		$dir    = untrailingslashit( $this->get_dir() );
 		$stored = bin2hex( random_bytes( 16 ) );
-		$dest   = $dir . $stored;
 		$tmp    = (string) $file['tmp_name'];
-
-		$moved = is_uploaded_file( $tmp ) ? move_uploaded_file( $tmp, $dest ) : ( $this->is_uploaded_file( $tmp ) && copy( $tmp, $dest ) );
-		if ( ! $moved ) {
+		$real   = is_uploaded_file( $tmp );
+		if ( ! $real && ! $this->is_uploaded_file( $tmp ) ) {
 			return new \WP_Error( 'lf_upload_move', __( 'The file could not be saved.', 'launch-forms' ) );
 		}
-		@chmod( $dest, 0640 ); // phpcs:ignore WordPress.PHP.NoSilencedErrors, WordPress.WP.AlternativeFunctions -- Direct file access is required for private storage.
+
+		// Let WordPress move the file, but into the private folder under a random name with
+		// no extension (the checks above already validated name, type and size).
+		$to_private = static function ( $uploads ) use ( $dir ) {
+			return array_merge(
+				$uploads,
+				array(
+					'path'    => $dir,
+					'url'     => '',
+					'subdir'  => '',
+					'basedir' => $dir,
+					'baseurl' => '',
+					'error'   => false,
+				)
+			);
+		};
+		$overrides  = array(
+			'test_form'                => false,
+			'test_type'                => false,
+			'unique_filename_callback' => static function () use ( $stored ) {
+				return $stored;
+			},
+		);
+		$upload     = array(
+			'name'     => $stored,
+			'type'     => $info['type'],
+			'tmp_name' => $tmp,
+			'error'    => 0,
+			'size'     => (int) ( $file['size'] ?? 0 ),
+		);
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		add_filter( 'upload_dir', $to_private, PHP_INT_MAX );
+		$result = $real ? wp_handle_upload( $upload, $overrides ) : wp_handle_sideload( $upload, $overrides );
+		remove_filter( 'upload_dir', $to_private, PHP_INT_MAX );
+
+		$dest = $dir . '/' . $stored;
+		if ( ! empty( $result['error'] ) || empty( $result['file'] ) || wp_normalize_path( $result['file'] ) !== wp_normalize_path( $dest ) ) {
+			if ( ! empty( $result['file'] ) && file_exists( $result['file'] ) && 0 === strpos( wp_normalize_path( $result['file'] ), wp_normalize_path( $dir ) . '/' ) ) {
+				wp_delete_file( $result['file'] );
+			}
+			return new \WP_Error( 'lf_upload_move', __( 'The file could not be saved.', 'launch-forms' ) );
+		}
+		@chmod( $dest, 0640 ); // phpcs:ignore WordPress.PHP.NoSilencedErrors, WordPress.WP.AlternativeFunctions -- Only the web server needs to read private uploads.
 
 		return array(
 			'file' => $stored,

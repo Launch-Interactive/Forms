@@ -95,7 +95,6 @@ final class Plugin {
 		}
 		$this->booted = true;
 
-		add_action( 'init', array( $this, 'load_textdomain' ) );
 		$this->settings->register_hooks();
 		$this->smtp->register_hooks();
 		$this->forms->register_hooks();
@@ -103,13 +102,6 @@ final class Plugin {
 		$this->frontend->register_hooks();
 		$this->rest->register_hooks();
 		$this->admin->register_hooks();
-	}
-
-	/**
-	 * Load translations.
-	 */
-	public function load_textdomain() {
-		load_plugin_textdomain( 'launch-forms', false, dirname( plugin_basename( LAUNCH_FORMS_FILE ) ) . '/languages' );
 	}
 
 	/**

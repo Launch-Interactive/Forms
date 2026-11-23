@@ -4,7 +4,7 @@ Tags: form, contact form, form builder, mailchimp, turnstile
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.6.2
+Stable tag: 1.6.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -99,6 +99,10 @@ Yes. Forms submit normally when JavaScript isn't available, and conditional logi
 
 == Changelog ==
 
+= 1.6.3 =
+* Changed: uploaded files are saved with WordPress's own upload handler (still private, under random names).
+* Changed: translations load the standard WordPress.org way.
+
 = 1.6.2 =
 * Fix: the Form block's preview now shows changes you haven't saved yet, such as a newly added field.
 
@@ -135,5 +139,5 @@ Yes. Forms submit normally when JavaScript isn't available, and conditional logi
 
 == Upgrade Notice ==
 
-= 1.6.2 =
-The block editor preview now shows unsaved form changes.
+= 1.6.3 =
+Preparation for the WordPress.org plugin directory. No changes to how forms work.

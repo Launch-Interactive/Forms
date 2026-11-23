@@ -111,6 +111,6 @@ class Test_Email {
 		$host    = wp_parse_url( network_home_url(), PHP_URL_HOST );
 		$host    = 0 === strpos( (string) $host, 'www.' ) ? substr( $host, 4 ) : $host;
 		$default = 'wordpress@' . $host;
-		return (string) apply_filters( 'wp_mail_from', $default );
+		return (string) apply_filters( 'wp_mail_from', $default ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Core filter: shows the From address wp_mail() will use.
 	}
 }
