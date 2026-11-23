@@ -101,6 +101,10 @@ class Renderer {
 			'method'       => 'post',
 			'data-lf-form' => $form->id,
 		);
+		if ( '' !== $form->settings['analytics_event'] ) {
+			$attrs['data-lf-event']      = $form->settings['analytics_event'];
+			$attrs['data-lf-event-form'] = $form->title;
+		}
 		if ( $form->has_field_type( 'file' ) ) {
 			$attrs['enctype'] = 'multipart/form-data';
 		}

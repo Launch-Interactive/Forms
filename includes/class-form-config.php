@@ -109,6 +109,7 @@ class Form_Config {
 				'store_submissions'    => true,
 				'hide_form_on_success' => true,
 				'captcha'              => 'none',
+				'analytics_event'      => '',
 			),
 			'notifications' => array(
 				array(
@@ -232,6 +233,7 @@ class Form_Config {
 			'store_submissions'    => self::bool( $settings['store_submissions'] ),
 			'hide_form_on_success' => self::bool( $settings['hide_form_on_success'] ),
 			'captcha'              => 'none', // Legacy: captchas are now fields (migrated above).
+			'analytics_event'      => self::sanitize_event_name( (string) $settings['analytics_event'] ),
 		);
 
 		$notifications = array();
@@ -326,6 +328,19 @@ class Form_Config {
 		}
 
 		return $field;
+	}
+
+	/**
+	 * A Google Analytics 4 event name: letters, numbers and underscores, starting with a
+	 * letter, at most 40 characters. Spaces and other characters become underscores.
+	 *
+	 * @param string $name Raw name.
+	 * @return string Empty when nothing usable is left.
+	 */
+	public static function sanitize_event_name( $name ) {
+		$name = preg_replace( '/[^A-Za-z0-9_]+/', '_', remove_accents( trim( $name ) ) );
+		$name = preg_replace( '/^[^A-Za-z]+/', '', (string) $name );
+		return rtrim( substr( (string) $name, 0, 40 ), '_' );
 	}
 
 	/**

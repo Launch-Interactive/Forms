@@ -1273,6 +1273,17 @@
 						change( 'hide_form_on_success', v );
 					},
 				} ),
+				el( c.TextControl, {
+					__nextHasNoMarginBottom: true,
+					__next40pxDefaultSize: true,
+					label: __( 'Google Analytics event (optional)', 'launch-forms' ),
+					help: __( 'Event name sent to Google Analytics or Google Tag Manager when this form is submitted successfully, e.g. contact_form_submit or generate_lead. It includes form_id and form_name. Your site must already load Google Analytics. Leave empty to send nothing.', 'launch-forms' ),
+					placeholder: 'contact_form_submit',
+					value: s.analytics_event || '',
+					onChange: function ( v ) {
+						change( 'analytics_event', v );
+					},
+				} ),
 				el( c.ToggleControl, {
 					__nextHasNoMarginBottom: true,
 					label: __( 'Save submissions in WordPress', 'launch-forms' ),

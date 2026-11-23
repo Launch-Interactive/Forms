@@ -310,4 +310,30 @@ class RendererTest extends LF_TestCase {
 		);
 		$this->assertStringEndsWith( '<!-- filtered -->', $this->render( $this->contact_form() ) );
 	}
+
+	public function test_analytics_event_is_added_to_the_form_only_when_set() {
+		$form = $this->contact_form();
+		$this->assertStringNotContainsString( 'data-lf-event', launch_forms()->renderer->render( $form ) );
+
+		$form = $this->contact_form( array( 'settings' => array( 'analytics_event' => 'contact_form_submit' ) ) );
+		launch_forms()->renderer->reset();
+		$html = launch_forms()->renderer->render( $form );
+		$this->assertStringContainsString( 'data-lf-event="contact_form_submit"', $html );
+		$this->assertStringContainsString( 'data-lf-event-form="Contact"', $html );
+	}
+
+	public function test_analytics_event_names_are_cleaned_to_ga4_rules() {
+		$clean = static function ( $name ) {
+			return \LaunchForms\Form_Config::sanitize_event_name( $name );
+		};
+		$this->assertSame( 'contact_form_submit', $clean( 'contact_form_submit' ) );
+		$this->assertSame( 'Contact_form_submit', $clean( ' Contact form submit! ' ) );
+		$this->assertSame( 'form_sent', $clean( '123 form-sent' ), 'Must start with a letter.' );
+		$this->assertSame( 'cafe_signup', $clean( 'café signup' ), 'Accents removed.' );
+		$this->assertSame( 40, strlen( $clean( str_repeat( 'a', 60 ) ) ) );
+		$this->assertSame( '', $clean( '!!!' ) );
+
+		$form = $this->contact_form( array( 'settings' => array( 'analytics_event' => 'Lead "form" <b>' ) ) );
+		$this->assertSame( 'Lead_form_b', $form->settings['analytics_event'] );
+	}
 }

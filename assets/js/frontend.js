@@ -199,6 +199,43 @@
 		}
 	}
 
+	/**
+	 * Send the form's analytics event, if it has one, to gtag.js or Google Tag Manager.
+	 * Calls `done` once the event is sent (or after a short wait), so a redirect doesn't
+	 * cut it off.
+	 */
+	function track( form, done ) {
+		var finished = false;
+		var finish = function () {
+			if ( ! finished ) {
+				finished = true;
+				done();
+			}
+		};
+		var name = form.getAttribute( 'data-lf-event' );
+		var params = {
+			form_id: form.getAttribute( 'data-lf-form' ),
+			form_name: form.getAttribute( 'data-lf-event-form' ) || '',
+		};
+		var sent = false;
+		try {
+			if ( name && typeof window.gtag === 'function' ) {
+				window.gtag( 'event', name, Object.assign( {}, params, { event_callback: finish, event_timeout: 1000 } ) );
+				sent = true;
+			} else if ( name && window.dataLayer && typeof window.dataLayer.push === 'function' ) {
+				window.dataLayer.push( Object.assign( { event: name }, params, { eventCallback: finish, eventTimeout: 1000 } ) );
+				sent = true;
+			}
+		} catch ( e ) {
+			sent = false;
+		}
+		if ( sent ) {
+			window.setTimeout( finish, 1200 ); // Blocked or slow analytics never hold the visitor up for long.
+		} else {
+			finish();
+		}
+	}
+
 	function submit( form, event ) {
 		if ( ! window.fetch || ! window.FormData || ! config.restUrl ) {
 			return; // Fall back to a normal POST.
@@ -232,9 +269,12 @@
 				setBusy( form, false );
 				if ( data && data.success ) {
 					if ( data.redirect ) {
-						window.launchForms.navigate( data.redirect );
+						track( form, function () {
+							window.launchForms.navigate( data.redirect );
+						} );
 						return;
 					}
+					track( form, function () {} );
 					form.dispatchEvent( new window.CustomEvent( 'launch-forms:success', { bubbles: true, detail: data } ) );
 					if ( data.hide_form ) {
 						var box = document.createElement( 'div' );

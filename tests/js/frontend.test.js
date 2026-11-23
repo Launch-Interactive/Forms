@@ -198,3 +198,85 @@ test( 'logged-in nonce header is sent when present', async () => {
 	await flush();
 	assert.equal( headers[ 'X-WP-Nonce' ], 'abc123' );
 } );
+
+/* Analytics events */
+
+function withEvent( form, name ) {
+	form.setAttribute( 'data-lf-event', name );
+	form.setAttribute( 'data-lf-event-form', 'Contact us' );
+}
+
+const submitOk = ( window, form ) => {
+	form.dispatchEvent( new window.Event( 'submit', { cancelable: true } ) );
+	return flush();
+};
+
+test( 'analytics: gtag receives the event with form_id and form_name on success', async () => {
+	const { window, form } = setup( () => jsonResponse( 200, { success: true, message: 'Thanks', hide_form: true } ) );
+	withEvent( form, 'contact_form_submit' );
+	const calls = [];
+	window.gtag = ( ...args ) => calls.push( args );
+	await submitOk( window, form );
+	assert.equal( calls.length, 1 );
+	assert.equal( calls[ 0 ][ 0 ], 'event' );
+	assert.equal( calls[ 0 ][ 1 ], 'contact_form_submit' );
+	assert.equal( calls[ 0 ][ 2 ].form_id, '7' );
+	assert.equal( calls[ 0 ][ 2 ].form_name, 'Contact us' );
+} );
+
+test( 'analytics: Google Tag Manager dataLayer is used when gtag is absent', async () => {
+	const { window, form } = setup( () => jsonResponse( 200, { success: true, message: 'Thanks' } ) );
+	withEvent( form, 'generate_lead' );
+	window.dataLayer = [];
+	await submitOk( window, form );
+	assert.equal( window.dataLayer.length, 1 );
+	assert.equal( window.dataLayer[ 0 ].event, 'generate_lead' );
+	assert.equal( window.dataLayer[ 0 ].form_id, '7' );
+} );
+
+test( 'analytics: nothing is sent when the form has no event or the submission fails', async () => {
+	const ok = setup( () => jsonResponse( 200, { success: true, message: 'Thanks' } ) );
+	const calls = [];
+	ok.window.gtag = ( ...args ) => calls.push( args );
+	await submitOk( ok.window, ok.form );
+	assert.equal( calls.length, 0, 'No event configured.' );
+
+	const bad = setup( () => jsonResponse( 422, { success: false, message: 'Fix', errors: { email: 'Bad' } } ) );
+	withEvent( bad.form, 'contact_form_submit' );
+	bad.window.gtag = ( ...args ) => calls.push( args );
+	await submitOk( bad.window, bad.form );
+	assert.equal( calls.length, 0, 'Failed submissions are not counted.' );
+} );
+
+test( 'analytics: a redirect waits for the event to be sent', async () => {
+	const { window, form } = setup( () => jsonResponse( 200, { success: true, redirect: 'https://example.org/thanks/' } ) );
+	withEvent( form, 'contact_form_submit' );
+	let callback = null;
+	window.gtag = ( type, name, params ) => {
+		callback = params.event_callback;
+	};
+	let assigned = null;
+	window.launchForms.navigate = ( url ) => {
+		assigned = url;
+	};
+	await submitOk( window, form );
+	assert.equal( assigned, null, 'Not yet: GA has not confirmed.' );
+	callback();
+	assert.equal( assigned, 'https://example.org/thanks/' );
+	callback();
+	assert.equal( assigned, 'https://example.org/thanks/', 'Navigates only once.' );
+} );
+
+test( 'analytics: blocked analytics delays a redirect by at most about a second', async () => {
+	const { window, form } = setup( () => jsonResponse( 200, { success: true, redirect: 'https://example.org/thanks/' } ) );
+	withEvent( form, 'contact_form_submit' );
+	window.gtag = () => {}; // Stub left behind by an ad blocker: never calls back.
+	let assigned = null;
+	window.launchForms.navigate = ( url ) => {
+		assigned = url;
+	};
+	await submitOk( window, form );
+	assert.equal( assigned, null );
+	await new Promise( ( resolve ) => setTimeout( resolve, 1300 ) );
+	assert.equal( assigned, 'https://example.org/thanks/' );
+} );

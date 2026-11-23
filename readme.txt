@@ -4,7 +4,7 @@ Tags: form, contact form, form builder, mailchimp, turnstile
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.6.3
+Stable tag: 1.7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -34,6 +34,7 @@ Launch Forms is a form builder for people who want forms that look like the rest
 * Email notifications, as many per form as you need, with merge tags such as `{field:email}` and `{all_fields}`. Send autoresponders to the visitor.
 * Success messages can use merge tags too: "A confirmation email was sent to {field:email}."
 * Add subscribers to a Mailchimp audience, with merge fields, tags, double opt-in and an optional consent checkbox.
+* Track submissions in Google Analytics: give a form an event name (e.g. `contact_form_submit`) and every successful submission is sent to Google Analytics or Google Tag Manager, with the form's ID and name. No code needed.
 * Optional SMTP settings send all of your site's email through your email provider. The password is stored encrypted.
 * A test email tool shows exactly why sending failed.
 
@@ -73,6 +74,11 @@ If your site runs on nginx, block web access to `wp-content/uploads/launch-forms
 
 == Frequently Asked Questions ==
 
+= How do I track submissions in Google Analytics? =
+
+Open the form, go to the Settings tab and enter a **Google Analytics event** name, such as `contact_form_submit` or GA4's recommended `generate_lead`. Each successful submission then calls `gtag( 'event', 'contact_form_submit', { form_id, form_name } )`, or pushes the same event to the Google Tag Manager `dataLayer` if your site uses GTM. Launch Forms doesn't add Google Analytics itself, so your site needs to load it already (for example through Site Kit or your theme). To report on it, mark the event as a key event in Google Analytics, or add a Custom Event trigger in Tag Manager.
+
+
 = Why doesn't the form have its own styling? =
 
 On purpose. Launch Forms uses your theme's styles for inputs, labels and buttons, so forms match your site without extra CSS. A tiny structural stylesheet handles layout (side-by-side fields, error messages) and can be turned off under Forms → Settings.
@@ -98,6 +104,9 @@ Yes. Under Forms → Settings, change the `*` to anything you like, for example 
 Yes. Forms submit normally when JavaScript isn't available, and conditional logic is still applied on the server.
 
 == Changelog ==
+
+= 1.7.0 =
+* New: send a Google Analytics (gtag.js) or Google Tag Manager event when a form is submitted, set per form with no code.
 
 = 1.6.3 =
 * Changed: uploaded files are saved with WordPress's own upload handler (still private, under random names).
@@ -139,5 +148,5 @@ Yes. Forms submit normally when JavaScript isn't available, and conditional logi
 
 == Upgrade Notice ==
 
-= 1.6.3 =
-Preparation for the WordPress.org plugin directory. No changes to how forms work.
+= 1.7.0 =
+Adds Google Analytics and Google Tag Manager events for form submissions.
