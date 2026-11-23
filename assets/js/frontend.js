@@ -236,6 +236,42 @@
 		}
 	}
 
+	var BLOCKED = {};
+
+	/**
+	 * Whether a REST response was refused before it reached Launch Forms. Launch Forms' own
+	 * replies always say whether the submission succeeded, and its errors use `lf_` codes.
+	 */
+	function blocked( status, data ) {
+		if ( [ 401, 403, 404, 405 ].indexOf( status ) === -1 ) {
+			return false;
+		}
+		if ( data && typeof data === 'object' && ( typeof data.success === 'boolean' || /^lf_/.test( String( data.code || '' ) ) ) ) {
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * After a no-JavaScript-style submission, the page reloads with ?lf_sent=ID and the success
+	 * message carries the form's analytics event: send it, then tidy the address so a reload
+	 * doesn't count the submission again.
+	 */
+	function trackSent( root ) {
+		var sent = ( root || document ).querySelector( '.lf-message[data-lf-sent][data-lf-event]' );
+		if ( ! sent ) {
+			return;
+		}
+		sent.removeAttribute( 'data-lf-sent' );
+		track( sent, function () {} );
+		try {
+			var url = new window.URL( window.location.href );
+			url.searchParams.delete( 'lf_sent' );
+			url.searchParams.delete( 'lf_msg' );
+			window.history.replaceState( window.history.state, '', url.toString() );
+		} catch ( e ) {}
+	}
+
 	function submit( form, event ) {
 		if ( ! window.fetch || ! window.FormData || ! config.restUrl ) {
 			return; // Fall back to a normal POST.
@@ -261,11 +297,23 @@
 				} );
 			} )
 			.then( function ( response ) {
-				return response.json().catch( function () {
-					return { success: false, message: config.i18n && config.i18n.error };
-				} );
+				return response
+					.json()
+					.catch( function () {
+						return null;
+					} )
+					.then( function ( data ) {
+						return blocked( response.status, data ) ? BLOCKED : data || { success: false, message: config.i18n && config.i18n.error };
+					} );
 			} )
 			.then( function ( data ) {
+				if ( data === BLOCKED ) {
+					// The site, a security plugin or a firewall refused the REST request before it
+					// reached Launch Forms (e.g. "REST API for logged-in users only"). The form works
+					// without JavaScript, so send it the ordinary way. The captcha token is unused.
+					window.launchForms.submitNatively( form );
+					return;
+				}
 				setBusy( form, false );
 				if ( data && data.success ) {
 					if ( data.redirect ) {
@@ -308,6 +356,7 @@
 	}
 
 	function init( root ) {
+		trackSent( root );
 		Array.prototype.forEach.call( ( root || document ).querySelectorAll( 'form.lf-form' ), function ( form ) {
 			if ( form.__launchForms ) {
 				return;
@@ -332,6 +381,9 @@
 	window.launchForms.collectValues = collectValues;
 	window.launchForms.navigate = function ( url ) {
 		window.location.assign( url );
+	};
+	window.launchForms.submitNatively = function ( form ) {
+		window.HTMLFormElement.prototype.submit.call( form ); // Skips the submit event, so no loop.
 	};
 
 	if ( document.readyState === 'loading' ) {

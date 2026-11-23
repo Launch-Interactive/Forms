@@ -336,4 +336,28 @@ class RendererTest extends LF_TestCase {
 		$form = $this->contact_form( array( 'settings' => array( 'analytics_event' => 'Lead "form" <b>' ) ) );
 		$this->assertSame( 'Lead_form_b', $form->settings['analytics_event'] );
 	}
+
+	public function test_success_page_after_a_normal_submit_carries_the_analytics_event() {
+		$form            = $this->contact_form( array( 'settings' => array( 'analytics_event' => 'contact_form_submit' ) ) );
+		$_GET['lf_sent'] = (string) $form->id;
+		$html            = $this->render( $form );
+		$this->assertMatchesRegularExpression( '#<div id="lf-form-' . $form->id . '" class="lf-message lf-message--success" role="status" data-lf-sent data-lf-form="' . $form->id . '" data-lf-event="contact_form_submit" data-lf-event-form="Contact">#', $html );
+
+		$form = $this->contact_form( array( 'settings' => array( 'analytics_event' => 'contact_form_submit', 'hide_form_on_success' => false ) ) );
+		launch_forms()->renderer->reset();
+		$_GET['lf_sent'] = (string) $form->id;
+		$html            = $this->render( $form );
+		unset( $_GET['lf_sent'] );
+		$this->assertMatchesRegularExpression( '#<div class="lf-message lf-message--success" role="status" data-lf-sent [^>]*data-lf-event="contact_form_submit"#', $html, 'Also when the form stays visible.' );
+		$this->assertSame( 1, substr_count( $html, 'data-lf-sent' ) );
+	}
+
+	public function test_success_page_without_an_analytics_event_has_no_marker() {
+		$form            = $this->contact_form();
+		$_GET['lf_sent'] = (string) $form->id;
+		$html            = $this->render( $form );
+		unset( $_GET['lf_sent'] );
+		$this->assertStringNotContainsString( 'data-lf-sent', $html );
+		$this->assertStringNotContainsString( 'data-lf-event', $html );
+	}
 }

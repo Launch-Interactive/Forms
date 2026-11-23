@@ -82,10 +82,21 @@ class Renderer {
 		// Success after a non-JavaScript (redirected) submission.
 		$sent    = isset( $_GET['lf_sent'] ) && (int) $_GET['lf_sent'] === $form->id; // phpcs:ignore WordPress.Security.NonceVerification
 		$message = '';
+		$message_attrs = array(
+			'class' => 'lf-message lf-message--success',
+			'role'  => 'status',
+		);
 		if ( $sent || ( $result && $result->success ) ) {
 			$message = $result && $result->success ? $this->success_message( $form, $result ) : $this->redirected_message( $form );
+			if ( $sent && '' !== $form->settings['analytics_event'] ) {
+				// frontend.js sends the analytics event for a submission that didn't go through JavaScript.
+				$message_attrs['data-lf-sent']       = true;
+				$message_attrs['data-lf-form']       = $form->id;
+				$message_attrs['data-lf-event']      = $form->settings['analytics_event'];
+				$message_attrs['data-lf-event-form'] = $form->title;
+			}
 			if ( $form->settings['hide_form_on_success'] ) {
-				return '<div id="' . esc_attr( $html_id ) . '" class="lf-message lf-message--success" role="status">' . $message . '</div>';
+				return '<div' . self::attrs( array( 'id' => $html_id ) + $message_attrs ) . '>' . $message . '</div>';
 			}
 			$result = null; // Show a fresh form below the message.
 		}
@@ -112,7 +123,7 @@ class Renderer {
 		$html = '<form' . self::attrs( $attrs ) . '>';
 
 		if ( '' !== $message ) {
-			$html .= '<div class="lf-message lf-message--success" role="status">' . $message . '</div>';
+			$html .= '<div' . self::attrs( $message_attrs ) . '>' . $message . '</div>';
 		} elseif ( $result && ! $result->success ) {
 			$html .= '<div class="lf-message lf-message--error" role="alert">' . esc_html( $result->message ) . '</div>';
 		}

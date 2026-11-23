@@ -40,14 +40,17 @@ const FORM = `
 	<div class="lf-submit"><button type="submit" class="wp-element-button">Send</button></div>
 </form>`;
 
-function setup( fetchImpl ) {
-	const dom = new JSDOM( `<!doctype html><html><body><main>${ FORM }</main></body></html>`, {
+function setup( fetchImpl, options = {} ) {
+	const dom = new JSDOM( `<!doctype html><html><body><main>${ options.html || FORM }</main></body></html>`, {
 		runScripts: 'outside-only',
-		url: 'https://example.org/contact/',
+		url: options.url || 'https://example.org/contact/',
 	} );
 	const { window } = dom;
 	window.launchFormsConfig = { restUrl: 'https://example.org/wp-json/launch-forms/v1/forms/', i18n: { error: 'Oops' } };
 	window.fetch = fetchImpl || ( () => Promise.reject( new Error( 'no fetch' ) ) );
+	if ( options.beforeInit ) {
+		options.beforeInit( window );
+	}
 	window.eval( logicSrc );
 	window.eval( frontendSrc );
 	window.launchForms.init(); // jsdom is still "loading" here; init is idempotent.
@@ -279,4 +282,72 @@ test( 'analytics: blocked analytics delays a redirect by at most about a second'
 	assert.equal( assigned, null );
 	await new Promise( ( resolve ) => setTimeout( resolve, 1300 ) );
 	assert.equal( assigned, 'https://example.org/thanks/' );
+} );
+
+/* REST API blocked for visitors (security plugins, "logged-in users only" snippets, firewalls) */
+
+function blockedSetup( status, body ) {
+	const native = [];
+	const ctx = setup( () =>
+		Promise.resolve( {
+			ok: false,
+			status,
+			json: () => ( body === undefined ? Promise.reject( new SyntaxError( 'Not JSON' ) ) : Promise.resolve( body ) ),
+		} )
+	);
+	ctx.window.launchForms.submitNatively = ( form ) => native.push( form );
+	return { ...ctx, native };
+}
+
+test( 'blocked REST request falls back to a normal submit', async () => {
+	const { window, form, native } = blockedSetup( 401, { code: 'rest_not_logged_in', message: 'You are not currently logged in.', data: { status: 401 } } );
+	withEvent( form, 'contact_form_submit' );
+	const calls = [];
+	window.gtag = ( ...args ) => calls.push( args );
+	await submitOk( window, form );
+	assert.deepEqual( native, [ form ], 'Submitted the ordinary way.' );
+	assert.equal( form.querySelector( '.lf-message' ), null, 'The REST error is not shown.' );
+	assert.equal( form.getAttribute( 'aria-busy' ), 'true', 'Stays busy while the page submits.' );
+	assert.equal( calls.length, 0, 'No analytics event yet: the submission has not been processed.' );
+} );
+
+test( 'a firewall page (not JSON) also falls back', async () => {
+	const { window, form, native } = blockedSetup( 403 );
+	await submitOk( window, form );
+	assert.equal( native.length, 1 );
+} );
+
+test( 'Launch Forms errors are shown, not retried', async () => {
+	const missing = blockedSetup( 404, { code: 'lf_form_not_found', message: 'Form not found.', data: { status: 404 } } );
+	await submitOk( missing.window, missing.form );
+	assert.equal( missing.native.length, 0 );
+	assert.equal( missing.form.querySelector( '.lf-message--error' ).textContent, 'Form not found.' );
+
+	const limited = blockedSetup( 403, { success: false, message: 'Too many submissions.', errors: {} } );
+	await submitOk( limited.window, limited.form );
+	assert.equal( limited.native.length, 0 );
+	assert.equal( limited.form.querySelector( '.lf-message--error' ).textContent, 'Too many submissions.' );
+
+	const server = blockedSetup( 500 );
+	await submitOk( server.window, server.form );
+	assert.equal( server.native.length, 0, 'A server error may have happened after processing, so never resubmit.' );
+	assert.equal( server.form.querySelector( '.lf-message--error' ).textContent, 'Oops' );
+} );
+
+test( 'analytics: the event is sent on the page shown after a normal submit', () => {
+	const calls = [];
+	const { window, document } = setup( null, {
+		url: 'https://example.org/contact/?lf_sent=7&lf_msg=abc&utm_source=x#lf-form-7',
+		html: '<div id="lf-form-7" class="lf-message lf-message--success" role="status" data-lf-sent data-lf-form="7" data-lf-event="contact_form_submit" data-lf-event-form="Contact us"><p>Thanks!</p></div>',
+		beforeInit: ( w ) => {
+			w.gtag = ( ...args ) => calls.push( args );
+		},
+	} );
+	assert.equal( calls.length, 1 );
+	assert.equal( calls[ 0 ][ 1 ], 'contact_form_submit' );
+	assert.equal( calls[ 0 ][ 2 ].form_id, '7' );
+	assert.equal( calls[ 0 ][ 2 ].form_name, 'Contact us' );
+	assert.equal( window.location.href, 'https://example.org/contact/?utm_source=x#lf-form-7', 'A reload does not count it again.' );
+	window.launchForms.init( document );
+	assert.equal( calls.length, 1, 'Sent once.' );
 } );

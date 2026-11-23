@@ -4,7 +4,7 @@ Tags: form, contact form, form builder, mailchimp, turnstile
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.7.1
+Stable tag: 1.7.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -99,11 +99,19 @@ Yes. Any setting can be defined in wp-config.php, e.g. `define( 'LAUNCH_FORMS_MA
 
 Yes. Under Forms → Settings, change the `*` to anything you like, for example "(required)", or leave it empty.
 
+= My site blocks the REST API for visitors. Do forms still work? =
+
+Yes. Forms normally send without reloading the page, through the WordPress REST API. If your site or a security plugin refuses that request, the form is sent the ordinary way instead and the page reloads with the result. To keep forms sending without a reload, allow the `launch-forms/v1` routes in your REST API restriction.
+
 = Does it work without JavaScript? =
 
 Yes. Forms submit normally when JavaScript isn't available, and conditional logic is still applied on the server.
 
 == Changelog ==
+
+= 1.7.2 =
+* Fix: forms work on sites that block the WordPress REST API for visitors (for example with a security plugin), instead of showing "You are not currently logged in." The form is sent the ordinary way.
+* Fix: Google Analytics events are also sent for forms submitted without JavaScript.
 
 = 1.7.1 =
 * Improved: the conditional logic script loads only on forms that use conditional logic, and no longer delays the page.
@@ -151,5 +159,5 @@ Yes. Forms submit normally when JavaScript isn't available, and conditional logi
 
 == Upgrade Notice ==
 
-= 1.7.1 =
-Loads less JavaScript on forms that don't use conditional logic.
+= 1.7.2 =
+Fixes forms on sites that block the REST API for visitors.
