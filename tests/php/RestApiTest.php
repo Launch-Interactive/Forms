@@ -87,6 +87,52 @@ class RestApiTest extends LF_TestCase {
 		$this->assertSame( 200, $response->get_status(), wp_json_encode( $response->get_data() ) );
 	}
 
+	private function preview( $form_id, $config, $class = '' ) {
+		$request = new WP_REST_Request( 'POST', '/launch-forms/v1/forms/' . $form_id . '/preview' );
+		$request->set_body_params( array( 'config' => is_string( $config ) ? $config : wp_json_encode( $config ), 'className' => $class ) );
+		return $this->server->dispatch( $request );
+	}
+
+	public function test_block_preview_renders_unsaved_changes_without_saving() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
+		$form   = $this->contact_form();
+		$config = array(
+			'fields' => array_merge( $form->fields, array( $this->field( 'text', 'company', array( 'label' => 'Company' ) ) ) ),
+		);
+
+		$response = $this->preview( $form->id, $config, 'is-style-wide bad"class' );
+		$this->assertSame( 200, $response->get_status() );
+		$html = $response->get_data()['html'];
+		$this->assertStringContainsString( 'name="lf[company]"', $html, 'The field added in the editor shows.' );
+		$this->assertStringContainsString( 'class="lf-form wp-block-launch-forms-form is-style-wide badclass"', $html );
+
+		$saved = launch_forms()->forms->get( $form->id );
+		$this->assertNull( $saved->get_field( 'company' ), 'Nothing is saved.' );
+		$this->assertStringNotContainsString( 'lf[company]', launch_forms()->renderer->render( $saved ) );
+	}
+
+	public function test_block_preview_sanitises_the_config() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
+		$form = $this->contact_form();
+		$html = $this->preview( $form->id, array( 'fields' => array( array( 'type' => 'content', 'content' => '<p>Hi</p><script>alert(1)</script>' ) ) ) )->get_data()['html'];
+		$this->assertStringContainsString( '<p>Hi</p>', $html );
+		$this->assertStringNotContainsString( '<script>', $html );
+		$this->assertSame( 200, $this->preview( $form->id, 'not json' )->get_status(), 'Bad JSON gives an empty form, not an error.' );
+	}
+
+	public function test_block_preview_requires_permission_to_edit_the_form() {
+		$form = $this->contact_form();
+		$this->assertSame( 401, $this->preview( $form->id, array() )->get_status() );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'author' ) ) );
+		$this->assertSame( 403, $this->preview( $form->id, array() )->get_status(), 'Authors cannot edit forms.' );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$page = self::factory()->post->create( array( 'post_type' => 'page' ) );
+		$this->assertSame( 403, $this->preview( $page, array() )->get_status(), 'Only forms can be previewed.' );
+		$this->assertSame( 403, $this->preview( 999999, array() )->get_status() );
+	}
+
 	public function test_mailchimp_lists_requires_permission() {
 		$request = new WP_REST_Request( 'GET', '/launch-forms/v1/mailchimp/lists' );
 		$this->assertSame( 401, $this->server->dispatch( $request )->get_status() );

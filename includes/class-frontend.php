@@ -70,7 +70,7 @@ class Frontend {
 		wp_register_script(
 			'launch-forms-block-editor',
 			LAUNCH_FORMS_URL . 'assets/js/block.js',
-			array( 'wp-blocks', 'wp-element', 'wp-components', 'wp-block-editor', 'wp-data', 'wp-core-data', 'wp-server-side-render', 'wp-i18n', 'launch-forms-builder' ),
+			array( 'wp-blocks', 'wp-element', 'wp-components', 'wp-block-editor', 'wp-data', 'wp-core-data', 'wp-server-side-render', 'wp-i18n', 'wp-api-fetch', 'launch-forms-builder' ),
 			$ver,
 			true
 		);

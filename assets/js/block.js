@@ -11,6 +11,8 @@
 	var el = wp.element.createElement;
 	var Fragment = wp.element.Fragment;
 	var useState = wp.element.useState;
+	var useEffect = wp.element.useEffect;
+	var RawHTML = wp.element.RawHTML;
 	var __ = wp.i18n.__;
 	var c = wp.components;
 	var be = wp.blockEditor;
@@ -75,6 +77,71 @@
 				},
 			} )
 		);
+	}
+
+	/**
+	 * The form as it will look, including changes not saved yet. The server renders the
+	 * builder's current (edited) configuration; ServerSideRender would show the saved form.
+	 */
+	function Preview( props ) {
+		var formId = props.formId;
+		var info = useSelect(
+			function ( select ) {
+				var store = select( 'core' );
+				var args = [ 'postType', TYPE, formId ];
+				return {
+					record: store.getEditedEntityRecord.apply( null, args ),
+					resolved: store.hasFinishedResolution( 'getEntityRecord', args ),
+				};
+			},
+			[ formId ]
+		);
+		var config = info.record && info.record.meta ? info.record.meta[ META ] : undefined;
+		var state = useState( { html: null, error: '' } );
+		var setState = state[ 1 ];
+
+		useEffect(
+			function () {
+				if ( typeof config !== 'string' ) {
+					return undefined;
+				}
+				var cancelled = false;
+				var timer = setTimeout( function () {
+					wp.apiFetch( {
+						path: '/launch-forms/v1/forms/' + formId + '/preview',
+						method: 'POST',
+						data: { config: config, className: props.className || '' },
+					} )
+						.then( function ( response ) {
+							if ( ! cancelled ) {
+								setState( { html: response.html, error: '' } );
+							}
+						} )
+						.catch( function ( err ) {
+							if ( ! cancelled ) {
+								setState( { html: null, error: ( err && err.message ) || __( 'Could not load the preview.', 'launch-forms' ) } );
+							}
+						} );
+				}, 250 );
+				return function () {
+					cancelled = true;
+					clearTimeout( timer );
+				};
+			},
+			[ formId, config, props.className ]
+		);
+
+		// Form missing or not readable: let the server explain.
+		if ( info.resolved && ! info.record ) {
+			return el( c.Disabled, null, el( ServerSideRender, { block: 'launch-forms/form', attributes: { formId: formId } } ) );
+		}
+		if ( state[ 0 ].error ) {
+			return el( c.Notice, { status: 'error', isDismissible: false }, state[ 0 ].error );
+		}
+		if ( state[ 0 ].html === null ) {
+			return el( c.Spinner );
+		}
+		return el( c.Disabled, null, el( RawHTML, null, state[ 0 ].html ) );
 	}
 
 	function Edit( props ) {
@@ -215,11 +282,7 @@
 		} else if ( mode === 'edit' ) {
 			body = el( FormEditor, { formId: formId } );
 		} else {
-			body = el(
-				c.Disabled,
-				null,
-				el( ServerSideRender, { block: 'launch-forms/form', attributes: { formId: formId } } )
-			);
+			body = el( Preview, { formId: formId, className: props.attributes.className } );
 		}
 
 		return el( 'div', blockProps, toolbar, inspector, body );

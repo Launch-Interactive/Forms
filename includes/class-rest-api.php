@@ -57,6 +57,33 @@ class Rest_Api {
 
 		register_rest_route(
 			self::NS,
+			'/forms/(?P<id>\d+)/preview',
+			array(
+				'methods'             => \WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'preview' ),
+				'permission_callback' => static function ( \WP_REST_Request $request ) {
+					$post = get_post( (int) $request['id'] );
+					return $post && Forms::POST_TYPE === $post->post_type && current_user_can( 'edit_post', $post->ID );
+				},
+				'args'                => array(
+					'id'        => array(
+						'type'     => 'integer',
+						'required' => true,
+					),
+					'config'    => array(
+						'type'     => 'string',
+						'required' => true,
+					),
+					'className' => array(
+						'type'    => 'string',
+						'default' => '',
+					),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NS,
 			'/mailchimp/lists',
 			array(
 				'methods'             => \WP_REST_Server::READABLE,
@@ -66,6 +93,20 @@ class Rest_Api {
 				},
 			)
 		);
+	}
+
+	/**
+	 * Render a form from the block editor's unsaved configuration, so the block preview
+	 * shows changes before the page is saved. Nothing is stored.
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 * @return \WP_REST_Response
+	 */
+	public function preview( \WP_REST_Request $request ) {
+		$id    = (int) $request['id'];
+		$form  = new Form( $id, get_the_title( $id ), (string) $request['config'] );
+		$class = implode( ' ', array_filter( array_map( 'sanitize_html_class', preg_split( '/\s+/', 'wp-block-launch-forms-form ' . $request['className'] ) ) ) );
+		return rest_ensure_response( array( 'html' => $this->plugin->renderer->render( $form, array( 'class' => $class ) ) ) );
 	}
 
 	/**
