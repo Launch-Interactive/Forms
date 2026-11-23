@@ -14,8 +14,9 @@ defined( 'ABSPATH' ) || exit;
  */
 class Captcha {
 
-	const RECAPTCHA_VERIFY = 'https://www.google.com/recaptcha/api/siteverify'; // phpcs:ignore PluginCheck.CodeAnalysis.Offloading.OffloadedContent -- Server-side verification API, not offloaded content.
-	const TURNSTILE_VERIFY = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+	// Server-side verification APIs, called with wp_remote_post(); nothing is loaded in the browser from these.
+	const RECAPTCHA_VERIFY = 'https://www.google.com/recaptcha/api/siteverify';
+	const TURNSTILE_VERIFY = 'https://challenges.cloudflare.com/turnstile/v0/siteverify'; // phpcs:ignore PluginCheck.CodeAnalysis.Offloading.OffloadedContent
 	const RECAPTCHA_ACTION = 'launch_forms_submit';
 
 	/** @var Settings */
