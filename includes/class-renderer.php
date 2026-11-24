@@ -128,14 +128,12 @@ class Renderer {
 			$html .= '<div class="lf-message lf-message--error" role="alert">' . esc_html( $result->message ) . '</div>';
 		}
 
-		$html              .= '<div class="lf-fields">';
 		$this->current_form = $form;
 		foreach ( $form->fields as $field ) {
 			$value = array_key_exists( $field['name'], $values ) ? $values[ $field['name'] ] : null;
 			$html .= $this->render_field( $field, $prefix, $value, $errors[ $field['name'] ] ?? '', $visibility[ $field['name'] ] ?? true );
 		}
 		$this->current_form = null;
-		$html              .= '</div>';
 
 		$html .= $this->honeypot( $prefix );
 		$html .= '<input type="hidden" name="lf_form_id" value="' . esc_attr( $form->id ) . '">';

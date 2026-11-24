@@ -4,7 +4,7 @@ Tags: form, contact form, form builder, mailchimp, turnstile
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.7.3
+Stable tag: 1.8.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -109,6 +109,9 @@ Yes. Forms submit normally when JavaScript isn't available, and conditional logi
 
 == Changelog ==
 
+= 1.8.0 =
+* Changed: simpler form markup. Fields sit directly in the form, without the `lf-fields` wrapper, and the submit button follows them as the last item. The form is laid out with CSS grid (12 columns).
+
 = 1.7.3 =
 * Changed: fields are spaced with CSS gap instead of margins. Adjust the spacing with the `--lf-row-gap` and `--lf-gap` CSS variables.
 
@@ -162,5 +165,5 @@ Yes. Forms submit normally when JavaScript isn't available, and conditional logi
 
 == Upgrade Notice ==
 
-= 1.7.3 =
-Fields are now spaced with CSS gap. If your theme added margins to Launch Forms fields, check the spacing.
+= 1.8.0 =
+The `lf-fields` wrapper is gone and forms use CSS grid. If your theme styles `.lf-fields`, move those styles to `.lf-form`.

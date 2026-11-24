@@ -35,7 +35,7 @@ class RendererTest extends LF_TestCase {
 		$this->assertSame( 'Submit', trim( $x->query( '//button[@type="submit"]' )->item( 0 )->textContent ) );
 	}
 
-	public function test_fields_are_wrapped_and_carry_their_width() {
+	public function test_fields_sit_directly_in_the_form_and_carry_their_width() {
 		$form = $this->make_form(
 			array(
 				$this->field( 'text', 'first', array( 'width' => 'half' ) ),
@@ -44,10 +44,12 @@ class RendererTest extends LF_TestCase {
 			)
 		);
 		$x = $this->dom( $this->render( $form ) );
-		$this->assertSame( 3, $x->query( '//form/div[@class="lf-fields"]/div[contains(@class,"lf-field ")]' )->length );
+		$this->assertSame( 3, $x->query( '//form/div[contains(@class,"lf-field ")]' )->length, 'Fields are direct children of the form (no wrapper).' );
+		$this->assertSame( 0, $x->query( '//div[@class="lf-fields"]' )->length );
 		$this->assertSame( 2, $x->query( '//div[contains(concat(" ",@class," ")," lf-field--half ")]' )->length );
 		$this->assertSame( 0, $x->query( '//div[contains(@class,"lf-field--full")]' )->length, 'Full width is the default and adds no class.' );
-		$this->assertSame( 0, $x->query( '//div[@class="lf-fields"]//button' )->length, 'Submit button stays outside the field row.' );
+		$items = $x->query( '//form/div[not(contains(@class,"lf-hp"))]' );
+		$this->assertSame( 'lf-submit', $items->item( $items->length - 1 )->getAttribute( 'class' ), 'The submit button is the last item, after the fields.' );
 	}
 
 	public function test_labels_are_associated_with_inputs() {

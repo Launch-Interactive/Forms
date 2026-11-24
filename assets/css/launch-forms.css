@@ -1,40 +1,38 @@
 /*
  * Launch Forms — structural CSS only; looks come from the theme. Can be turned off under
- * Forms → Settings. Spacing: --lf-row-gap (rows, above submit) and --lf-gap (side by side),
+ * Forms → Settings. Spacing: --lf-row-gap (between rows) and --lf-gap (side by side),
  * both 1em by default. Fields stack below 480px.
  */
-.lf-form .lf-fields {
-	display: flex;
-	flex-wrap: wrap;
+/* The form is a 12-column grid; field widths span columns. */
+.lf-form {
+	display: grid;
+	grid-template-columns: repeat(12, minmax(0, 1fr));
 	gap: var(--lf-row-gap, 1em) var(--lf-gap, 1em);
-	margin: 0 0 var(--lf-row-gap, 1em);
 	container-type: inline-size;
 }
-.lf-form .lf-field {
+.lf-form > * {
+	grid-column: 1 / -1;
+	min-width: 0;
 	margin: 0;
 }
-.lf-form .lf-fields > * {
-	flex: 0 0 100%;
-	min-width: 0;
+.lf-form > .lf-field--half {
+	grid-column: span 6;
 }
-.lf-form .lf-fields > .lf-field--half {
-	flex-basis: calc((100% - var(--lf-gap, 1em)) / 2);
+.lf-form > .lf-field--third {
+	grid-column: span 4;
 }
-.lf-form .lf-fields > .lf-field--third {
-	flex-basis: calc((100% - 2 * var(--lf-gap, 1em)) / 3);
+.lf-form > .lf-field--two-thirds {
+	grid-column: span 8;
 }
-.lf-form .lf-fields > .lf-field--two-thirds {
-	flex-basis: calc((200% - var(--lf-gap, 1em)) / 3);
+.lf-form > .lf-field--quarter {
+	grid-column: span 3;
 }
-.lf-form .lf-fields > .lf-field--quarter {
-	flex-basis: calc((100% - 3 * var(--lf-gap, 1em)) / 4);
-}
-.lf-form .lf-fields > .lf-field--three-quarters {
-	flex-basis: calc((300% - var(--lf-gap, 1em)) / 4);
+.lf-form > .lf-field--three-quarters {
+	grid-column: span 9;
 }
 @container (max-width: 480px) {
-	.lf-form .lf-fields > .lf-field {
-		flex-basis: 100%;
+	.lf-form > .lf-field {
+		grid-column: 1 / -1;
 	}
 }
 .lf-form .lf-field[hidden],
