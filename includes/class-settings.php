@@ -2,10 +2,10 @@
 /**
  * Global plugin settings.
  *
- * @package LaunchForms
+ * @package LaunchInteractiveForms
  */
 
-namespace LaunchForms;
+namespace LaunchInteractiveForms;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Settings {
 
-	const OPTION = 'launch_forms_settings';
+	const OPTION = 'liforms_settings';
 
 	/**
 	 * Hooks.
@@ -67,14 +67,14 @@ class Settings {
 	}
 
 	/**
-	 * The SMTP password in plain text: from LAUNCH_FORMS_SMTP_PASSWORD if defined, otherwise
+	 * The SMTP password in plain text: from LIFORMS_SMTP_PASSWORD if defined, otherwise
 	 * decrypted from the database ('' if none, or if the site's salts changed since it was saved).
 	 *
 	 * @return string
 	 */
 	public function smtp_password() {
-		if ( defined( 'LAUNCH_FORMS_SMTP_PASSWORD' ) ) {
-			return (string) LAUNCH_FORMS_SMTP_PASSWORD;
+		if ( defined( 'LIFORMS_SMTP_PASSWORD' ) ) {
+			return (string) LIFORMS_SMTP_PASSWORD;
 		}
 		return self::decrypt( (string) ( $this->all()['smtp_password'] ?? '' ) );
 	}
@@ -85,7 +85,7 @@ class Settings {
 	 * @return bool
 	 */
 	public function has_smtp_password() {
-		return defined( 'LAUNCH_FORMS_SMTP_PASSWORD' ) || '' !== (string) ( $this->all()['smtp_password'] ?? '' );
+		return defined( 'LIFORMS_SMTP_PASSWORD' ) || '' !== (string) ( $this->all()['smtp_password'] ?? '' );
 	}
 
 	/**
@@ -134,6 +134,7 @@ class Settings {
 	 * @return string
 	 */
 	private static function secret_key() {
+		// The "launch-forms-secret" label is unchanged since 1.x: changing it would make saved secrets unreadable.
 		return sodium_crypto_generichash( 'launch-forms-secret|' . wp_salt( 'auth' ), '', SODIUM_CRYPTO_SECRETBOX_KEYBYTES );
 	}
 
@@ -142,7 +143,7 @@ class Settings {
 	 */
 	public function register() {
 		register_setting(
-			'launch_forms',
+			'liforms',
 			self::OPTION,
 			array(
 				'type'              => 'array',
@@ -163,13 +164,13 @@ class Settings {
 	}
 
 	/**
-	 * Get one setting. Constants named LAUNCH_FORMS_<KEY> override stored values (useful for secrets).
+	 * Get one setting. Constants named LIFORMS_<KEY> override stored values (useful for secrets).
 	 *
 	 * @param string $key Key.
 	 * @return mixed
 	 */
 	public function get( $key ) {
-		$constant = 'LAUNCH_FORMS_' . strtoupper( $key );
+		$constant = 'LIFORMS_' . strtoupper( $key );
 		if ( defined( $constant ) ) {
 			return constant( $constant );
 		}

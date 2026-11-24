@@ -2,10 +2,10 @@
 /**
  * REST endpoints: public submission endpoint and admin helpers.
  *
- * @package LaunchForms
+ * @package LaunchInteractiveForms
  */
 
-namespace LaunchForms;
+namespace LaunchInteractiveForms;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Rest_Api {
 
-	const NS = 'launch-forms/v1';
+	const NS = 'liforms/v1';
 
 	/** @var Plugin */
 	private $plugin;
@@ -105,7 +105,7 @@ class Rest_Api {
 	public function preview( \WP_REST_Request $request ) {
 		$id    = (int) $request['id'];
 		$form  = new Form( $id, get_the_title( $id ), (string) $request['config'] );
-		$class = implode( ' ', array_filter( array_map( 'sanitize_html_class', preg_split( '/\s+/', 'wp-block-launch-forms-form ' . $request['className'] ) ) ) );
+		$class = implode( ' ', array_filter( array_map( 'sanitize_html_class', preg_split( '/\s+/', 'wp-block-liforms-form ' . $request['className'] ) ) ) );
 		return rest_ensure_response( array( 'html' => $this->plugin->renderer->render( $form, array( 'class' => $class ) ) ) );
 	}
 
@@ -118,14 +118,14 @@ class Rest_Api {
 	public function submit( \WP_REST_Request $request ) {
 		$form = $this->plugin->forms->get( (int) $request['id'] );
 		if ( ! $form ) {
-			return new \WP_Error( 'lf_form_not_found', __( 'Form not found.', 'launch-interactive-forms' ), array( 'status' => 404 ) );
+			return new \WP_Error( 'liforms_form_not_found', __( 'Form not found.', 'launch-interactive-forms' ), array( 'status' => 404 ) );
 		}
 
 		$files  = $request->get_file_params();
 		$result = $this->plugin->processor->process(
 			$form,
 			(array) $request->get_body_params(),
-			Uploads::normalize_files( $files['lf'] ?? null ),
+			Uploads::normalize_files( $files['lif'] ?? null ),
 			array(
 				'page_url' => esc_url_raw( (string) $request->get_header( 'referer' ) ),
 				'ip'       => Frontend::client_ip(),

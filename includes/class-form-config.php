@@ -6,10 +6,10 @@
  * JSON string in post meta so it can be edited identically from the Forms screen and from
  * the block editor (via the REST API).
  *
- * @package LaunchForms
+ * @package LaunchInteractiveForms
  */
 
-namespace LaunchForms;
+namespace LaunchInteractiveForms;
 
 defined( 'ABSPATH' ) || exit;
 

@@ -1,18 +1,18 @@
 <?php
 /**
- * @covers \LaunchForms\Captcha
+ * @covers \LaunchInteractiveForms\Captcha
  */
 
-use LaunchForms\Captcha;
+use LaunchInteractiveForms\Captcha;
 
 class CaptchaTest extends LF_TestCase {
 
 	private function captcha() {
-		return launch_forms()->captcha;
+		return liforms()->captcha;
 	}
 
 	private function recaptcha_form( $version = 'v2' ) {
-		launch_forms()->settings->update(
+		liforms()->settings->update(
 			array(
 				'recaptcha_site_key'   => 'site-key',
 				'recaptcha_secret_key' => 'secret-key',
@@ -38,7 +38,7 @@ class CaptchaTest extends LF_TestCase {
 	}
 
 	private function turnstile_form() {
-		launch_forms()->settings->update( array( 'turnstile_site_key' => 'ts-site', 'turnstile_secret_key' => 'ts-secret' ) );
+		liforms()->settings->update( array( 'turnstile_site_key' => 'ts-site', 'turnstile_secret_key' => 'ts-secret' ) );
 		return $this->form_with( 'turnstile' );
 	}
 
@@ -46,7 +46,7 @@ class CaptchaTest extends LF_TestCase {
 		$this->assertSame( 'none', $this->captcha()->provider_for( $this->contact_form() ), 'No captcha field.' );
 		$form = $this->form_with( 'recaptcha' );
 		$this->assertSame( 'none', $this->captcha()->provider_for( $form ), 'Keys missing → disabled.' );
-		$this->assertStringNotContainsString( 'lf-field--captcha', launch_forms()->renderer->render( $form ), 'Field not shown without keys.' );
+		$this->assertStringNotContainsString( 'lif-field--captcha', liforms()->renderer->render( $form ), 'Field not shown without keys.' );
 		$this->assertSame( '', $this->captcha()->render( $form ) );
 		$this->assertTrue( $this->captcha()->verify( $form, array() ) );
 		$this->assertSame( array(), $this->http_requests );
@@ -56,23 +56,23 @@ class CaptchaTest extends LF_TestCase {
 		$form = $this->recaptcha_form();
 		$html = $this->captcha()->render( $form );
 		$this->assertStringContainsString( '<div class="g-recaptcha" data-sitekey="site-key"></div>', $html );
-		$this->assertTrue( wp_script_is( 'launch-forms-recaptcha', 'enqueued' ) );
-		$this->assertSame( 'https://www.google.com/recaptcha/api.js', wp_scripts()->registered['launch-forms-recaptcha']->src );
-		$this->assertStringContainsString( 'g-recaptcha', launch_forms()->renderer->render( $form ) );
+		$this->assertTrue( wp_script_is( 'liforms-recaptcha', 'enqueued' ) );
+		$this->assertSame( 'https://www.google.com/recaptcha/api.js', wp_scripts()->registered['liforms-recaptcha']->src );
+		$this->assertStringContainsString( 'g-recaptcha', liforms()->renderer->render( $form ) );
 	}
 
 	public function test_recaptcha_v3_markup_and_script() {
 		$form = $this->recaptcha_form( 'v3' );
 		$html = $this->captcha()->render( $form );
-		$this->assertStringContainsString( 'class="lf-recaptcha-v3" data-sitekey="site-key" data-action="launch_forms_submit"', $html );
-		$this->assertTrue( wp_script_is( 'launch-forms-recaptcha-v3', 'enqueued' ) );
-		$this->assertStringContainsString( 'render=site-key', wp_scripts()->registered['launch-forms-recaptcha-v3']->src );
+		$this->assertStringContainsString( 'class="lif-recaptcha-v3" data-sitekey="site-key" data-action="liforms_submit"', $html );
+		$this->assertTrue( wp_script_is( 'liforms-recaptcha-v3', 'enqueued' ) );
+		$this->assertStringContainsString( 'render=site-key', wp_scripts()->registered['liforms-recaptcha-v3']->src );
 	}
 
 	public function test_turnstile_markup_and_script() {
 		$html = $this->captcha()->render( $this->turnstile_form() );
 		$this->assertStringContainsString( '<div class="cf-turnstile" data-sitekey="ts-site"', $html );
-		$this->assertSame( 'https://challenges.cloudflare.com/turnstile/v0/api.js', wp_scripts()->registered['launch-forms-turnstile']->src );
+		$this->assertSame( 'https://challenges.cloudflare.com/turnstile/v0/api.js', wp_scripts()->registered['liforms-turnstile']->src );
 	}
 
 	public function test_missing_token_fails_without_http_call() {
@@ -104,9 +104,9 @@ class CaptchaTest extends LF_TestCase {
 				return array( 'body' => $response );
 			}
 		);
-		$response = array( 'success' => true, 'score' => 0.9, 'action' => 'launch_forms_submit' );
+		$response = array( 'success' => true, 'score' => 0.9, 'action' => 'liforms_submit' );
 		$this->assertTrue( $this->captcha()->verify( $form, array( 'g-recaptcha-response' => 't' ) ) );
-		$response = array( 'success' => true, 'score' => 0.2, 'action' => 'launch_forms_submit' );
+		$response = array( 'success' => true, 'score' => 0.2, 'action' => 'liforms_submit' );
 		$this->assertWPError( $this->captcha()->verify( $form, array( 'g-recaptcha-response' => 't' ) ) );
 		$response = array( 'success' => true, 'score' => 0.9, 'action' => 'login' );
 		$this->assertWPError( $this->captcha()->verify( $form, array( 'g-recaptcha-response' => 't' ) ) );
@@ -136,7 +136,7 @@ class CaptchaTest extends LF_TestCase {
 		);
 		$result = $this->captcha()->verify( $this->turnstile_form(), array( 'cf-turnstile-response' => 'tok' ) );
 		$this->assertWPError( $result );
-		$this->assertSame( 'lf_captcha_unreachable', $result->get_error_code() );
+		$this->assertSame( 'liforms_captcha_unreachable', $result->get_error_code() );
 	}
 
 	public function test_garbage_response_fails() {
@@ -149,21 +149,21 @@ class CaptchaTest extends LF_TestCase {
 	}
 
 	public function test_captcha_renders_where_it_is_placed_with_its_width() {
-		launch_forms()->settings->update( array( 'turnstile_site_key' => 'ts-site', 'turnstile_secret_key' => 'ts-secret' ) );
+		liforms()->settings->update( array( 'turnstile_site_key' => 'ts-site', 'turnstile_secret_key' => 'ts-secret' ) );
 		$form = $this->form_with( 'turnstile', array( 'width' => 'half', 'css_class' => 'my-captcha' ) );
-		$html = launch_forms()->renderer->render( $form );
+		$html = liforms()->renderer->render( $form );
 
-		$name    = strpos( $html, 'name="lf[name]"' );
+		$name    = strpos( $html, 'name="lif[name]"' );
 		$captcha = strpos( $html, 'class="cf-turnstile"' );
-		$email   = strpos( $html, 'name="lf[email]"' );
+		$email   = strpos( $html, 'name="lif[email]"' );
 		$this->assertTrue( $name < $captcha && $captcha < $email, 'Between Name and Email, as placed.' );
 		$this->assertSame( 1, substr_count( $html, 'cf-turnstile' ), 'Not also added at the end.' );
-		$this->assertMatchesRegularExpression( '/<div class="lf-field lf-field--turnstile lf-field--half my-captcha lf-field--captcha" data-lf-name="turnstile"><div class="lf-captcha"><div class="cf-turnstile"/', $html );
+		$this->assertMatchesRegularExpression( '/<div class="lif-field lif-field--turnstile lif-field--half my-captcha lif-field--captcha" data-lif-name="turnstile"><div class="lif-captcha"><div class="cf-turnstile"/', $html );
 		$this->assertLessThan( strpos( $html, 'type="submit"' ), $captcha );
 	}
 
 	public function test_only_one_captcha_and_never_conditional() {
-		$config = LaunchForms\Form_Config::sanitize(
+		$config = LaunchInteractiveForms\Form_Config::sanitize(
 			array(
 				'fields' => array(
 					array( 'type' => 'text', 'name' => 'name' ),
@@ -190,7 +190,7 @@ class CaptchaTest extends LF_TestCase {
 	}
 
 	public function test_forms_using_the_old_captcha_setting_get_a_field_at_the_end() {
-		$config = LaunchForms\Form_Config::sanitize(
+		$config = LaunchInteractiveForms\Form_Config::sanitize(
 			array(
 				'fields'   => array( array( 'type' => 'text', 'name' => 'name' ), array( 'type' => 'email', 'name' => 'email' ) ),
 				'settings' => array( 'captcha' => 'turnstile' ),
@@ -199,10 +199,10 @@ class CaptchaTest extends LF_TestCase {
 		$this->assertSame( array( 'text', 'email', 'turnstile' ), wp_list_pluck( $config['fields'], 'type' ) );
 		$this->assertSame( 'none', $config['settings']['captcha'] );
 
-		$again = LaunchForms\Form_Config::sanitize( $config );
+		$again = LaunchInteractiveForms\Form_Config::sanitize( $config );
 		$this->assertCount( 3, $again['fields'], 'Migrating twice changes nothing.' );
 
-		$placed = LaunchForms\Form_Config::sanitize(
+		$placed = LaunchInteractiveForms\Form_Config::sanitize(
 			array(
 				'fields'   => array( array( 'type' => 'recaptcha' ), array( 'type' => 'text', 'name' => 'name' ) ),
 				'settings' => array( 'captcha' => 'turnstile' ),
@@ -218,19 +218,19 @@ class CaptchaTest extends LF_TestCase {
 				return array( 'body' => array( 'success' => false ) );
 			}
 		);
-		$result = launch_forms()->processor->process( $form, array( 'lf' => array( 'name' => 'Ann', 'email' => 'ann@example.com' ), 'g-recaptcha-response' => 'bad' ) );
+		$result = liforms()->processor->process( $form, array( 'lif' => array( 'name' => 'Ann', 'email' => 'ann@example.com' ), 'g-recaptcha-response' => 'bad' ) );
 		$this->assertFalse( $result->success );
 		$this->assertArrayHasKey( 'recaptcha', $result->errors );
 
-		$html = launch_forms()->renderer->render( $form );
-		$this->assertMatchesRegularExpression( '/data-lf-name="recaptcha">.*class="g-recaptcha".*<p class="lf-error"[^>]*>Please complete the spam check/s', $html );
+		$html = liforms()->renderer->render( $form );
+		$this->assertMatchesRegularExpression( '/data-lif-name="recaptcha">.*class="g-recaptcha".*<p class="lif-error"[^>]*>Please complete the spam check/s', $html );
 		$this->assertStringContainsString( 'value="Ann"', $html, 'What they typed is kept.' );
 	}
 
 	public function test_captcha_fields_collect_no_value() {
 		$form   = $this->form_with( 'turnstile' );
-		$result = launch_forms()->processor->process( $form, array( 'lf' => array( 'name' => 'Ann', 'email' => 'ann@example.com', 'turnstile' => 'sneaky' ) ) );
+		$result = liforms()->processor->process( $form, array( 'lif' => array( 'name' => 'Ann', 'email' => 'ann@example.com', 'turnstile' => 'sneaky' ) ) );
 		$this->assertTrue( $result->success, 'Keys not set, so no check runs.' );
-		$this->assertSame( array( 'name', 'email', 'message' ), wp_list_pluck( launch_forms()->submissions->get_entries( $result->submission_id ), 'name' ) );
+		$this->assertSame( array( 'name', 'email', 'message' ), wp_list_pluck( liforms()->submissions->get_entries( $result->submission_id ), 'name' ) );
 	}
 }

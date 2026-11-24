@@ -1,71 +1,71 @@
 /*
  * Launch Interactive Forms — structural CSS only; looks come from the theme. Can be turned off under
- * Forms → Settings. Spacing: --lf-row-gap (between rows) and --lf-gap (side by side),
- * both 1em by default. Fields stack below 480px.
+ * Forms → Settings. Spacing: --lif-gap (between rows and side-by-side fields), 1em by
+ * default. Fields stack below 480px.
  */
 /* The form is a 12-column grid; field widths span columns. */
-.lf-form {
+.lif-form {
 	display: grid;
 	grid-template-columns: repeat(12, minmax(0, 1fr));
-	gap: var(--lf-row-gap, 1em) var(--lf-gap, 1em);
+	gap: var(--lif-gap, 1em);
 	container-type: inline-size;
 }
-.lf-form > * {
+.lif-form > * {
 	grid-column: 1 / -1;
 	min-width: 0;
 	margin: 0;
 }
-.lf-form > .lf-field--half {
+.lif-form > .lif-field--half {
 	grid-column: span 6;
 }
-.lf-form > .lf-field--third {
+.lif-form > .lif-field--third {
 	grid-column: span 4;
 }
-.lf-form > .lf-field--two-thirds {
+.lif-form > .lif-field--two-thirds {
 	grid-column: span 8;
 }
-.lf-form > .lf-field--quarter {
+.lif-form > .lif-field--quarter {
 	grid-column: span 3;
 }
-.lf-form > .lf-field--three-quarters {
+.lif-form > .lif-field--three-quarters {
 	grid-column: span 9;
 }
 @container (max-width: 480px) {
-	.lf-form > .lf-field {
+	.lif-form > .lif-field {
 		grid-column: 1 / -1;
 	}
 }
-.lf-form .lf-field[hidden],
-.lf-form .lf-message[hidden] {
+.lif-form .lif-field[hidden],
+.lif-form .lif-message[hidden] {
 	display: none !important;
 }
-.lf-form label,
-.lf-form legend {
+.lif-form label,
+.lif-form legend {
 	display: block;
 }
-.lf-form fieldset {
+.lif-form fieldset {
 	min-width: 0;
 }
-.lf-form .lf-option label,
-.lf-form .lf-field--consent label {
+.lif-form .lif-option label,
+.lif-form .lif-field--consent label {
 	display: inline;
 }
-.lf-form input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
-.lf-form select,
-.lf-form textarea {
+.lif-form input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+.lif-form select,
+.lif-form textarea {
 	box-sizing: border-box;
 	width: 100%;
 	max-width: 100%;
 }
-.lf-form .lf-description,
-.lf-form .lf-error {
+.lif-form .lif-description,
+.lif-form .lif-error {
 	margin: 0.25em 0 0;
 }
-.lf-form .lf-error {
-	color: var(--lf-error-color, #b32d2e);
+.lif-form .lif-error {
+	color: var(--lif-error-color, #b32d2e);
 }
 /* Honeypot: off-screen, not display:none (some bots skip hidden inputs). */
-.lf-hp {
+.lif-hp {
 	position: absolute !important;
 	left: -9999px !important;
 	width: 1px;

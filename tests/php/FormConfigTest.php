@@ -1,12 +1,12 @@
 <?php
 /**
- * @covers \LaunchForms\Form_Config
- * @covers \LaunchForms\Forms
- * @covers \LaunchForms\Form
+ * @covers \LaunchInteractiveForms\Form_Config
+ * @covers \LaunchInteractiveForms\Forms
+ * @covers \LaunchInteractiveForms\Form
  */
 
-use LaunchForms\Form_Config;
-use LaunchForms\Forms;
+use LaunchInteractiveForms\Form_Config;
+use LaunchInteractiveForms\Forms;
 
 class FormConfigTest extends LF_TestCase {
 
@@ -202,14 +202,14 @@ class FormConfigTest extends LF_TestCase {
 	}
 
 	public function test_meta_round_trip_via_forms_repository() {
-		$id = launch_forms()->forms->create(
+		$id = liforms()->forms->create(
 			'Quote',
 			array(
 				'fields'   => array( array( 'type' => 'text', 'label' => 'Company "Ltd"' ) ),
 				'settings' => array( 'submit_label' => 'Get a quote' ),
 			)
 		);
-		$form = launch_forms()->forms->get( $id );
+		$form = liforms()->forms->get( $id );
 		$this->assertSame( 'Quote', $form->title );
 		$this->assertSame( 'Company "Ltd"', $form->fields[0]['label'] );
 		$this->assertSame( 'Get a quote', $form->settings['submit_label'] );
@@ -221,16 +221,16 @@ class FormConfigTest extends LF_TestCase {
 	public function test_get_only_returns_published_forms_of_correct_type() {
 		$draft = self::factory()->post->create( array( 'post_type' => Forms::POST_TYPE, 'post_status' => 'draft' ) );
 		$post  = self::factory()->post->create();
-		$this->assertNull( launch_forms()->forms->get( $draft ) );
-		$this->assertNotNull( launch_forms()->forms->get( $draft, false ) );
-		$this->assertNull( launch_forms()->forms->get( $post ) );
-		$this->assertNull( launch_forms()->forms->get( 999999 ) );
+		$this->assertNull( liforms()->forms->get( $draft ) );
+		$this->assertNotNull( liforms()->forms->get( $draft, false ) );
+		$this->assertNull( liforms()->forms->get( $post ) );
+		$this->assertNull( liforms()->forms->get( 999999 ) );
 	}
 
 	public function test_all_lists_published_forms() {
-		$a = launch_forms()->forms->create( 'B form' );
-		$b = launch_forms()->forms->create( 'A form' );
-		$this->assertSame( array( $b => 'A form', $a => 'B form' ), launch_forms()->forms->all() );
+		$a = liforms()->forms->create( 'B form' );
+		$b = liforms()->forms->create( 'A form' );
+		$this->assertSame( array( $b => 'A form', $a => 'B form' ), liforms()->forms->all() );
 	}
 
 	public function test_meta_is_protected_and_block_editor_disabled() {
@@ -242,26 +242,26 @@ class FormConfigTest extends LF_TestCase {
 	public function test_classic_editor_save_requires_nonce_and_capability() {
 		$editor = self::factory()->user->create( array( 'role' => 'editor' ) );
 		wp_set_current_user( $editor );
-		$id     = launch_forms()->forms->create( 'Classic' );
+		$id     = liforms()->forms->create( 'Classic' );
 		$config = wp_json_encode( array( 'fields' => array( array( 'type' => 'email', 'label' => 'Work email' ) ) ) );
 
 		// Without a nonce nothing changes.
 		$_POST = array( Forms::META_KEY => wp_slash( $config ) );
-		launch_forms()->forms->save_classic_editor( $id, get_post( $id ) );
-		$this->assertSame( array(), launch_forms()->forms->get( $id )->fields );
+		liforms()->forms->save_classic_editor( $id, get_post( $id ) );
+		$this->assertSame( array(), liforms()->forms->get( $id )->fields );
 
-		$_POST['launch_forms_builder_nonce'] = wp_create_nonce( 'launch_forms_builder_' . $id );
-		launch_forms()->forms->save_classic_editor( $id, get_post( $id ) );
-		$this->assertSame( 'work_email', launch_forms()->forms->get( $id )->fields[0]['name'] );
+		$_POST['liforms_builder_nonce'] = wp_create_nonce( 'liforms_builder_' . $id );
+		liforms()->forms->save_classic_editor( $id, get_post( $id ) );
+		$this->assertSame( 'work_email', liforms()->forms->get( $id )->fields[0]['name'] );
 
 		// A subscriber cannot save even with a valid nonce.
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
 		$_POST = array(
 			Forms::META_KEY            => wp_slash( wp_json_encode( array( 'fields' => array() ) ) ),
-			'launch_forms_builder_nonce' => wp_create_nonce( 'launch_forms_builder_' . $id ),
+			'liforms_builder_nonce' => wp_create_nonce( 'liforms_builder_' . $id ),
 		);
-		launch_forms()->forms->save_classic_editor( $id, get_post( $id ) );
-		$this->assertCount( 1, launch_forms()->forms->get( $id )->fields );
+		liforms()->forms->save_classic_editor( $id, get_post( $id ) );
+		$this->assertCount( 1, liforms()->forms->get( $id )->fields );
 		$_POST = array();
 	}
 }

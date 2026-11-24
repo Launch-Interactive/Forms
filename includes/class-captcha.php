@@ -2,10 +2,10 @@
 /**
  * Google reCAPTCHA (v2 checkbox / v3 score) and Cloudflare Turnstile.
  *
- * @package LaunchForms
+ * @package LaunchInteractiveForms
  */
 
-namespace LaunchForms;
+namespace LaunchInteractiveForms;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -17,7 +17,7 @@ class Captcha {
 	// Server-side verification APIs, called with wp_remote_post(); nothing is loaded in the browser from these.
 	const RECAPTCHA_VERIFY = 'https://www.google.com/recaptcha/api/siteverify';
 	const TURNSTILE_VERIFY = 'https://challenges.cloudflare.com/turnstile/v0/siteverify'; // phpcs:ignore PluginCheck.CodeAnalysis.Offloading.OffloadedContent
-	const RECAPTCHA_ACTION = 'launch_forms_submit';
+	const RECAPTCHA_ACTION = 'liforms_submit';
 
 	/** @var Settings */
 	private $settings;
@@ -74,12 +74,12 @@ class Captcha {
 		$this->enqueue( $provider );
 
 		if ( 'turnstile' === $provider ) {
-			return '<div class="lf-captcha"><div class="cf-turnstile" data-sitekey="' . esc_attr( $this->settings->get( 'turnstile_site_key' ) ) . '" data-action="' . esc_attr( self::RECAPTCHA_ACTION ) . '"></div></div>';
+			return '<div class="lif-captcha"><div class="cf-turnstile" data-sitekey="' . esc_attr( $this->settings->get( 'turnstile_site_key' ) ) . '" data-action="' . esc_attr( self::RECAPTCHA_ACTION ) . '"></div></div>';
 		}
 		if ( 'v3' === $this->settings->get( 'recaptcha_version' ) ) {
-			return '<input type="hidden" name="g-recaptcha-response" class="lf-recaptcha-v3" data-sitekey="' . esc_attr( $this->settings->get( 'recaptcha_site_key' ) ) . '" data-action="' . esc_attr( self::RECAPTCHA_ACTION ) . '" value="">';
+			return '<input type="hidden" name="g-recaptcha-response" class="lif-recaptcha-v3" data-sitekey="' . esc_attr( $this->settings->get( 'recaptcha_site_key' ) ) . '" data-action="' . esc_attr( self::RECAPTCHA_ACTION ) . '" value="">';
 		}
-		return '<div class="lf-captcha"><div class="g-recaptcha" data-sitekey="' . esc_attr( $this->settings->get( 'recaptcha_site_key' ) ) . '"></div></div>';
+		return '<div class="lif-captcha"><div class="g-recaptcha" data-sitekey="' . esc_attr( $this->settings->get( 'recaptcha_site_key' ) ) . '"></div></div>';
 	}
 
 	/**
@@ -90,14 +90,14 @@ class Captcha {
 	public function enqueue( $provider ) {
 		if ( 'turnstile' === $provider ) {
 			// Turnstile must be loaded from Cloudflare; self-hosting it is not supported. Disclosed in readme.txt.
-			wp_enqueue_script( 'launch-forms-turnstile', 'https://challenges.cloudflare.com/turnstile/v0/api.js', array(), null, array( 'in_footer' => true, 'strategy' => 'defer' ) ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion, PluginCheck.CodeAnalysis.EnqueuedResourceOffloading.OffloadedContent
+			wp_enqueue_script( 'liforms-turnstile', 'https://challenges.cloudflare.com/turnstile/v0/api.js', array(), null, array( 'in_footer' => true, 'strategy' => 'defer' ) ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion, PluginCheck.CodeAnalysis.EnqueuedResourceOffloading.OffloadedContent
 			return;
 		}
 		$src    = 'https://www.google.com/recaptcha/api.js';
-		$handle = 'launch-forms-recaptcha';
+		$handle = 'liforms-recaptcha';
 		if ( 'v3' === $this->settings->get( 'recaptcha_version' ) ) {
 			$src    = add_query_arg( 'render', rawurlencode( (string) $this->settings->get( 'recaptcha_site_key' ) ), $src );
-			$handle = 'launch-forms-recaptcha-v3';
+			$handle = 'liforms-recaptcha-v3';
 		}
 		// reCAPTCHA must be loaded from Google; self-hosting it is not supported. Disclosed in readme.txt.
 		wp_enqueue_script( $handle, $src, array(), null, array( 'in_footer' => true, 'strategy' => 'defer' ) ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion, PluginCheck.CodeAnalysis.EnqueuedResourceOffloading.OffloadedContent
@@ -119,7 +119,7 @@ class Captcha {
 
 		$field = 'turnstile' === $provider ? 'cf-turnstile-response' : 'g-recaptcha-response';
 		$token = isset( $request[ $field ] ) && is_string( $request[ $field ] ) ? trim( $request[ $field ] ) : '';
-		$fail  = new \WP_Error( 'lf_captcha', __( 'Please complete the spam check and try again.', 'launch-interactive-forms' ) );
+		$fail  = new \WP_Error( 'liforms_captcha', __( 'Please complete the spam check and try again.', 'launch-interactive-forms' ) );
 		if ( '' === $token || strlen( $token ) > 4096 ) {
 			return $fail;
 		}
@@ -140,7 +140,7 @@ class Captcha {
 			)
 		);
 		if ( is_wp_error( $response ) ) {
-			return new \WP_Error( 'lf_captcha_unreachable', __( 'The spam check could not be verified. Please try again.', 'launch-interactive-forms' ) );
+			return new \WP_Error( 'liforms_captcha_unreachable', __( 'The spam check could not be verified. Please try again.', 'launch-interactive-forms' ) );
 		}
 		$data = json_decode( (string) wp_remote_retrieve_body( $response ), true );
 		if ( ! is_array( $data ) || empty( $data['success'] ) ) {

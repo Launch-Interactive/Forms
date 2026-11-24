@@ -2,10 +2,10 @@
 /**
  * Outcome of processing a submission.
  *
- * @package LaunchForms
+ * @package LaunchInteractiveForms
  */
 
-namespace LaunchForms;
+namespace LaunchInteractiveForms;
 
 defined( 'ABSPATH' ) || exit;
 

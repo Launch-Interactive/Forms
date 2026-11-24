@@ -13,7 +13,7 @@
 		module.exports = helpers;
 		return;
 	}
-	root.launchFormsBuilder = factory.ui( helpers, root.wp, root.launchFormsBuilderData || {} );
+	root.liformsBuilder = factory.ui( helpers, root.wp, root.liformsBuilderData || {} );
 } )( typeof self !== 'undefined' ? self : this, {
 	/* ------------------------------------------------------------------ helpers */
 	helpers: function () {
@@ -385,13 +385,13 @@
 			};
 
 			if ( ! others.length ) {
-				return el( 'p', { className: 'lf-builder__hint' }, __( 'Add another field to use conditional logic.', 'launch-interactive-forms' ) );
+				return el( 'p', { className: 'lif-builder__hint' }, __( 'Add another field to use conditional logic.', 'launch-interactive-forms' ) );
 			}
 
 			var rules = cond.rules || [];
 			return el(
 				'div',
-				{ className: 'lf-builder__conditions' },
+				{ className: 'lif-builder__conditions' },
 				el( c.ToggleControl, {
 					__nextHasNoMarginBottom: true,
 					label: __( 'Conditional logic', 'launch-interactive-forms' ),
@@ -409,7 +409,7 @@
 						null,
 						el(
 							'div',
-							{ className: 'lf-builder__row' },
+							{ className: 'lif-builder__row' },
 							el( c.SelectControl, {
 								__nextHasNoMarginBottom: true,
 								__next40pxDefaultSize: true,
@@ -477,7 +477,7 @@
 							}
 							return el(
 								'div',
-								{ className: 'lf-builder__row lf-builder__rule', key: i },
+								{ className: 'lif-builder__row lif-builder__rule', key: i },
 								el( c.SelectControl, {
 									__nextHasNoMarginBottom: true,
 									__next40pxDefaultSize: true,
@@ -564,14 +564,14 @@
 					)
 				);
 				if ( type === 'recaptcha' && data.recaptchaVersion === 'v3' ) {
-					parts.push( el( 'p', { key: 'v3', className: 'lf-builder__hint' }, __( 'reCAPTCHA v3 is invisible, so its position only matters for where errors appear. Google shows its badge in the corner of the page.', 'launch-interactive-forms' ) ) );
+					parts.push( el( 'p', { key: 'v3', className: 'lif-builder__hint' }, __( 'reCAPTCHA v3 is invisible, so its position only matters for where errors appear. Google shows its badge in the corner of the page.', 'launch-interactive-forms' ) ) );
 				}
 			}
 			if ( ! noInput ) {
 				parts.push(
 					el(
 						'div',
-						{ className: 'lf-builder__row', key: 'basic' },
+						{ className: 'lif-builder__row', key: 'basic' },
 						el( c.TextControl, {
 							__nextHasNoMarginBottom: true,
 							__next40pxDefaultSize: true,
@@ -656,14 +656,14 @@
 				);
 			}
 			if ( row.length ) {
-				parts.push( el( 'div', { className: 'lf-builder__row', key: 'row' }, row ) );
+				parts.push( el( 'div', { className: 'lif-builder__row', key: 'row' }, row ) );
 			}
 
 			if ( type === 'number' ) {
 				parts.push(
 					el(
 						'div',
-						{ className: 'lf-builder__row', key: 'num' },
+						{ className: 'lif-builder__row', key: 'num' },
 						text( 'min', __( 'Minimum', 'launch-interactive-forms' ) ),
 						text( 'max', __( 'Maximum', 'launch-interactive-forms' ) ),
 						text( 'step', __( 'Step', 'launch-interactive-forms' ) )
@@ -675,7 +675,7 @@
 				parts.push(
 					el(
 						'div',
-						{ className: 'lf-builder__row', key: 'file' },
+						{ className: 'lif-builder__row', key: 'file' },
 						el( c.TextControl, {
 							__nextHasNoMarginBottom: true,
 							__next40pxDefaultSize: true,
@@ -732,14 +732,14 @@
 				);
 			}
 			if ( toggles.length ) {
-				parts.push( el( 'div', { className: 'lf-builder__row', key: 'toggles' }, toggles ) );
+				parts.push( el( 'div', { className: 'lif-builder__row', key: 'toggles' }, toggles ) );
 			}
 
 			var widths = data.widths || {};
 			parts.push(
 				el(
 					'div',
-					{ className: 'lf-builder__row', key: 'css' },
+					{ className: 'lif-builder__row', key: 'css' },
 					type !== 'hidden' &&
 						el( c.SelectControl, {
 							__nextHasNoMarginBottom: true,
@@ -771,7 +771,7 @@
 				);
 			}
 
-			return el( 'div', { className: 'lf-builder__field-body' }, parts );
+			return el( 'div', { className: 'lif-builder__field-body' }, parts );
 		}
 
 		/* ---------------- drag and drop */
@@ -996,7 +996,7 @@
 				}
 				drafts[ 1 ]( {} );
 			};
-			var sortable = useSortable( 'lf-builder__field', move );
+			var sortable = useSortable( 'lif-builder__field', move );
 			var dragging = sortable.drag;
 
 			// Keep keyboard focus on the handle of the field that was just moved.
@@ -1008,8 +1008,8 @@
 				if ( to === null || ! list ) {
 					return;
 				}
-				var item = list.querySelectorAll( '.lf-builder__field' )[ to ];
-				var handle = item && item.querySelector( '.lf-builder__handle' );
+				var item = list.querySelectorAll( '.lif-builder__field' )[ to ];
+				var handle = item && item.querySelector( '.lif-builder__handle' );
 				if ( handle ) {
 					handle.focus();
 				}
@@ -1017,26 +1017,26 @@
 
 			return el(
 				'div',
-				{ className: 'lf-builder__fields' + ( dragging ? ' is-sorting' : '' ), ref: sortable.listRef },
-				! fields.length && el( 'p', { className: 'lf-builder__hint' }, __( 'No fields yet. Add your first field below.', 'launch-interactive-forms' ) ),
+				{ className: 'lif-builder__fields' + ( dragging ? ' is-sorting' : '' ), ref: sortable.listRef },
+				! fields.length && el( 'p', { className: 'lif-builder__hint' }, __( 'No fields yet. Add your first field below.', 'launch-interactive-forms' ) ),
 				fields.map( function ( field, index ) {
 					var isOpen = open === index;
 					var title = field.type === 'content' ? __( 'Content', 'launch-interactive-forms' ) : h.isCaptcha( field ) ? typeLabels[ field.type ] || field.type : h.stripTags( field.label ) || field.name;
 					return el(
 						'div',
 						{
-							className: 'lf-builder__field' + ( isOpen ? ' is-open' : '' ) + ( dragging && dragging.from === index ? ' is-dragging' : '' ),
+							className: 'lif-builder__field' + ( isOpen ? ' is-open' : '' ) + ( dragging && dragging.from === index ? ' is-dragging' : '' ),
 							key: index,
 							style: sortable.itemStyle( index ),
 						},
 						el(
 							'div',
-							{ className: 'lf-builder__field-head' },
+							{ className: 'lif-builder__field-head' },
 							fields.length > 1 &&
 								el(
 									'span',
 									{
-										className: 'lf-builder__handle',
+										className: 'lif-builder__handle',
 										role: 'button',
 										tabIndex: 0,
 										title: __( 'Drag to reorder', 'launch-interactive-forms' ),
@@ -1079,7 +1079,7 @@
 								'button',
 								{
 									type: 'button',
-									className: 'lf-builder__field-title',
+									className: 'lif-builder__field-title',
 									'aria-expanded': isOpen,
 									onClick: function () {
 										setOpen( isOpen ? -1 : index );
@@ -1087,9 +1087,9 @@
 								},
 								el( 'strong', null, title ),
 								field.required ? ' *' : '',
-								el( 'span', { className: 'lf-builder__meta' }, h.isCaptcha( field ) ? __( 'Spam check', 'launch-interactive-forms' ) : ( typeLabels[ field.type ] || field.type ) + ( h.isInput( field ) ? ' · ' + field.name : '' ) ),
-								WIDTH_BADGES[ field.width ] ? el( 'span', { className: 'lf-builder__badge', title: ( data.widths || {} )[ field.width ] }, WIDTH_BADGES[ field.width ] ) : null,
-								field.conditions && field.conditions.enabled ? el( 'span', { className: 'lf-builder__badge' }, __( 'conditional', 'launch-interactive-forms' ) ) : null
+								el( 'span', { className: 'lif-builder__meta' }, h.isCaptcha( field ) ? __( 'Spam check', 'launch-interactive-forms' ) : ( typeLabels[ field.type ] || field.type ) + ( h.isInput( field ) ? ' · ' + field.name : '' ) ),
+								WIDTH_BADGES[ field.width ] ? el( 'span', { className: 'lif-builder__badge', title: ( data.widths || {} )[ field.width ] }, WIDTH_BADGES[ field.width ] ) : null,
+								field.conditions && field.conditions.enabled ? el( 'span', { className: 'lif-builder__badge' }, __( 'conditional', 'launch-interactive-forms' ) ) : null
 							),
 							el( c.Button, {
 								icon: 'admin-page',
@@ -1173,7 +1173,7 @@
 				} ),
 				el(
 					'div',
-					{ className: 'lf-builder__add' },
+					{ className: 'lif-builder__add' },
 					el( c.SelectControl, {
 						__nextHasNoMarginBottom: true,
 						__next40pxDefaultSize: true,
@@ -1220,7 +1220,7 @@
 
 			return el(
 				'div',
-				{ className: 'lf-builder__panel' },
+				{ className: 'lif-builder__panel' },
 				el( c.TextControl, {
 					__nextHasNoMarginBottom: true,
 					__next40pxDefaultSize: true,
@@ -1245,7 +1245,7 @@
 					} ),
 					el(
 						'p',
-						{ className: 'lf-builder__hint' },
+						{ className: 'lif-builder__hint' },
 						__( 'Merge tags:', 'launch-interactive-forms' ),
 						' ',
 						h.mergeTags( props.config ).map( function ( t ) {
@@ -1295,10 +1295,10 @@
 				el(
 					'div',
 					null,
-					el( 'p', { className: 'lf-builder__label' }, __( 'Spam protection', 'launch-interactive-forms' ) ),
+					el( 'p', { className: 'lif-builder__label' }, __( 'Spam protection', 'launch-interactive-forms' ) ),
 					el(
 						'p',
-						{ className: 'lf-builder__hint' },
+						{ className: 'lif-builder__hint' },
 						captchaField
 							? wp.i18n.sprintf(
 									/* translators: %s: Google reCAPTCHA or Cloudflare Turnstile. */
@@ -1325,8 +1325,8 @@
 
 			return el(
 				'div',
-				{ className: 'lf-builder__panel' },
-				el( 'p', { className: 'lf-builder__hint' }, __( 'Merge tags:', 'launch-interactive-forms' ), ' ', tags.map( function ( t ) {
+				{ className: 'lif-builder__panel' },
+				el( 'p', { className: 'lif-builder__hint' }, __( 'Merge tags:', 'launch-interactive-forms' ), ' ', tags.map( function ( t ) {
 					return el( 'code', { key: t }, t );
 				} ) ),
 				list.map( function ( n, i ) {
@@ -1349,10 +1349,10 @@
 					};
 					return el(
 						'div',
-						{ className: 'lf-builder__card', key: i },
+						{ className: 'lif-builder__card', key: i },
 						el(
 							'div',
-							{ className: 'lf-builder__row' },
+							{ className: 'lif-builder__row' },
 							el( c.ToggleControl, {
 								__nextHasNoMarginBottom: true,
 								label: __( 'Enabled', 'launch-interactive-forms' ),
@@ -1389,7 +1389,7 @@
 								change( 'message', v );
 							},
 						} ),
-						el( 'div', { className: 'lf-builder__row' }, text( 'reply_to', __( 'Reply-To', 'launch-interactive-forms' ) ), text( 'from_name', __( 'From name', 'launch-interactive-forms' ) ), text( 'from_email', __( 'From email', 'launch-interactive-forms' ) ) ),
+						el( 'div', { className: 'lif-builder__row' }, text( 'reply_to', __( 'Reply-To', 'launch-interactive-forms' ) ), text( 'from_name', __( 'From name', 'launch-interactive-forms' ) ), text( 'from_email', __( 'From email', 'launch-interactive-forms' ) ) ),
 						hasFiles &&
 							el( c.ToggleControl, {
 								__nextHasNoMarginBottom: true,
@@ -1435,7 +1435,7 @@
 					if ( ! data.mailchimpConfigured || ! mc.enabled || listsState[ 0 ] !== null || ! wp.apiFetch ) {
 						return;
 					}
-					wp.apiFetch( { path: '/launch-forms/v1/mailchimp/lists' } ).then(
+					wp.apiFetch( { path: '/liforms/v1/mailchimp/lists' } ).then(
 						function ( lists ) {
 							listsState[ 1 ]( lists );
 						},
@@ -1461,7 +1461,7 @@
 			var mergeFields = mc.merge_fields || [];
 			return el(
 				'div',
-				{ className: 'lf-builder__panel' },
+				{ className: 'lif-builder__panel' },
 				el( c.ToggleControl, {
 					__nextHasNoMarginBottom: true,
 					label: __( 'Subscribe submitters to Mailchimp', 'launch-interactive-forms' ),
@@ -1566,7 +1566,7 @@
 							};
 							return el(
 								'div',
-								{ className: 'lf-builder__row lf-builder__rule', key: i },
+								{ className: 'lif-builder__row lif-builder__rule', key: i },
 								el( c.TextControl, {
 									__nextHasNoMarginBottom: true,
 									__next40pxDefaultSize: true,
@@ -1622,11 +1622,11 @@
 			var onChange = props.onChange;
 			return el(
 				'div',
-				{ className: 'lf-builder' },
+				{ className: 'lif-builder' },
 				el(
 					c.TabPanel,
 					{
-						className: 'lf-builder__tabs',
+						className: 'lif-builder__tabs',
 						tabs: [
 							{ name: 'fields', title: __( 'Fields', 'launch-interactive-forms' ) },
 							{ name: 'settings', title: __( 'Settings', 'launch-interactive-forms' ) },

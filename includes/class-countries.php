@@ -2,10 +2,10 @@
 /**
  * The list of countries offered by the Country field.
  *
- * @package LaunchForms
+ * @package LaunchInteractiveForms
  */
 
-namespace LaunchForms;
+namespace LaunchInteractiveForms;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -283,7 +283,7 @@ class Countries {
 		 *
 		 * @param array<string,string> $countries Code => name.
 		 */
-		$countries = (array) apply_filters( 'launch_forms_countries', $countries );
+		$countries = (array) apply_filters( 'liforms_countries', $countries );
 		$countries = array_filter( array_map( 'sanitize_text_field', array_filter( $countries, 'is_scalar' ) ), 'strlen' );
 		uasort( $countries, array( self::class, 'compare' ) );
 		return $countries;

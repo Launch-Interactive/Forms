@@ -9,7 +9,7 @@
 	convertDeprecationsToExceptions="false"
 	>
 	<testsuites>
-		<testsuite name="launch-forms">
+		<testsuite name="liforms">
 			<directory suffix="Test.php">./tests/php/</directory>
 		</testsuite>
 	</testsuites>

@@ -1,7 +1,7 @@
 /**
  * "Form" block. Pick an existing form or build one right in the editor.
  *
- * The block only stores the form ID; the form itself is a separate, reusable lf_form record
+ * The block only stores the form ID; the form itself is a separate, reusable liforms_form record
  * edited through core-data. Changes made here are saved with the page (the editor lists the
  * form in its "save" panel) and appear everywhere the form is used.
  */
@@ -20,9 +20,9 @@
 	var useDispatch = wp.data.useDispatch;
 	var useEntityProp = wp.coreData.useEntityProp;
 	var ServerSideRender = wp.serverSideRender;
-	var builder = window.launchFormsBuilder;
-	var META = 'launch_forms_config';
-	var TYPE = 'launch_forms_form';
+	var builder = window.liformsBuilder;
+	var META = 'liforms_config';
+	var TYPE = 'liforms_form';
 
 	function starterConfig() {
 		var defaults = builder.data.defaults || {};
@@ -45,7 +45,7 @@
 		return config;
 	}
 
-	/** Builder bound to the lf_form entity. */
+	/** Builder bound to the liforms_form entity. */
 	function FormEditor( props ) {
 		var metaProp = useEntityProp( 'postType', TYPE, 'meta', props.formId );
 		var titleProp = useEntityProp( 'postType', TYPE, 'title', props.formId );
@@ -55,7 +55,7 @@
 		}
 		return el(
 			'div',
-			{ className: 'lf-block-editor' },
+			{ className: 'lif-block-editor' },
 			el( c.TextControl, {
 				__nextHasNoMarginBottom: true,
 				__next40pxDefaultSize: true,
@@ -108,7 +108,7 @@
 				var cancelled = false;
 				var timer = setTimeout( function () {
 					wp.apiFetch( {
-						path: '/launch-forms/v1/forms/' + formId + '/preview',
+						path: '/liforms/v1/forms/' + formId + '/preview',
 						method: 'POST',
 						data: { config: config, className: props.className || '' },
 					} )
@@ -133,7 +133,7 @@
 
 		// Form missing or not readable: let the server explain.
 		if ( info.resolved && ! info.record ) {
-			return el( c.Disabled, null, el( ServerSideRender, { block: 'launch-forms/form', attributes: { formId: formId } } ) );
+			return el( c.Disabled, null, el( ServerSideRender, { block: 'liforms/form', attributes: { formId: formId } } ) );
 		}
 		if ( state[ 0 ].error ) {
 			return el( c.Notice, { status: 'error', isDismissible: false }, state[ 0 ].error );
@@ -196,7 +196,7 @@
 				? el( c.Spinner )
 				: el(
 						'div',
-						{ className: 'lf-block-picker' },
+						{ className: 'lif-block-picker' },
 						forms.length > 0 &&
 							el( c.SelectControl, {
 								__nextHasNoMarginBottom: true,
@@ -266,7 +266,7 @@
 						Fragment,
 						null,
 						el( 'p', null, __( 'Shortcode for other builders:', 'launch-interactive-forms' ) ),
-						el( 'code', null, '[launch_form id="' + formId + '"]' ),
+						el( 'code', null, '[liforms id="' + formId + '"]' ),
 						el(
 							'p',
 							null,
@@ -288,7 +288,7 @@
 		return el( 'div', blockProps, toolbar, inspector, body );
 	}
 
-	wp.blocks.registerBlockType( 'launch-forms/form', {
+	wp.blocks.registerBlockType( 'liforms/form', {
 		edit: Edit,
 		save: function () {
 			return null;

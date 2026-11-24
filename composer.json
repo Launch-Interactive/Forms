@@ -1,5 +1,5 @@
 {
-    "name": "launch-forms/launch-forms",
+    "name": "launch-interactive/launch-interactive-forms",
     "description": "Lightweight WordPress form builder that inherits theme styling.",
     "type": "wordpress-plugin",
     "license": "GPL-2.0-or-later",

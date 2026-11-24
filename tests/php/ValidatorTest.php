@@ -1,10 +1,10 @@
 <?php
 /**
- * @covers \LaunchForms\Validator
+ * @covers \LaunchInteractiveForms\Validator
  */
 
-use LaunchForms\Form_Config;
-use LaunchForms\Validator;
+use LaunchInteractiveForms\Form_Config;
+use LaunchInteractiveForms\Validator;
 
 class ValidatorTest extends LF_TestCase {
 
@@ -136,7 +136,7 @@ class ValidatorTest extends LF_TestCase {
 	public function test_validation_errors_filter() {
 		$form = $this->contact_form();
 		add_filter(
-			'launch_forms_validation_errors',
+			'liforms_validation_errors',
 			static function ( $errors, $values ) {
 				if ( 'blocked@example.com' === $values['email'] ) {
 					$errors['email'] = 'Blocked.';

@@ -2,10 +2,10 @@
 /**
  * Send all WordPress email through an SMTP server.
  *
- * @package LaunchForms
+ * @package LaunchInteractiveForms
  */
 
-namespace LaunchForms;
+namespace LaunchInteractiveForms;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -81,7 +81,7 @@ class Smtp {
 		 *
 		 * @param \PHPMailer\PHPMailer\PHPMailer $phpmailer Mailer.
 		 */
-		do_action( 'launch_forms_smtp_configured', $phpmailer );
+		do_action( 'liforms_smtp_configured', $phpmailer );
 	}
 
 	/**

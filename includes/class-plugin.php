@@ -2,10 +2,10 @@
 /**
  * Service container and bootstrap.
  *
- * @package LaunchForms
+ * @package LaunchInteractiveForms
  */
 
-namespace LaunchForms;
+namespace LaunchInteractiveForms;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -124,6 +124,6 @@ final class Plugin {
 		 *
 		 * @param string $capability Default 'manage_options'.
 		 */
-		return (string) apply_filters( 'launch_forms_manage_capability', 'manage_options' );
+		return (string) apply_filters( 'liforms_manage_capability', 'manage_options' );
 	}
 }

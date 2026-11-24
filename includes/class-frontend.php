@@ -2,10 +2,10 @@
 /**
  * Front-end integration: assets, shortcode, block and the no-JavaScript POST fallback.
  *
- * @package LaunchForms
+ * @package LaunchInteractiveForms
  */
 
-namespace LaunchForms;
+namespace LaunchInteractiveForms;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -14,10 +14,10 @@ defined( 'ABSPATH' ) || exit;
  */
 class Frontend {
 
-	const SHORTCODE = 'launch_form';
+	const SHORTCODE = 'liforms';
 
 	/** Transient prefix for filled-in success messages carried across the no-JS redirect. */
-	const MESSAGE_TRANSIENT = 'launch_forms_msg_';
+	const MESSAGE_TRANSIENT = 'liforms_msg_';
 
 	/** @var Plugin */
 	private $plugin;
@@ -47,35 +47,35 @@ class Frontend {
 	 * Register scripts and styles.
 	 */
 	public function register_assets() {
-		$ver = LAUNCH_FORMS_VERSION;
-		$css = $this->plugin->settings->get( 'load_css' ) ? LAUNCH_FORMS_URL . 'assets/css/launch-forms.css' : false;
-		wp_register_style( 'launch-forms', $css, array(), $ver );
+		$ver = LIFORMS_VERSION;
+		$css = $this->plugin->settings->get( 'load_css' ) ? LIFORMS_URL . 'assets/css/liforms.css' : false;
+		wp_register_style( 'liforms', $css, array(), $ver );
 
 		// The conditional logic script is added as a dependency only when a form on the page uses it (see enqueue_assets()).
-		wp_register_script( 'launch-forms-conditional', LAUNCH_FORMS_URL . 'assets/js/conditional-logic.js', array(), $ver, array( 'in_footer' => true, 'strategy' => 'defer' ) );
-		wp_register_script( 'launch-forms', LAUNCH_FORMS_URL . 'assets/js/frontend.js', array(), $ver, array( 'in_footer' => true, 'strategy' => 'defer' ) );
+		wp_register_script( 'liforms-conditional', LIFORMS_URL . 'assets/js/conditional-logic.js', array(), $ver, array( 'in_footer' => true, 'strategy' => 'defer' ) );
+		wp_register_script( 'liforms', LIFORMS_URL . 'assets/js/frontend.js', array(), $ver, array( 'in_footer' => true, 'strategy' => 'defer' ) );
 		wp_localize_script(
-			'launch-forms',
-			'launchFormsConfig',
+			'liforms',
+			'liformsConfig',
 			array(
-				'restUrl' => esc_url_raw( rest_url( 'launch-forms/v1/forms/' ) ),
+				'restUrl' => esc_url_raw( rest_url( 'liforms/v1/forms/' ) ),
 				'i18n'    => array(
 					'error' => __( 'Something went wrong. Please try again.', 'launch-interactive-forms' ),
 				),
 			)
 		);
 
-		wp_register_script( 'launch-forms-builder', LAUNCH_FORMS_URL . 'assets/js/builder.js', array( 'wp-element', 'wp-components', 'wp-i18n', 'wp-api-fetch', 'wp-a11y' ), $ver, true );
-		wp_register_style( 'launch-forms-builder', LAUNCH_FORMS_URL . 'assets/css/builder.css', array( 'wp-components', 'dashicons' ), $ver ); // Dashicons: the block editor canvas iframe doesn't load them.
+		wp_register_script( 'liforms-builder', LIFORMS_URL . 'assets/js/builder.js', array( 'wp-element', 'wp-components', 'wp-i18n', 'wp-api-fetch', 'wp-a11y' ), $ver, true );
+		wp_register_style( 'liforms-builder', LIFORMS_URL . 'assets/css/builder.css', array( 'wp-components', 'dashicons' ), $ver ); // Dashicons: the block editor canvas iframe doesn't load them.
 		wp_register_script(
-			'launch-forms-block-editor',
-			LAUNCH_FORMS_URL . 'assets/js/block.js',
-			array( 'wp-blocks', 'wp-element', 'wp-components', 'wp-block-editor', 'wp-data', 'wp-core-data', 'wp-server-side-render', 'wp-i18n', 'wp-api-fetch', 'launch-forms-builder' ),
+			'liforms-block-editor',
+			LIFORMS_URL . 'assets/js/block.js',
+			array( 'wp-blocks', 'wp-element', 'wp-components', 'wp-block-editor', 'wp-data', 'wp-core-data', 'wp-server-side-render', 'wp-i18n', 'wp-api-fetch', 'liforms-builder' ),
 			$ver,
 			true
 		);
-		wp_set_script_translations( 'launch-forms-builder', 'launch-interactive-forms' );
-		wp_set_script_translations( 'launch-forms-block-editor', 'launch-interactive-forms' );
+		wp_set_script_translations( 'liforms-builder', 'launch-interactive-forms' );
+		wp_set_script_translations( 'liforms-block-editor', 'launch-interactive-forms' );
 	}
 
 	/**
@@ -83,7 +83,7 @@ class Frontend {
 	 */
 	public function register_block() {
 		register_block_type(
-			LAUNCH_FORMS_DIR . 'blocks/form',
+			LIFORMS_DIR . 'blocks/form',
 			array( 'render_callback' => array( $this, 'render_block' ) )
 		);
 	}
@@ -99,12 +99,12 @@ class Frontend {
 		if ( ! $id ) {
 			return '';
 		}
-		$class = trim( 'wp-block-launch-forms-form ' . ( isset( $attributes['className'] ) ? (string) $attributes['className'] : '' ) );
+		$class = trim( 'wp-block-liforms-form ' . ( isset( $attributes['className'] ) ? (string) $attributes['className'] : '' ) );
 		return $this->plugin->renderer->render_id( $id, array( 'class' => $class ) );
 	}
 
 	/**
-	 * [launch_form id="123" class="optional"] shortcode for classic content and page builders.
+	 * [liforms id="123" class="optional"] shortcode for classic content and page builders.
 	 *
 	 * @param array|string $atts Attributes.
 	 * @return string
@@ -128,20 +128,20 @@ class Frontend {
 	 * @param Form $form Form.
 	 */
 	public function enqueue_assets( Form $form ) {
-		if ( ! wp_script_is( 'launch-forms', 'registered' ) ) {
+		if ( ! wp_script_is( 'liforms', 'registered' ) ) {
 			$this->register_assets();
 		}
-		wp_enqueue_style( 'launch-forms' );
-		wp_enqueue_script( 'launch-forms' );
+		wp_enqueue_style( 'liforms' );
+		wp_enqueue_script( 'liforms' );
 		if ( $form->has_conditions() ) {
 			// Make frontend.js depend on the conditional logic script, so it's printed (and run) first.
-			$script = wp_scripts()->query( 'launch-forms', 'registered' );
-			if ( $script && ! in_array( 'launch-forms-conditional', $script->deps, true ) ) {
-				$script->deps[] = 'launch-forms-conditional';
+			$script = wp_scripts()->query( 'liforms', 'registered' );
+			if ( $script && ! in_array( 'liforms-conditional', $script->deps, true ) ) {
+				$script->deps[] = 'liforms-conditional';
 			}
 		}
 		if ( is_user_logged_in() ) {
-			wp_add_inline_script( 'launch-forms', 'window.launchFormsConfig&&(window.launchFormsConfig.nonce=' . wp_json_encode( wp_create_nonce( 'wp_rest' ) ) . ');', 'before' );
+			wp_add_inline_script( 'liforms', 'window.liformsConfig&&(window.liformsConfig.nonce=' . wp_json_encode( wp_create_nonce( 'wp_rest' ) ) . ');', 'before' );
 		}
 	}
 
@@ -168,10 +168,10 @@ class Frontend {
 	 * @return string|null
 	 */
 	public function process_post( array $post, array $files ) {
-		if ( empty( $post['lf_form_id'] ) || ! isset( $_SERVER['REQUEST_METHOD'] ) || 'POST' !== $_SERVER['REQUEST_METHOD'] ) {
+		if ( empty( $post['lif_form_id'] ) || ! isset( $_SERVER['REQUEST_METHOD'] ) || 'POST' !== $_SERVER['REQUEST_METHOD'] ) {
 			return null;
 		}
-		$form = $this->plugin->forms->get( absint( $post['lf_form_id'] ) );
+		$form = $this->plugin->forms->get( absint( $post['lif_form_id'] ) );
 		if ( ! $form ) {
 			return null;
 		}
@@ -180,9 +180,9 @@ class Frontend {
 		$result  = $this->plugin->processor->process(
 			$form,
 			wp_unslash( $post ),
-			Uploads::normalize_files( $files['lf'] ?? null ),
+			Uploads::normalize_files( $files['lif'] ?? null ),
 			array(
-				'page_url' => remove_query_arg( array( 'lf_sent', 'lf_msg' ), $current ),
+				'page_url' => remove_query_arg( array( 'lif_sent', 'lif_msg' ), $current ),
 				'ip'       => self::client_ip(),
 				'user_id'  => self::verified_user_id( $form->id, $post ),
 			)
@@ -205,7 +205,7 @@ class Frontend {
 			}
 			return $result->redirect;
 		}
-		$args = array( 'lf_sent' => $form->id );
+		$args = array( 'lif_sent' => $form->id );
 		if ( false !== strpos( $form->settings['success_message'], '{' ) && ! $result->spam ) {
 			// The message uses merge tags: keep the filled-in version for a few minutes under an
 			// unguessable token, since the submitted values are gone after the redirect.
@@ -218,9 +218,9 @@ class Frontend {
 				),
 				10 * MINUTE_IN_SECONDS
 			);
-			$args['lf_msg'] = $token;
+			$args['lif_msg'] = $token;
 		}
-		return add_query_arg( $args, remove_query_arg( array( 'lf_sent', 'lf_msg' ), $current ) ) . '#lf-form-' . $form->id;
+		return add_query_arg( $args, remove_query_arg( array( 'lif_sent', 'lif_msg' ), $current ) ) . '#lif-form-' . $form->id;
 	}
 
 	/**
@@ -237,8 +237,8 @@ class Frontend {
 		if ( ! $user_id ) {
 			return 0;
 		}
-		$nonce = isset( $post['lf_nonce'] ) && is_string( $post['lf_nonce'] ) ? sanitize_key( $post['lf_nonce'] ) : '';
-		return wp_verify_nonce( $nonce, 'launch_forms_submit_' . (int) $form_id ) ? $user_id : 0;
+		$nonce = isset( $post['lif_nonce'] ) && is_string( $post['lif_nonce'] ) ? sanitize_key( $post['lif_nonce'] ) : '';
+		return wp_verify_nonce( $nonce, 'liforms_submit_' . (int) $form_id ) ? $user_id : 0;
 	}
 
 	/**
@@ -266,7 +266,7 @@ class Frontend {
 		 *
 		 * @param string $ip REMOTE_ADDR.
 		 */
-		$ip = (string) apply_filters( 'launch_forms_client_ip', $ip );
+		$ip = (string) apply_filters( 'liforms_client_ip', $ip );
 		return filter_var( $ip, FILTER_VALIDATE_IP ) ? $ip : '';
 	}
 }

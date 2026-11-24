@@ -3,10 +3,10 @@
  * Server-side conditional logic. Mirrors assets/js/conditional-logic.js exactly so hidden
  * fields are ignored during validation even when JavaScript is disabled or bypassed.
  *
- * @package LaunchForms
+ * @package LaunchInteractiveForms
  */
 
-namespace LaunchForms;
+namespace LaunchInteractiveForms;
 
 defined( 'ABSPATH' ) || exit;
 

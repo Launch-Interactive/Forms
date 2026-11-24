@@ -4,8 +4,8 @@
  */
 ( function () {
 	// Only show the SMTP details while "Use Custom SMTP" is ticked.
-	var toggle = document.getElementById( 'lf-smtp-enabled' );
-	var details = document.getElementById( 'lf-smtp-details' );
+	var toggle = document.getElementById( 'lif-smtp-enabled' );
+	var details = document.getElementById( 'lif-smtp-details' );
 	if ( toggle && details ) {
 		toggle.addEventListener( 'change', function () {
 			details.hidden = ! toggle.checked;
@@ -13,8 +13,8 @@
 	}
 
 	// Switch to the usual port when the encryption changes, unless a custom port was typed.
-	var enc = document.getElementById( 'lf-smtp-encryption' );
-	var port = document.getElementById( 'lf-smtp-port' );
+	var enc = document.getElementById( 'lif-smtp-encryption' );
+	var port = document.getElementById( 'lif-smtp-port' );
 	var ports = { tls: '587', ssl: '465', none: '25' };
 	if ( enc && port ) {
 		enc.addEventListener( 'change', function () {

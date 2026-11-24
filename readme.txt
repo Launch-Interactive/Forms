@@ -4,7 +4,7 @@ Tags: form, contact form, form builder, mailchimp, turnstile
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.0.0
+Stable tag: 2.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -18,7 +18,7 @@ Launch Interactive Forms is a form builder for people who want forms that look l
 
 * Build a form right in the block editor with the Form block, or under Forms → Add New.
 * Each form is a reusable record. Place it on as many pages as you like; edit it once and it changes everywhere.
-* Use the `[launch_form id="123"]` shortcode in Elementor, classic content, widgets and other page builders.
+* Use the `[liforms id="123"]` shortcode in Elementor, classic content, widgets and other page builders.
 * Drag fields into order, or use the keyboard: tab to a field's handle and press the up and down arrow keys.
 
 **Fields**
@@ -46,7 +46,7 @@ Launch Interactive Forms is a form builder for people who want forms that look l
 * Uploaded files are stored privately under random names, outside the media library, and can only be downloaded by administrators. A Site Health check confirms your server really blocks the folder.
 * Forms still work without JavaScript.
 
-Developer documentation, hooks and filters are on [GitHub](https://github.com/Launch-Interactive/Launch-Forms).
+Developer documentation, hooks and filters are on [GitHub](https://github.com/Launch-Interactive/launch-interactive-forms).
 
 == External services ==
 
@@ -85,15 +85,15 @@ On purpose. The plugin uses your theme's styles for inputs, labels and buttons, 
 
 = How do I use a form in Elementor or another page builder? =
 
-Use the shortcode shown on the form's edit screen, e.g. `[launch_form id="123"]`.
+Use the shortcode shown on the form's edit screen, e.g. `[liforms id="123"]`.
 
 = Are uploaded files public? =
 
-No. They are stored in a private folder under random names with no file extension, and only administrators can download them, through a logged-in, nonce-checked link. Apache and IIS are protected automatically. On nginx, add `location ^~ /wp-content/uploads/launch-interactive-forms/ { deny all; }` to your server config, or add `define( 'LAUNCH_FORMS_PRIVATE_DIR', '/path/outside/webroot' );` to wp-config.php.
+No. They are stored in a private folder under random names with no file extension, and only administrators can download them, through a logged-in, nonce-checked link. Apache and IIS are protected automatically. On nginx, add `location ^~ /wp-content/uploads/launch-interactive-forms/ { deny all; }` to your server config, or add `define( 'LIFORMS_PRIVATE_DIR', '/path/outside/webroot' );` to wp-config.php.
 
 = Can I keep API keys out of the database? =
 
-Yes. Any setting can be defined in wp-config.php, e.g. `define( 'LAUNCH_FORMS_MAILCHIMP_API_KEY', '...' );` or `define( 'LAUNCH_FORMS_SMTP_PASSWORD', '...' );`.
+Yes. Any setting can be defined in wp-config.php, e.g. `define( 'LIFORMS_MAILCHIMP_API_KEY', '...' );` or `define( 'LIFORMS_SMTP_PASSWORD', '...' );`.
 
 = Can I change the required field marker? =
 
@@ -101,13 +101,17 @@ Yes. Under Forms → Settings, change the `*` to anything you like, for example 
 
 = My site blocks the REST API for visitors. Do forms still work? =
 
-Yes. Forms normally send without reloading the page, through the WordPress REST API. If your site or a security plugin refuses that request, the form is sent the ordinary way instead and the page reloads with the result. To keep forms sending without a reload, allow the `launch-forms/v1` routes in your REST API restriction.
+Yes. Forms normally send without reloading the page, through the WordPress REST API. If your site or a security plugin refuses that request, the form is sent the ordinary way instead and the page reloads with the result. To keep forms sending without a reload, allow the `liforms/v1` routes in your REST API restriction.
 
 = Does it work without JavaScript? =
 
 Yes. Forms submit normally when JavaScript isn't available, and conditional logic is still applied on the server.
 
 == Changelog ==
+
+= 2.1.0 =
+* Changed: one prefix throughout. PHP names, options, hooks, post types, the REST namespace, the block and the shortcode use `liforms` (`liforms_settings`, `liforms_form_html`, `liforms/v1`, `liforms/form`, `[liforms]`); constants use `LIFORMS_`; the namespace is `LaunchInteractiveForms`. CSS classes, HTML ids, data attributes, CSS variables and form field names use `lif-` / `lif_`. Spacing is one variable, `--lif-gap`, for rows and side-by-side fields.
+* Existing data, blocks and shortcodes (in post content, Elementor data and widgets) are moved to the new names automatically. Theme CSS, custom code and wp-config.php constants need updating by hand.
 
 = 2.0.0 =
 * Renamed from Launch Forms to Launch Interactive Forms (slug `launch-interactive-forms`).
@@ -172,6 +176,9 @@ Yes. Forms submit normally when JavaScript isn't available, and conditional logi
 * First release.
 
 == Upgrade Notice ==
+
+= 2.1.0 =
+New prefix: update theme CSS (`.lf-*` → `.lif-*`, `--lf-row-gap` / `--lf-gap` → `--lif-gap`), hooks (`launch_forms_*` → `liforms_*`) and wp-config.php constants (`LAUNCH_FORMS_*` → `LIFORMS_*`). Forms, submissions, blocks and shortcodes are updated automatically.
 
 = 2.0.0 =
 New name and folder (launch-interactive-forms). Forms, submissions and uploads move to the new names automatically the first time it loads.

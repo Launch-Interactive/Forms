@@ -2,10 +2,10 @@
 /**
  * "Send test email" tool so site owners can confirm wp_mail() works.
  *
- * @package LaunchForms
+ * @package LaunchInteractiveForms
  */
 
-namespace LaunchForms;
+namespace LaunchInteractiveForms;
 
 defined( 'ABSPATH' ) || exit;
 

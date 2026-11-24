@@ -2,12 +2,12 @@
 /**
  * Links in a consent checkbox's label.
  *
- * @covers \LaunchForms\Form_Config
- * @covers \LaunchForms\Renderer
- * @covers \LaunchForms\Processor
+ * @covers \LaunchInteractiveForms\Form_Config
+ * @covers \LaunchInteractiveForms\Renderer
+ * @covers \LaunchInteractiveForms\Processor
  */
 
-use LaunchForms\Form_Config;
+use LaunchInteractiveForms\Form_Config;
 
 class ConsentLabelTest extends LF_TestCase {
 
@@ -26,15 +26,15 @@ class ConsentLabelTest extends LF_TestCase {
 	public function test_link_is_kept_and_rendered_inside_the_label() {
 		$form = $this->consent_form();
 		$this->assertSame( self::LABEL, $form->fields[1]['label'] );
-		$html = launch_forms()->renderer->render( $form );
-		$this->assertMatchesRegularExpression( '#<label for="[^"]+">I agree to the <a href="\#terms">terms and conditions</a> <span class="lf-required"#', $html );
+		$html = liforms()->renderer->render( $form );
+		$this->assertMatchesRegularExpression( '#<label for="[^"]+">I agree to the <a href="\#terms">terms and conditions</a> <span class="lif-required"#', $html );
 	}
 
 	public function test_unsafe_html_is_removed() {
 		$form  = $this->consent_form( 'I <strong>agree</strong> <a href="javascript:alert(1)" onclick="x()">here</a><script>alert(2)</script> <img src=x onerror=y> <em>ok</em>' );
 		$label = $form->fields[1]['label'];
 		$this->assertSame( 'I <strong>agree</strong> <a href="alert(1)">here</a>alert(2) <em>ok</em>', $label );
-		$html = launch_forms()->renderer->render( $form );
+		$html = liforms()->renderer->render( $form );
 		$this->assertStringNotContainsString( 'javascript:', $html );
 		$this->assertStringNotContainsString( 'onclick', $html );
 		$this->assertStringNotContainsString( '<script>alert(2)', $html );
@@ -51,13 +51,13 @@ class ConsentLabelTest extends LF_TestCase {
 	public function test_other_field_labels_stay_plain_text() {
 		$form = $this->make_form( array( $this->field( 'text', 'name', array( 'label' => 'Your <a href="#x">name</a>' ) ) ) );
 		$this->assertSame( 'Your name', $form->fields[0]['label'] );
-		$this->assertStringContainsString( '>Your name</label>', launch_forms()->renderer->render( $form ) );
+		$this->assertStringContainsString( '>Your name</label>', liforms()->renderer->render( $form ) );
 	}
 
 	public function test_emails_and_submissions_use_the_plain_text_label() {
 		$form = $this->consent_form( 'I agree to the <a href="#terms">terms &amp; conditions</a>' );
 		reset_phpmailer_instance();
-		$result = launch_forms()->processor->process( $form, array( 'lf' => array( 'email' => 'ann@example.com', 'terms' => '1' ) ) );
+		$result = liforms()->processor->process( $form, array( 'lif' => array( 'email' => 'ann@example.com', 'terms' => '1' ) ) );
 		$this->assertTrue( $result->success );
 
 		$labels = wp_list_pluck( $result->entries, 'label', 'name' );

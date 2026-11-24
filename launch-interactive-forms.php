@@ -1,9 +1,9 @@
 <?php
 /**
  * Plugin Name:       Launch Interactive Forms
- * Plugin URI:        https://github.com/Launch-Interactive/Launch-Forms
+ * Plugin URI:        https://github.com/Launch-Interactive/launch-interactive-forms
  * Description:       Lightweight form builder that outputs minimal HTML and inherits your theme's styling. Build forms in the block editor or the Forms screen, reuse them anywhere with a block or shortcode.
- * Version:           2.0.0
+ * Version:           2.1.0
  * Requires at least: 6.5
  * Requires PHP:      7.4
  * Author:            Launch Interactive
@@ -12,23 +12,23 @@
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       launch-interactive-forms
  *
- * @package LaunchForms
+ * @package LaunchInteractiveForms
  */
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'LAUNCH_FORMS_VERSION', '2.0.0' );
-define( 'LAUNCH_FORMS_FILE', __FILE__ );
-define( 'LAUNCH_FORMS_DIR', plugin_dir_path( __FILE__ ) );
-define( 'LAUNCH_FORMS_URL', plugin_dir_url( __FILE__ ) );
+define( 'LIFORMS_VERSION', '2.1.0' );
+define( 'LIFORMS_FILE', __FILE__ );
+define( 'LIFORMS_DIR', plugin_dir_path( __FILE__ ) );
+define( 'LIFORMS_URL', plugin_dir_url( __FILE__ ) );
 
 spl_autoload_register(
 	static function ( $class ) {
-		if ( 0 !== strpos( $class, 'LaunchForms\\' ) ) {
+		if ( 0 !== strpos( $class, 'LaunchInteractiveForms\\' ) ) {
 			return;
 		}
-		$name = strtolower( str_replace( '_', '-', substr( $class, strlen( 'LaunchForms\\' ) ) ) );
-		$file = LAUNCH_FORMS_DIR . 'includes/class-' . $name . '.php';
+		$name = strtolower( str_replace( '_', '-', substr( $class, strlen( 'LaunchInteractiveForms\\' ) ) ) );
+		$file = LIFORMS_DIR . 'includes/class-' . $name . '.php';
 		if ( is_readable( $file ) ) {
 			require $file;
 		}
@@ -38,12 +38,12 @@ spl_autoload_register(
 /**
  * Access the plugin container.
  *
- * @return \LaunchForms\Plugin
+ * @return \LaunchInteractiveForms\Plugin
  */
-function launch_forms() {
-	return \LaunchForms\Plugin::instance();
+function liforms() {
+	return \LaunchInteractiveForms\Plugin::instance();
 }
 
-launch_forms()->boot();
+liforms()->boot();
 
-register_activation_hook( __FILE__, array( '\LaunchForms\Plugin', 'activate' ) );
+register_activation_hook( __FILE__, array( '\LaunchInteractiveForms\Plugin', 'activate' ) );

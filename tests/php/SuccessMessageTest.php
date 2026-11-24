@@ -2,10 +2,10 @@
 /**
  * Merge tags in the success message.
  *
- * @covers \LaunchForms\Renderer
- * @covers \LaunchForms\Notifications
- * @covers \LaunchForms\Frontend
- * @covers \LaunchForms\Rest_Api
+ * @covers \LaunchInteractiveForms\Renderer
+ * @covers \LaunchInteractiveForms\Notifications
+ * @covers \LaunchInteractiveForms\Frontend
+ * @covers \LaunchInteractiveForms\Rest_Api
  */
 
 class SuccessMessageTest extends LF_TestCase {
@@ -17,8 +17,8 @@ class SuccessMessageTest extends LF_TestCase {
 	}
 
 	private function rest_submit( $form, array $values ) {
-		$request = new WP_REST_Request( 'POST', '/launch-forms/v1/forms/' . $form->id . '/submit' );
-		$request->set_body_params( array( 'lf' => $values ) );
+		$request = new WP_REST_Request( 'POST', '/liforms/v1/forms/' . $form->id . '/submit' );
+		$request->set_body_params( array( 'lif' => $values ) );
 		return rest_get_server()->dispatch( $request )->get_data();
 	}
 
@@ -78,8 +78,8 @@ class SuccessMessageTest extends LF_TestCase {
 
 	public function test_same_page_render_after_submission() {
 		$form = $this->form();
-		launch_forms()->processor->process( $form, array( 'lf' => array( 'name' => 'Ann', 'email' => 'ann@example.com' ) ) );
-		$this->assertStringContainsString( 'A confirmation email was sent to ann@example.com.', launch_forms()->renderer->render( $form ) );
+		liforms()->processor->process( $form, array( 'lif' => array( 'name' => 'Ann', 'email' => 'ann@example.com' ) ) );
+		$this->assertStringContainsString( 'A confirmation email was sent to ann@example.com.', liforms()->renderer->render( $form ) );
 	}
 
 	public function test_no_javascript_redirect_carries_the_filled_in_message() {
@@ -88,28 +88,28 @@ class SuccessMessageTest extends LF_TestCase {
 		$_SERVER['REQUEST_URI']    = '/contact/';
 		$form                      = $this->form();
 
-		$redirect = launch_forms()->frontend->process_post( array( 'lf_form_id' => $form->id, 'lf' => array( 'name' => 'Ann', 'email' => 'ann@example.com' ) ), array() );
+		$redirect = liforms()->frontend->process_post( array( 'lif_form_id' => $form->id, 'lif' => array( 'name' => 'Ann', 'email' => 'ann@example.com' ) ), array() );
 		parse_str( (string) wp_parse_url( $redirect, PHP_URL_QUERY ), $query );
-		$this->assertSame( (string) $form->id, $query['lf_sent'] );
-		$this->assertMatchesRegularExpression( '/^[a-f0-9]{32}$/', $query['lf_msg'], 'Unguessable token, not the values themselves.' );
+		$this->assertSame( (string) $form->id, $query['lif_sent'] );
+		$this->assertMatchesRegularExpression( '/^[a-f0-9]{32}$/', $query['lif_msg'], 'Unguessable token, not the values themselves.' );
 		$this->assertStringNotContainsString( 'ann@example.com', $redirect );
 
 		// The redirected page load.
 		$_SERVER['REQUEST_METHOD'] = 'GET';
-		launch_forms()->processor->reset();
+		liforms()->processor->reset();
 		$_GET = $query;
-		$html = launch_forms()->renderer->render( $form );
+		$html = liforms()->renderer->render( $form );
 		$this->assertStringContainsString( 'A confirmation email was sent to ann@example.com.', $html );
 
 		// A token can't be used to show the message on a different form.
 		$other = $this->form();
-		$_GET  = array( 'lf_sent' => (string) $other->id, 'lf_msg' => $query['lf_msg'] );
-		$this->assertStringNotContainsString( 'ann@example.com', launch_forms()->renderer->render( $other ) );
+		$_GET  = array( 'lif_sent' => (string) $other->id, 'lif_msg' => $query['lif_msg'] );
+		$this->assertStringNotContainsString( 'ann@example.com', liforms()->renderer->render( $other ) );
 
 		// Expired or made-up tokens fall back to the message without values.
-		$_GET = array( 'lf_sent' => (string) $form->id, 'lf_msg' => str_repeat( 'a', 32 ) );
-		launch_forms()->renderer->reset();
-		$this->assertStringContainsString( 'A confirmation email was sent to .', launch_forms()->renderer->render( $form ) );
+		$_GET = array( 'lif_sent' => (string) $form->id, 'lif_msg' => str_repeat( 'a', 32 ) );
+		liforms()->renderer->reset();
+		$this->assertStringContainsString( 'A confirmation email was sent to .', liforms()->renderer->render( $form ) );
 		$_GET = array();
 	}
 
@@ -118,16 +118,16 @@ class SuccessMessageTest extends LF_TestCase {
 		$_SERVER['HTTP_HOST']      = 'example.org';
 		$_SERVER['REQUEST_URI']    = '/contact/';
 		$form                      = $this->form( 'Thanks!' );
-		$redirect                  = launch_forms()->frontend->process_post( array( 'lf_form_id' => $form->id, 'lf' => array( 'name' => 'Ann', 'email' => 'ann@example.com' ) ), array() );
-		$this->assertStringNotContainsString( 'lf_msg', $redirect );
+		$redirect                  = liforms()->frontend->process_post( array( 'lif_form_id' => $form->id, 'lif' => array( 'name' => 'Ann', 'email' => 'ann@example.com' ) ), array() );
+		$this->assertStringNotContainsString( 'lif_msg', $redirect );
 		$_SERVER['REQUEST_METHOD'] = 'GET';
 	}
 
 	public function test_hidden_form_on_success_shows_filled_message() {
 		$form = $this->form( self::MESSAGE, array( 'hide_form_on_success' => true ) );
-		launch_forms()->processor->process( $form, array( 'lf' => array( 'name' => 'Ann', 'email' => 'ann@example.com' ) ) );
-		$html = launch_forms()->renderer->render( $form );
-		$this->assertStringStartsWith( '<div id="lf-form-' . $form->id . '" class="lf-message lf-message--success"', $html );
+		liforms()->processor->process( $form, array( 'lif' => array( 'name' => 'Ann', 'email' => 'ann@example.com' ) ) );
+		$html = liforms()->renderer->render( $form );
+		$this->assertStringStartsWith( '<div id="lif-form-' . $form->id . '" class="lif-message lif-message--success"', $html );
 		$this->assertStringContainsString( 'ann@example.com', $html );
 	}
 }

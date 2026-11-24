@@ -2,13 +2,13 @@
 /**
  * The Country field.
  *
- * @covers \LaunchForms\Countries
- * @covers \LaunchForms\Form_Config
- * @covers \LaunchForms\Renderer
- * @covers \LaunchForms\Validator
+ * @covers \LaunchInteractiveForms\Countries
+ * @covers \LaunchInteractiveForms\Form_Config
+ * @covers \LaunchInteractiveForms\Renderer
+ * @covers \LaunchInteractiveForms\Validator
  */
 
-use LaunchForms\Countries;
+use LaunchInteractiveForms\Countries;
 
 class CountryFieldTest extends LF_TestCase {
 
@@ -24,7 +24,7 @@ class CountryFieldTest extends LF_TestCase {
 	}
 
 	private function submit( $form, array $values ) {
-		return launch_forms()->processor->process( $form, array( 'lf' => $values ) );
+		return liforms()->processor->process( $form, array( 'lif' => $values ) );
 	}
 
 	public function test_list_is_complete_sorted_and_unique() {
@@ -49,8 +49,8 @@ class CountryFieldTest extends LF_TestCase {
 
 	public function test_renders_a_select_of_countries() {
 		$form = $this->country_form( array( 'required' => true, 'placeholder' => 'Choose a country' ) );
-		$html = launch_forms()->renderer->render( $form );
-		$this->assertMatchesRegularExpression( '/<select[^>]*name="lf\[country\]"[^>]*>/', $html );
+		$html = liforms()->renderer->render( $form );
+		$this->assertMatchesRegularExpression( '/<select[^>]*name="lif\[country\]"[^>]*>/', $html );
 		$this->assertMatchesRegularExpression( '/<select[^>]*autocomplete="country-name"/', $html, 'Browsers can autofill it.' );
 		$this->assertMatchesRegularExpression( '/<select[^>]*required/', $html );
 		$this->assertStringContainsString( '<option value="">Choose a country</option>', $html );
@@ -61,7 +61,7 @@ class CountryFieldTest extends LF_TestCase {
 
 	public function test_default_country_is_preselected() {
 		$form = $this->country_form( array( 'default' => 'New Zealand' ) );
-		$this->assertStringContainsString( '<option value="New Zealand" data-code="NZ" selected=\'selected\'>', launch_forms()->renderer->render( $form ) );
+		$this->assertStringContainsString( '<option value="New Zealand" data-code="NZ" selected=\'selected\'>', liforms()->renderer->render( $form ) );
 	}
 
 	public function test_unknown_default_is_dropped_on_save() {
@@ -90,13 +90,13 @@ class CountryFieldTest extends LF_TestCase {
 
 	public function test_filter_can_limit_the_list() {
 		add_filter(
-			'launch_forms_countries',
+			'liforms_countries',
 			static function ( $countries ) {
 				return array_intersect_key( $countries, array_flip( array( 'AU', 'NZ' ) ) );
 			}
 		);
 		$form = $this->country_form();
-		$this->assertSame( 3, substr_count( launch_forms()->renderer->render( $form ), '<option' ) );
+		$this->assertSame( 3, substr_count( liforms()->renderer->render( $form ), '<option' ) );
 		$this->assertFalse( $this->submit( $form, array( 'name' => 'Ann', 'country' => 'France' ) )->success );
 		$this->assertTrue( $this->submit( $form, array( 'name' => 'Ann', 'country' => 'New Zealand' ) )->success );
 	}
@@ -131,7 +131,7 @@ class CountryFieldTest extends LF_TestCase {
 	}
 
 	public function test_offered_in_the_builder() {
-		$data = launch_forms()->admin->builder_data();
+		$data = liforms()->admin->builder_data();
 		$this->assertSame( 'Country', $data['fieldTypes']['country'] );
 		$this->assertContains( 'Australia', $data['countries'] );
 	}

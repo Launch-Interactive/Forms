@@ -1,7 +1,7 @@
 {
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
-	"name": "launch-forms/form",
+	"name": "liforms/form",
 	"title": "Form",
 	"category": "widgets",
 	"icon": "feedback",
@@ -19,7 +19,7 @@
 		"className": true,
 		"customClassName": true
 	},
-	"editorScript": "launch-forms-block-editor",
-	"editorStyle": "launch-forms-builder",
-	"style": "launch-forms"
+	"editorScript": "liforms-block-editor",
+	"editorStyle": "liforms-builder",
+	"style": "liforms"
 }

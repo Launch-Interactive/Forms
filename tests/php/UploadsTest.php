@@ -1,10 +1,10 @@
 <?php
 /**
- * @covers \LaunchForms\Uploads
+ * @covers \LaunchInteractiveForms\Uploads
  */
 
-use LaunchForms\Form_Config;
-use LaunchForms\Uploads;
+use LaunchInteractiveForms\Form_Config;
+use LaunchInteractiveForms\Uploads;
 
 class UploadsTest extends LF_TestCase {
 
@@ -13,7 +13,7 @@ class UploadsTest extends LF_TestCase {
 
 	public function set_up() {
 		parent::set_up();
-		$this->uploads = launch_forms()->uploads;
+		$this->uploads = liforms()->uploads;
 	}
 
 	private function file_field( array $extra = array() ) {
@@ -31,7 +31,7 @@ class UploadsTest extends LF_TestCase {
 	}
 
 	public function test_default_dir_is_in_uploads_not_media_library_path() {
-		remove_all_filters( 'launch_forms_private_dir' );
+		remove_all_filters( 'liforms_private_dir' );
 		$dir = $this->uploads->get_dir();
 		$this->assertSame( trailingslashit( wp_upload_dir()['basedir'] ) . 'launch-interactive-forms/', $dir );
 		$this->assertFileExists( $dir . '.htaccess' );
@@ -98,16 +98,16 @@ class UploadsTest extends LF_TestCase {
 		$field  = $this->file_field( array( 'max_size' => 0.001 ) ); // ~1 KB.
 		$result = $this->uploads->validate( $field, $this->fake_upload( 'big.txt', str_repeat( 'a', 5000 ) ) );
 		$this->assertWPError( $result );
-		$this->assertSame( 'lf_upload_size', $result->get_error_code() );
+		$this->assertSame( 'liforms_upload_size', $result->get_error_code() );
 		$this->assertWPError( $this->uploads->validate( $field, $this->fake_upload( 'empty.txt', '' ) ) );
 	}
 
 	public function test_rejects_php_upload_errors_and_non_uploaded_files() {
 		$file          = $this->fake_upload( 'a.txt', 'x' );
 		$file['error'] = UPLOAD_ERR_PARTIAL;
-		$this->assertSame( 'lf_upload_error', $this->uploads->validate( $this->file_field(), $file )->get_error_code() );
+		$this->assertSame( 'liforms_upload_error', $this->uploads->validate( $this->file_field(), $file )->get_error_code() );
 
-		remove_all_filters( 'launch_forms_is_uploaded_file' );
+		remove_all_filters( 'liforms_is_uploaded_file' );
 		$result = $this->uploads->store( $this->file_field(), $this->fake_upload( 'a.txt', 'x' ) );
 		$this->assertWPError( $result, 'Files that did not arrive via HTTP upload must be refused.' );
 	}

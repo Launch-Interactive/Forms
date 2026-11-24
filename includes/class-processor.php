@@ -3,10 +3,10 @@
  * Submission pipeline: spam checks → validation → uploads → storage → actions.
  * Shared by the REST endpoint (JavaScript) and the plain POST fallback (no JavaScript).
  *
- * @package LaunchForms
+ * @package LaunchInteractiveForms
  */
 
-namespace LaunchForms;
+namespace LaunchInteractiveForms;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -42,13 +42,13 @@ class Processor {
 	 * Process a submission.
 	 *
 	 * @param Form  $form    Form.
-	 * @param array $request Unslashed top-level POST params (contains `lf`, `lf_hp`, captcha tokens).
+	 * @param array $request Unslashed top-level POST params (contains `lif`, `lif_hp`, captcha tokens).
 	 * @param array $files   Normalised uploads keyed by field name (Uploads::normalize_files()).
 	 * @param array $context Optional: page_url, ip, user_id.
 	 * @return Submission_Result
 	 */
 	public function process( Form $form, array $request, array $files = array(), array $context = array() ) {
-		$input   = isset( $request['lf'] ) && is_array( $request['lf'] ) ? $request['lf'] : array();
+		$input   = isset( $request['lif'] ) && is_array( $request['lif'] ) ? $request['lif'] : array();
 		$context = array_merge(
 			array(
 				'page_url' => '',
@@ -60,7 +60,7 @@ class Processor {
 		$context['page_url'] = self::same_site_url( (string) $context['page_url'] );
 
 		// Honeypot: pretend everything worked so bots learn nothing.
-		if ( isset( $request['lf_hp'] ) && '' !== trim( (string) ( is_scalar( $request['lf_hp'] ) ? $request['lf_hp'] : 'x' ) ) ) {
+		if ( isset( $request['lif_hp'] ) && '' !== trim( (string) ( is_scalar( $request['lif_hp'] ) ? $request['lif_hp'] : 'x' ) ) ) {
 			$result          = new Submission_Result();
 			$result->success = true;
 			$result->spam    = true;
@@ -143,7 +143,7 @@ class Processor {
 		 * @param Form  $form          Form.
 		 * @param array $entries       Entries.
 		 */
-		do_action( 'launch_forms_before_actions', $submission_id, $form, $entries );
+		do_action( 'liforms_before_actions', $submission_id, $form, $entries );
 
 		$log = $this->plugin->notifications->send_all( $form, $entries, $context );
 
@@ -174,7 +174,7 @@ class Processor {
 		 * @param array $entries       Entries.
 		 * @param array $log           Action log.
 		 */
-		do_action( 'launch_forms_submission', $submission_id, $form, $entries, $log );
+		do_action( 'liforms_submission', $submission_id, $form, $entries, $log );
 
 		$this->count_submission( $context['ip'] );
 
@@ -236,12 +236,12 @@ class Processor {
 		 * Filters the submission rate limit. Return false to turn it off.
 		 *
 		 * If the site is behind a proxy or CDN that hides visitor IPs, every visitor shares one
-		 * address: raise the limit, or pass the real IP through the `launch_forms_client_ip` filter.
+		 * address: raise the limit, or pass the real IP through the `liforms_client_ip` filter.
 		 *
 		 * @param array{max:int,window:int}|false $limit Max successful submissions per IP per window (seconds).
 		 */
 		$limit = apply_filters(
-			'launch_forms_rate_limit',
+			'liforms_rate_limit',
 			array(
 				'max'    => 10,
 				'window' => 10 * MINUTE_IN_SECONDS,
@@ -263,7 +263,7 @@ class Processor {
 	 * @return string
 	 */
 	private static function rate_key( $ip ) {
-		return 'launch_forms_rate_' . substr( hash_hmac( 'sha256', $ip, wp_salt( 'nonce' ) ), 0, 32 );
+		return 'liforms_rate_' . substr( hash_hmac( 'sha256', $ip, wp_salt( 'nonce' ) ), 0, 32 );
 	}
 
 	/**

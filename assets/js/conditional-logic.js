@@ -9,7 +9,7 @@
 	if ( typeof module === 'object' && module.exports ) {
 		module.exports = api;
 	} else {
-		root.launchFormsConditional = api;
+		root.liformsConditional = api;
 	}
 } )( typeof self !== 'undefined' ? self : this, function () {
 	'use strict';

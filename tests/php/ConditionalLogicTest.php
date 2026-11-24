@@ -1,9 +1,9 @@
 <?php
 /**
- * @covers \LaunchForms\Conditional_Logic
+ * @covers \LaunchInteractiveForms\Conditional_Logic
  */
 
-use LaunchForms\Conditional_Logic;
+use LaunchInteractiveForms\Conditional_Logic;
 
 class ConditionalLogicTest extends LF_TestCase {
 
@@ -137,7 +137,7 @@ class ConditionalLogicTest extends LF_TestCase {
 				'expected' => $case[2],
 			);
 		}
-		$script = 'const l=require(' . wp_json_encode( LAUNCH_FORMS_DIR . 'assets/js/conditional-logic.js' ) . ');'
+		$script = 'const l=require(' . wp_json_encode( LIFORMS_DIR . 'assets/js/conditional-logic.js' ) . ');'
 			. 'const cases=' . wp_json_encode( $cases ) . ';'
 			. 'console.log(JSON.stringify(cases.map(c=>l.ruleMatches(c.operator,c.value,c.expected))));';
 		$output = shell_exec( escapeshellarg( $node ) . ' -e ' . escapeshellarg( $script ) );

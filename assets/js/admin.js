@@ -5,9 +5,9 @@
 ( function ( wp ) {
 	'use strict';
 
-	var builder = window.launchFormsBuilder;
-	var textarea = document.getElementById( 'launch-forms-config' );
-	var mount = document.getElementById( 'launch-forms-builder-root' );
+	var builder = window.liformsBuilder;
+	var textarea = document.getElementById( 'liforms-config' );
+	var mount = document.getElementById( 'liforms-builder-root' );
 	if ( ! builder || ! textarea || ! mount ) {
 		return;
 	}

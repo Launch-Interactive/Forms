@@ -1,9 +1,9 @@
 <?php
 /**
- * @covers \LaunchForms\Mailchimp
+ * @covers \LaunchInteractiveForms\Mailchimp
  */
 
-use LaunchForms\Mailchimp;
+use LaunchInteractiveForms\Mailchimp;
 
 class MailchimpTest extends LF_TestCase {
 
@@ -91,9 +91,9 @@ class MailchimpTest extends LF_TestCase {
 
 	public function test_skipped_or_errors() {
 		$this->assertNull( ( new Mailchimp( 'k-us5' ) )->subscribe( $this->form( array( 'enabled' => false ) ), array( 'email' => 'a@example.com' ) ) );
-		$this->assertSame( 'lf_mailchimp_key', ( new Mailchimp( '' ) )->subscribe( $this->form(), array( 'email' => 'a@example.com' ) )->get_error_code() );
-		$this->assertSame( 'lf_mailchimp_list', ( new Mailchimp( 'k-us5' ) )->subscribe( $this->form( array( 'list_id' => '' ) ), array( 'email' => 'a@example.com' ) )->get_error_code() );
-		$this->assertSame( 'lf_mailchimp_email', ( new Mailchimp( 'k-us5' ) )->subscribe( $this->form(), array( 'email' => 'nope' ) )->get_error_code() );
+		$this->assertSame( 'liforms_mailchimp_key', ( new Mailchimp( '' ) )->subscribe( $this->form(), array( 'email' => 'a@example.com' ) )->get_error_code() );
+		$this->assertSame( 'liforms_mailchimp_list', ( new Mailchimp( 'k-us5' ) )->subscribe( $this->form( array( 'list_id' => '' ) ), array( 'email' => 'a@example.com' ) )->get_error_code() );
+		$this->assertSame( 'liforms_mailchimp_email', ( new Mailchimp( 'k-us5' ) )->subscribe( $this->form(), array( 'email' => 'nope' ) )->get_error_code() );
 		$this->assertSame( array(), $this->http_requests );
 	}
 
@@ -125,7 +125,7 @@ class MailchimpTest extends LF_TestCase {
 	public function test_member_payload_filter() {
 		$this->ok();
 		add_filter(
-			'launch_forms_mailchimp_member',
+			'liforms_mailchimp_member',
 			static function ( $body ) {
 				$body['language'] = 'en';
 				return $body;

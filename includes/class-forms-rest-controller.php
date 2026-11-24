@@ -5,10 +5,10 @@
  * Form configs contain notification addresses and Mailchimp settings, so unlike regular
  * posts they must never be readable anonymously through /wp/v2/.
  *
- * @package LaunchForms
+ * @package LaunchInteractiveForms
  */
 
-namespace LaunchForms;
+namespace LaunchInteractiveForms;
 
 defined( 'ABSPATH' ) || exit;
 

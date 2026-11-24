@@ -2,11 +2,11 @@
 /**
  * Shared helpers for Launch Interactive Forms tests.
  *
- * @package LaunchForms
+ * @package LaunchInteractiveForms
  */
 
-use LaunchForms\Form;
-use LaunchForms\Form_Config;
+use LaunchInteractiveForms\Form;
+use LaunchInteractiveForms\Form_Config;
 
 /**
  * Base test case.
@@ -25,22 +25,22 @@ abstract class LF_TestCase extends WP_UnitTestCase {
 	public function set_up() {
 		parent::set_up();
 		reset_phpmailer_instance();
-		launch_forms()->processor->reset();
-		launch_forms()->renderer->reset();
+		liforms()->processor->reset();
+		liforms()->renderer->reset();
 		// WP_UnitTestCase unregisters all meta keys after each test; restore ours.
-		launch_forms()->forms->register();
+		liforms()->forms->register();
 		$this->http_requests = array();
 
-		$this->private_dir = trailingslashit( get_temp_dir() ) . 'lf-private-' . wp_generate_password( 8, false );
+		$this->private_dir = trailingslashit( get_temp_dir() ) . 'lif-private-' . wp_generate_password( 8, false );
 		$dir               = $this->private_dir;
 		add_filter(
-			'launch_forms_private_dir',
+			'liforms_private_dir',
 			static function () use ( $dir ) {
 				return $dir;
 			}
 		);
 		// Fixture files are not real HTTP uploads.
-		add_filter( 'launch_forms_is_uploaded_file', '__return_true' );
+		add_filter( 'liforms_is_uploaded_file', '__return_true' );
 	}
 
 	public function tear_down() {
@@ -57,7 +57,7 @@ abstract class LF_TestCase extends WP_UnitTestCase {
 			}
 			rmdir( $this->private_dir );
 		}
-		delete_option( 'launch_forms_settings' );
+		delete_option( 'liforms_settings' );
 		reset_phpmailer_instance();
 		parent::tear_down();
 	}
@@ -72,9 +72,9 @@ abstract class LF_TestCase extends WP_UnitTestCase {
 	 */
 	protected function make_form( array $fields, array $extra = array(), $title = 'Contact' ) {
 		$config = array_merge( array( 'fields' => $fields ), $extra );
-		$id     = launch_forms()->forms->create( $title, $config );
+		$id     = liforms()->forms->create( $title, $config );
 		$this->assertIsInt( $id );
-		return launch_forms()->forms->get( $id );
+		return liforms()->forms->get( $id );
 	}
 
 	/**
@@ -151,7 +151,7 @@ abstract class LF_TestCase extends WP_UnitTestCase {
 	 * @return array Normalised file array.
 	 */
 	protected function fake_upload( $name, $contents ) {
-		$tmp = wp_tempnam( 'lf-test' );
+		$tmp = wp_tempnam( 'lif-test' );
 		file_put_contents( $tmp, $contents );
 		$this->temp_files[] = $tmp;
 		return array(

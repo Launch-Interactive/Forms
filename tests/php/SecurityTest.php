@@ -3,20 +3,20 @@
  * Hardening added after the security review: rate limiting, page URL checks, logged-in
  * attribution, the Site Health upload check and safe uninstall.
  *
- * @covers \LaunchForms\Processor
- * @covers \LaunchForms\Frontend
- * @covers \LaunchForms\Uploads
- * @covers \LaunchForms\Admin
+ * @covers \LaunchInteractiveForms\Processor
+ * @covers \LaunchInteractiveForms\Frontend
+ * @covers \LaunchInteractiveForms\Uploads
+ * @covers \LaunchInteractiveForms\Admin
  */
 
-use LaunchForms\Frontend;
-use LaunchForms\Processor;
-use LaunchForms\Submissions;
+use LaunchInteractiveForms\Frontend;
+use LaunchInteractiveForms\Processor;
+use LaunchInteractiveForms\Submissions;
 
 class SecurityTest extends LF_TestCase {
 
 	private function submit( $form, $ip = '203.0.113.5', array $values = array( 'name' => 'Ann', 'email' => 'ann@example.com' ), array $context = array() ) {
-		return launch_forms()->processor->process( $form, array( 'lf' => $values ), array(), array_merge( array( 'ip' => $ip ), $context ) );
+		return liforms()->processor->process( $form, array( 'lif' => $values ), array(), array_merge( array( 'ip' => $ip ), $context ) );
 	}
 
 	public function test_successful_submissions_are_rate_limited_per_ip() {
@@ -45,7 +45,7 @@ class SecurityTest extends LF_TestCase {
 	public function test_rate_limit_is_filterable_and_can_be_disabled() {
 		$form = $this->contact_form();
 		add_filter(
-			'launch_forms_rate_limit',
+			'liforms_rate_limit',
 			static function () {
 				return array( 'max' => 2, 'window' => 60 );
 			}
@@ -54,7 +54,7 @@ class SecurityTest extends LF_TestCase {
 		$this->assertTrue( $this->submit( $form )->success );
 		$this->assertFalse( $this->submit( $form )->success );
 
-		add_filter( 'launch_forms_rate_limit', '__return_false', 20 );
+		add_filter( 'liforms_rate_limit', '__return_false', 20 );
 		$this->assertTrue( $this->submit( $form )->success );
 	}
 
@@ -67,7 +67,7 @@ class SecurityTest extends LF_TestCase {
 	public function test_rest_returns_429_when_limited() {
 		$form = $this->contact_form();
 		add_filter(
-			'launch_forms_rate_limit',
+			'liforms_rate_limit',
 			static function () {
 				return array( 'max' => 1, 'window' => 60 );
 			}
@@ -75,8 +75,8 @@ class SecurityTest extends LF_TestCase {
 		$_SERVER['REMOTE_ADDR'] = '203.0.113.77';
 		$server                 = rest_get_server();
 		$send                   = static function () use ( $server, $form ) {
-			$request = new WP_REST_Request( 'POST', '/launch-forms/v1/forms/' . $form->id . '/submit' );
-			$request->set_body_params( array( 'lf' => array( 'name' => 'Ann', 'email' => 'ann@example.com' ) ) );
+			$request = new WP_REST_Request( 'POST', '/liforms/v1/forms/' . $form->id . '/submit' );
+			$request->set_body_params( array( 'lif' => array( 'name' => 'Ann', 'email' => 'ann@example.com' ) ) );
 			return $server->dispatch( $request );
 		};
 		$this->assertSame( 200, $send()->get_status() );
@@ -101,14 +101,14 @@ class SecurityTest extends LF_TestCase {
 		$user = self::factory()->user->create( array( 'role' => 'subscriber' ) );
 		wp_set_current_user( $user );
 		$this->assertSame( 0, Frontend::verified_user_id( $form->id, array() ), 'A cross-site POST carries no nonce.' );
-		$this->assertSame( 0, Frontend::verified_user_id( $form->id, array( 'lf_nonce' => wp_create_nonce( 'launch_forms_submit_999' ) ) ), 'Nonce for another form.' );
-		$this->assertSame( $user, Frontend::verified_user_id( $form->id, array( 'lf_nonce' => wp_create_nonce( 'launch_forms_submit_' . $form->id ) ) ) );
+		$this->assertSame( 0, Frontend::verified_user_id( $form->id, array( 'lif_nonce' => wp_create_nonce( 'liforms_submit_999' ) ) ), 'Nonce for another form.' );
+		$this->assertSame( $user, Frontend::verified_user_id( $form->id, array( 'lif_nonce' => wp_create_nonce( 'liforms_submit_' . $form->id ) ) ) );
 
-		$html = launch_forms()->renderer->render( $form );
-		$this->assertStringContainsString( 'name="lf_nonce"', $html );
+		$html = liforms()->renderer->render( $form );
+		$this->assertStringContainsString( 'name="lif_nonce"', $html );
 		wp_set_current_user( 0 );
-		launch_forms()->renderer->reset();
-		$this->assertStringNotContainsString( 'lf_nonce', launch_forms()->renderer->render( $form ), 'Logged-out pages stay cacheable.' );
+		liforms()->renderer->reset();
+		$this->assertStringNotContainsString( 'lif_nonce', liforms()->renderer->render( $form ), 'Logged-out pages stay cacheable.' );
 	}
 
 	/**
@@ -139,7 +139,7 @@ class SecurityTest extends LF_TestCase {
 		$uploads = wp_upload_dir( null, false );
 		$dir     = $uploads['basedir'] . '/launch-forms-private-test-' . wp_generate_password( 6, false );
 		add_filter(
-			'launch_forms_private_dir',
+			'liforms_private_dir',
 			static function () use ( $dir ) {
 				return $dir;
 			},
@@ -148,7 +148,7 @@ class SecurityTest extends LF_TestCase {
 		$this->private_dir = $dir;
 
 		$this->fake_web_server( 200 );
-		$result = launch_forms()->admin->site_health_private_uploads();
+		$result = liforms()->admin->site_health_private_uploads();
 		$this->assertSame( 'critical', $result['status'] );
 		$this->assertStringContainsString( 'deny all', $result['description'] );
 		$this->assertStringStartsWith( $uploads['baseurl'] . '/launch-forms-private-test-', $this->http_requests[0]['url'] );
@@ -159,7 +159,7 @@ class SecurityTest extends LF_TestCase {
 		$uploads = wp_upload_dir( null, false );
 		$dir     = $uploads['basedir'] . '/launch-forms-private-test-' . wp_generate_password( 6, false );
 		add_filter(
-			'launch_forms_private_dir',
+			'liforms_private_dir',
 			static function () use ( $dir ) {
 				return $dir;
 			},
@@ -168,7 +168,7 @@ class SecurityTest extends LF_TestCase {
 		$this->private_dir = $dir;
 
 		$this->fake_web_server( 403 );
-		$this->assertSame( 'good', launch_forms()->admin->site_health_private_uploads()['status'] );
+		$this->assertSame( 'good', liforms()->admin->site_health_private_uploads()['status'] );
 	}
 
 	public function test_site_health_passes_when_uploads_are_outside_the_web_root() {
@@ -178,14 +178,14 @@ class SecurityTest extends LF_TestCase {
 				return array( 'code' => 200, 'body' => '' );
 			}
 		);
-		$this->assertSame( 'outside', launch_forms()->uploads->public_access_status() );
-		$this->assertSame( 'good', launch_forms()->admin->site_health_private_uploads()['status'] );
+		$this->assertSame( 'outside', liforms()->uploads->public_access_status() );
+		$this->assertSame( 'good', liforms()->admin->site_health_private_uploads()['status'] );
 		$this->assertSame( array(), $this->http_requests, 'No request needed.' );
 	}
 
 	public function test_site_health_test_is_registered() {
 		$tests = apply_filters( 'site_status_tests', array( 'direct' => array(), 'async' => array() ) );
-		$this->assertArrayHasKey( 'launch_forms_private_uploads', $tests['direct'] );
+		$this->assertArrayHasKey( 'liforms_private_uploads', $tests['direct'] );
 	}
 
 	public function test_uninstall_only_deletes_files_the_plugin_created() {
@@ -193,22 +193,22 @@ class SecurityTest extends LF_TestCase {
 		$dir     = trailingslashit( $uploads['basedir'] ) . 'launch-interactive-forms/';
 		$created = ! is_dir( $dir );
 		wp_mkdir_p( $dir );
-		launch_forms()->uploads->protect_dir( $dir );
+		liforms()->uploads->protect_dir( $dir );
 		$ours    = $dir . str_repeat( 'a', 32 );
 		$foreign = $dir . 'keep-me.txt';
 		file_put_contents( $ours, 'x' );
 		file_put_contents( $foreign, 'not ours' );
 
-		update_option( 'launch_forms_settings', array( 'delete_data_on_uninstall' => true ) );
+		update_option( 'liforms_settings', array( 'delete_data_on_uninstall' => true ) );
 		if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 			define( 'WP_UNINSTALL_PLUGIN', 'launch-interactive-forms/launch-interactive-forms.php' );
 		}
-		include LAUNCH_FORMS_DIR . 'uninstall.php';
+		include LIFORMS_DIR . 'uninstall.php';
 
 		$this->assertFileDoesNotExist( $ours );
 		$this->assertFileDoesNotExist( $dir . '.htaccess' );
 		$this->assertFileExists( $foreign, 'Files the plugin did not write are left alone.' );
-		$this->assertFalse( get_option( 'launch_forms_settings' ) );
+		$this->assertFalse( get_option( 'liforms_settings' ) );
 
 		unlink( $foreign );
 		if ( $created ) {

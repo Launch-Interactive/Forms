@@ -2,10 +2,10 @@
 /**
  * Sanitises and validates submitted values.
  *
- * @package LaunchForms
+ * @package LaunchInteractiveForms
  */
 
-namespace LaunchForms;
+namespace LaunchInteractiveForms;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -20,7 +20,7 @@ class Validator {
 	 * Sanitise raw input into strings / string arrays, before conditional logic runs.
 	 *
 	 * @param Form  $form  Form.
-	 * @param array $input Raw (unslashed) `lf` array.
+	 * @param array $input Raw (unslashed) `lif` array.
 	 * @param array $files Normalised uploads keyed by field name (only names are used).
 	 * @return array<string,string|string[]>
 	 */
@@ -57,7 +57,7 @@ class Validator {
 	 * Validate a submission.
 	 *
 	 * @param Form  $form  Form.
-	 * @param array $input Raw (unslashed) `lf` array.
+	 * @param array $input Raw (unslashed) `lif` array.
 	 * @param array $files Normalised uploads keyed by field name.
 	 * @return array{values:array,errors:array,visibility:array,raw:array}
 	 */
@@ -87,7 +87,7 @@ class Validator {
 		 * @param array $values Clean values.
 		 * @param Form  $form   Form.
 		 */
-		$errors = (array) apply_filters( 'launch_forms_validation_errors', $errors, $values, $form );
+		$errors = (array) apply_filters( 'liforms_validation_errors', $errors, $values, $form );
 
 		return array(
 			'values'     => $values,

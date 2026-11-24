@@ -12,32 +12,32 @@ const frontendSrc = fs.readFileSync( path.join( ROOT, 'assets/js/frontend.js' ),
 
 // Mirrors the markup produced by includes/class-renderer.php.
 const FORM = `
-<form id="lf-form-7" class="lf-form" method="post" data-lf-form="7">
-	<div class="lf-field lf-field--select" data-lf-name="topic">
-		<label for="lf-7-1-topic">Topic</label>
-		<select id="lf-7-1-topic" name="lf[topic]"><option value="">— Select —</option><option value="sales">Sales</option><option value="support">Support</option></select>
+<form id="lif-form-7" class="lif-form" method="post" data-lif-form="7">
+	<div class="lif-field lif-field--select" data-lif-name="topic">
+		<label for="lif-7-1-topic">Topic</label>
+		<select id="lif-7-1-topic" name="lif[topic]"><option value="">— Select —</option><option value="sales">Sales</option><option value="support">Support</option></select>
 	</div>
-	<div class="lf-field lf-field--text lf-field--required" data-lf-name="order" data-lf-conditions='{"enabled":true,"action":"show","match":"all","rules":[{"field":"topic","operator":"is","value":"support"}]}' hidden>
-		<label for="lf-7-1-order">Order</label>
-		<input id="lf-7-1-order" name="lf[order]" required type="text" value="" disabled>
+	<div class="lif-field lif-field--text lif-field--required" data-lif-name="order" data-lif-conditions='{"enabled":true,"action":"show","match":"all","rules":[{"field":"topic","operator":"is","value":"support"}]}' hidden>
+		<label for="lif-7-1-order">Order</label>
+		<input id="lif-7-1-order" name="lif[order]" required type="text" value="" disabled>
 	</div>
-	<fieldset class="lf-field lf-field--checkbox lf-fieldset" data-lf-name="extras">
+	<fieldset class="lif-field lif-field--checkbox lif-fieldset" data-lif-name="extras">
 		<legend>Extras</legend>
-		<div class="lf-option"><input type="checkbox" id="lf-7-1-extras-0" name="lf[extras][]" value="a"> <label for="lf-7-1-extras-0">A</label></div>
-		<div class="lf-option"><input type="checkbox" id="lf-7-1-extras-1" name="lf[extras][]" value="b"> <label for="lf-7-1-extras-1">B</label></div>
+		<div class="lif-option"><input type="checkbox" id="lif-7-1-extras-0" name="lif[extras][]" value="a"> <label for="lif-7-1-extras-0">A</label></div>
+		<div class="lif-option"><input type="checkbox" id="lif-7-1-extras-1" name="lif[extras][]" value="b"> <label for="lif-7-1-extras-1">B</label></div>
 	</fieldset>
-	<div class="lf-field lf-field--textarea" data-lf-name="why_b" data-lf-conditions='{"enabled":true,"action":"show","match":"all","rules":[{"field":"extras","operator":"is","value":"b"}]}' hidden>
-		<label for="lf-7-1-why_b">Why B?</label>
-		<textarea id="lf-7-1-why_b" name="lf[why_b]" disabled></textarea>
+	<div class="lif-field lif-field--textarea" data-lif-name="why_b" data-lif-conditions='{"enabled":true,"action":"show","match":"all","rules":[{"field":"extras","operator":"is","value":"b"}]}' hidden>
+		<label for="lif-7-1-why_b">Why B?</label>
+		<textarea id="lif-7-1-why_b" name="lif[why_b]" disabled></textarea>
 	</div>
-	<div class="lf-field lf-field--email" data-lf-name="email">
-		<label for="lf-7-1-email">Email</label>
-		<input id="lf-7-1-email" name="lf[email]" type="email" value="" aria-describedby="lf-7-1-email-desc">
-		<p class="lf-description" id="lf-7-1-email-desc">We reply here</p>
+	<div class="lif-field lif-field--email" data-lif-name="email">
+		<label for="lif-7-1-email">Email</label>
+		<input id="lif-7-1-email" name="lif[email]" type="email" value="" aria-describedby="lif-7-1-email-desc">
+		<p class="lif-description" id="lif-7-1-email-desc">We reply here</p>
 	</div>
-	<div class="lf-hp" aria-hidden="true"><label for="lf-7-1-hp">Leave this field empty</label><input type="text" id="lf-7-1-hp" name="lf_hp" value="" tabindex="-1" autocomplete="off"></div>
-	<input type="hidden" name="lf_form_id" value="7">
-	<div class="lf-submit"><button type="submit" class="wp-element-button">Send</button></div>
+	<div class="lif-hp" aria-hidden="true"><label for="lif-7-1-hp">Leave this field empty</label><input type="text" id="lif-7-1-hp" name="lif_hp" value="" tabindex="-1" autocomplete="off"></div>
+	<input type="hidden" name="lif_form_id" value="7">
+	<div class="lif-submit"><button type="submit" class="wp-element-button">Send</button></div>
 </form>`;
 
 function setup( fetchImpl, options = {} ) {
@@ -46,14 +46,14 @@ function setup( fetchImpl, options = {} ) {
 		url: options.url || 'https://example.org/contact/',
 	} );
 	const { window } = dom;
-	window.launchFormsConfig = { restUrl: 'https://example.org/wp-json/launch-forms/v1/forms/', i18n: { error: 'Oops' } };
+	window.liformsConfig = { restUrl: 'https://example.org/wp-json/liforms/v1/forms/', i18n: { error: 'Oops' } };
 	window.fetch = fetchImpl || ( () => Promise.reject( new Error( 'no fetch' ) ) );
 	if ( options.beforeInit ) {
 		options.beforeInit( window );
 	}
 	window.eval( logicSrc );
 	window.eval( frontendSrc );
-	window.launchForms.init(); // jsdom is still "loading" here; init is idempotent.
+	window.liforms.init(); // jsdom is still "loading" here; init is idempotent.
 	return { window, document: window.document, form: window.document.querySelector( 'form' ) };
 }
 
@@ -74,26 +74,26 @@ function jsonResponse( status, body ) {
 
 test( 'conditional field toggles visibility and disabled state', () => {
 	const { window, document } = setup();
-	const wrapper = document.querySelector( '[data-lf-name="order"]' );
-	const input = document.getElementById( 'lf-7-1-order' );
+	const wrapper = document.querySelector( '[data-lif-name="order"]' );
+	const input = document.getElementById( 'lif-7-1-order' );
 	assert.equal( wrapper.hidden, true );
 	assert.equal( input.disabled, true );
 
-	change( window, document.getElementById( 'lf-7-1-topic' ), 'support' );
+	change( window, document.getElementById( 'lif-7-1-topic' ), 'support' );
 	assert.equal( wrapper.hidden, false );
 	assert.equal( input.disabled, false );
 
-	change( window, document.getElementById( 'lf-7-1-topic' ), 'sales' );
+	change( window, document.getElementById( 'lif-7-1-topic' ), 'sales' );
 	assert.equal( wrapper.hidden, true );
 	assert.equal( input.disabled, true, 'Hidden fields are disabled so they are not validated or submitted.' );
 } );
 
 test( 'checkbox groups are collected as arrays', () => {
 	const { window, document, form } = setup();
-	assert.deepEqual( JSON.parse( JSON.stringify( window.launchForms.collectValues( form ).extras ) ), [] );
-	change( window, document.getElementById( 'lf-7-1-extras-1' ), true );
-	assert.deepEqual( JSON.parse( JSON.stringify( window.launchForms.collectValues( form ).extras ) ), [ 'b' ] );
-	assert.equal( document.querySelector( '[data-lf-name="why_b"]' ).hidden, false );
+	assert.deepEqual( JSON.parse( JSON.stringify( window.liforms.collectValues( form ).extras ) ), [] );
+	change( window, document.getElementById( 'lif-7-1-extras-1' ), true );
+	assert.deepEqual( JSON.parse( JSON.stringify( window.liforms.collectValues( form ).extras ) ), [ 'b' ] );
+	assert.equal( document.querySelector( '[data-lif-name="why_b"]' ).hidden, false );
 } );
 
 test( 'successful AJAX submission replaces the form with the message', async () => {
@@ -102,28 +102,28 @@ test( 'successful AJAX submission replaces the form with the message', async () 
 		request = { url, init };
 		return jsonResponse( 200, { success: true, message: 'Thanks', message_html: '<p>Thanks!</p>', hide_form: true, redirect: '' } );
 	} );
-	form.querySelector( '#lf-7-1-email' ).value = 'a@example.com';
+	form.querySelector( '#lif-7-1-email' ).value = 'a@example.com';
 	form.dispatchEvent( new window.Event( 'submit', { bubbles: true, cancelable: true } ) );
 	await flush();
 
-	assert.equal( request.url, 'https://example.org/wp-json/launch-forms/v1/forms/7/submit' );
+	assert.equal( request.url, 'https://example.org/wp-json/liforms/v1/forms/7/submit' );
 	assert.equal( request.init.method, 'POST' );
-	assert.equal( request.init.body.get( 'lf[email]' ), 'a@example.com' );
-	assert.equal( request.init.body.get( 'lf[order]' ), null, 'Disabled hidden field not sent.' );
+	assert.equal( request.init.body.get( 'lif[email]' ), 'a@example.com' );
+	assert.equal( request.init.body.get( 'lif[order]' ), null, 'Disabled hidden field not sent.' );
 	assert.equal( document.querySelector( 'form' ), null );
-	const message = document.getElementById( 'lf-form-7' );
+	const message = document.getElementById( 'lif-form-7' );
 	assert.equal( message.getAttribute( 'role' ), 'status' );
 	assert.equal( message.innerHTML, '<p>Thanks!</p>' );
 } );
 
 test( 'success without hiding resets the form and shows a message', async () => {
 	const { window, document, form } = setup( () => jsonResponse( 200, { success: true, message: 'Thanks', message_html: '', hide_form: false } ) );
-	form.querySelector( '#lf-7-1-email' ).value = 'a@example.com';
+	form.querySelector( '#lif-7-1-email' ).value = 'a@example.com';
 	form.dispatchEvent( new window.Event( 'submit', { cancelable: true } ) );
 	await flush();
 	assert.ok( document.querySelector( 'form' ) );
-	assert.equal( form.querySelector( '#lf-7-1-email' ).value, '' );
-	assert.equal( form.querySelector( '.lf-message--success' ).textContent, 'Thanks' );
+	assert.equal( form.querySelector( '#lif-7-1-email' ).value, '' );
+	assert.equal( form.querySelector( '.lif-message--success' ).textContent, 'Thanks' );
 } );
 
 test( 'validation errors are shown accessibly and cleared on resubmit', async () => {
@@ -139,45 +139,45 @@ test( 'validation errors are shown accessibly and cleared on resubmit', async ()
 	form.dispatchEvent( new window.Event( 'submit', { cancelable: true } ) );
 	await flush();
 
-	const alert = form.querySelector( '.lf-message--error' );
+	const alert = form.querySelector( '.lif-message--error' );
 	assert.equal( alert.getAttribute( 'role' ), 'alert' );
 	assert.equal( alert.textContent, 'Please correct the errors below.' );
 
-	const email = document.getElementById( 'lf-7-1-email' );
+	const email = document.getElementById( 'lif-7-1-email' );
 	assert.equal( email.getAttribute( 'aria-invalid' ), 'true' );
-	assert.equal( email.getAttribute( 'aria-describedby' ), 'lf-7-1-email-desc lf-7-1-email-error' );
-	assert.equal( document.getElementById( 'lf-7-1-email-error' ).textContent, 'Please enter a valid email address.' );
+	assert.equal( email.getAttribute( 'aria-describedby' ), 'lif-7-1-email-desc lif-7-1-email-error' );
+	assert.equal( document.getElementById( 'lif-7-1-email-error' ).textContent, 'Please enter a valid email address.' );
 	assert.equal( document.activeElement, email, 'Focus moves to the first invalid field.' );
 
-	const group = document.querySelector( '[data-lf-name="extras"]' );
+	const group = document.querySelector( '[data-lif-name="extras"]' );
 	assert.equal( group.getAttribute( 'aria-invalid' ), 'true' );
-	assert.ok( document.getElementById( 'lf-7-1-extras-error' ) );
+	assert.ok( document.getElementById( 'lif-7-1-extras-error' ) );
 
 	form.dispatchEvent( new window.Event( 'submit', { cancelable: true } ) );
 	await flush();
-	assert.equal( form.querySelectorAll( '.lf-error' ).length, 0 );
+	assert.equal( form.querySelectorAll( '.lif-error' ).length, 0 );
 	assert.equal( email.hasAttribute( 'aria-invalid' ), false );
-	assert.equal( email.getAttribute( 'aria-describedby' ), 'lf-7-1-email-desc' );
-	assert.equal( form.querySelectorAll( '.lf-message' ).length, 1 );
+	assert.equal( email.getAttribute( 'aria-describedby' ), 'lif-7-1-email-desc' );
+	assert.equal( form.querySelectorAll( '.lif-message' ).length, 1 );
 } );
 
 test( 'redirect on success', async () => {
 	const { window, form } = setup( () => jsonResponse( 200, { success: true, redirect: 'https://example.org/thanks/' } ) );
 	let assigned = null;
-	window.launchForms.navigate = ( url ) => {
+	window.liforms.navigate = ( url ) => {
 		assigned = url;
 	};
 	form.dispatchEvent( new window.Event( 'submit', { cancelable: true } ) );
 	await flush();
 	assert.equal( assigned, 'https://example.org/thanks/' );
-	assert.equal( form.querySelector( '.lf-message--error' ), null );
+	assert.equal( form.querySelector( '.lif-message--error' ), null );
 } );
 
 test( 'network failure shows a generic error and re-enables the button', async () => {
 	const { window, form } = setup( () => Promise.reject( new Error( 'offline' ) ) );
 	form.dispatchEvent( new window.Event( 'submit', { cancelable: true } ) );
 	await flush();
-	assert.equal( form.querySelector( '.lf-message--error' ).textContent, 'Oops' );
+	assert.equal( form.querySelector( '.lif-message--error' ).textContent, 'Oops' );
 	assert.equal( form.querySelector( 'button' ).disabled, false );
 	assert.equal( form.getAttribute( 'aria-busy' ), 'false' );
 } );
@@ -196,7 +196,7 @@ test( 'logged-in nonce header is sent when present', async () => {
 		headers = init.headers;
 		return jsonResponse( 200, { success: true, hide_form: true } );
 	} );
-	window.launchFormsConfig.nonce = 'abc123';
+	window.liformsConfig.nonce = 'abc123';
 	form.dispatchEvent( new window.Event( 'submit', { cancelable: true } ) );
 	await flush();
 	assert.equal( headers[ 'X-WP-Nonce' ], 'abc123' );
@@ -205,8 +205,8 @@ test( 'logged-in nonce header is sent when present', async () => {
 /* Analytics events */
 
 function withEvent( form, name ) {
-	form.setAttribute( 'data-lf-event', name );
-	form.setAttribute( 'data-lf-event-form', 'Contact us' );
+	form.setAttribute( 'data-lif-event', name );
+	form.setAttribute( 'data-lif-event-form', 'Contact us' );
 }
 
 const submitOk = ( window, form ) => {
@@ -259,7 +259,7 @@ test( 'analytics: a redirect waits for the event to be sent', async () => {
 		callback = params.event_callback;
 	};
 	let assigned = null;
-	window.launchForms.navigate = ( url ) => {
+	window.liforms.navigate = ( url ) => {
 		assigned = url;
 	};
 	await submitOk( window, form );
@@ -275,7 +275,7 @@ test( 'analytics: blocked analytics delays a redirect by at most about a second'
 	withEvent( form, 'contact_form_submit' );
 	window.gtag = () => {}; // Stub left behind by an ad blocker: never calls back.
 	let assigned = null;
-	window.launchForms.navigate = ( url ) => {
+	window.liforms.navigate = ( url ) => {
 		assigned = url;
 	};
 	await submitOk( window, form );
@@ -295,7 +295,7 @@ function blockedSetup( status, body ) {
 			json: () => ( body === undefined ? Promise.reject( new SyntaxError( 'Not JSON' ) ) : Promise.resolve( body ) ),
 		} )
 	);
-	ctx.window.launchForms.submitNatively = ( form ) => native.push( form );
+	ctx.window.liforms.submitNatively = ( form ) => native.push( form );
 	return { ...ctx, native };
 }
 
@@ -306,7 +306,7 @@ test( 'blocked REST request falls back to a normal submit', async () => {
 	window.gtag = ( ...args ) => calls.push( args );
 	await submitOk( window, form );
 	assert.deepEqual( native, [ form ], 'Submitted the ordinary way.' );
-	assert.equal( form.querySelector( '.lf-message' ), null, 'The REST error is not shown.' );
+	assert.equal( form.querySelector( '.lif-message' ), null, 'The REST error is not shown.' );
 	assert.equal( form.getAttribute( 'aria-busy' ), 'true', 'Stays busy while the page submits.' );
 	assert.equal( calls.length, 0, 'No analytics event yet: the submission has not been processed.' );
 } );
@@ -318,27 +318,27 @@ test( 'a firewall page (not JSON) also falls back', async () => {
 } );
 
 test( 'the plugin\'s own errors are shown, not retried', async () => {
-	const missing = blockedSetup( 404, { code: 'lf_form_not_found', message: 'Form not found.', data: { status: 404 } } );
+	const missing = blockedSetup( 404, { code: 'liforms_form_not_found', message: 'Form not found.', data: { status: 404 } } );
 	await submitOk( missing.window, missing.form );
 	assert.equal( missing.native.length, 0 );
-	assert.equal( missing.form.querySelector( '.lf-message--error' ).textContent, 'Form not found.' );
+	assert.equal( missing.form.querySelector( '.lif-message--error' ).textContent, 'Form not found.' );
 
 	const limited = blockedSetup( 403, { success: false, message: 'Too many submissions.', errors: {} } );
 	await submitOk( limited.window, limited.form );
 	assert.equal( limited.native.length, 0 );
-	assert.equal( limited.form.querySelector( '.lf-message--error' ).textContent, 'Too many submissions.' );
+	assert.equal( limited.form.querySelector( '.lif-message--error' ).textContent, 'Too many submissions.' );
 
 	const server = blockedSetup( 500 );
 	await submitOk( server.window, server.form );
 	assert.equal( server.native.length, 0, 'A server error may have happened after processing, so never resubmit.' );
-	assert.equal( server.form.querySelector( '.lf-message--error' ).textContent, 'Oops' );
+	assert.equal( server.form.querySelector( '.lif-message--error' ).textContent, 'Oops' );
 } );
 
 test( 'analytics: the event is sent on the page shown after a normal submit', () => {
 	const calls = [];
 	const { window, document } = setup( null, {
-		url: 'https://example.org/contact/?lf_sent=7&lf_msg=abc&utm_source=x#lf-form-7',
-		html: '<div id="lf-form-7" class="lf-message lf-message--success" role="status" data-lf-sent data-lf-form="7" data-lf-event="contact_form_submit" data-lf-event-form="Contact us"><p>Thanks!</p></div>',
+		url: 'https://example.org/contact/?lif_sent=7&lif_msg=abc&utm_source=x#lif-form-7',
+		html: '<div id="lif-form-7" class="lif-message lif-message--success" role="status" data-lif-sent data-lif-form="7" data-lif-event="contact_form_submit" data-lif-event-form="Contact us"><p>Thanks!</p></div>',
 		beforeInit: ( w ) => {
 			w.gtag = ( ...args ) => calls.push( args );
 		},
@@ -347,7 +347,7 @@ test( 'analytics: the event is sent on the page shown after a normal submit', ()
 	assert.equal( calls[ 0 ][ 1 ], 'contact_form_submit' );
 	assert.equal( calls[ 0 ][ 2 ].form_id, '7' );
 	assert.equal( calls[ 0 ][ 2 ].form_name, 'Contact us' );
-	assert.equal( window.location.href, 'https://example.org/contact/?utm_source=x#lf-form-7', 'A reload does not count it again.' );
-	window.launchForms.init( document );
+	assert.equal( window.location.href, 'https://example.org/contact/?utm_source=x#lif-form-7', 'A reload does not count it again.' );
+	window.liforms.init( document );
 	assert.equal( calls.length, 1, 'Sent once.' );
 } );

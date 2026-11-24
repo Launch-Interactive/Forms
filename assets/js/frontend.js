@@ -5,11 +5,11 @@
 ( function () {
 	'use strict';
 
-	var config = window.launchFormsConfig || {};
-	var logic = window.launchFormsConditional;
+	var config = window.liformsConfig || {};
+	var logic = window.liformsConditional;
 
 	function fieldName( inputName ) {
-		var match = /^lf\[([a-z0-9_]+)\]/.exec( inputName || '' );
+		var match = /^lif\[([a-z0-9_]+)\]/.exec( inputName || '' );
 		return match ? match[ 1 ] : null;
 	}
 
@@ -59,7 +59,7 @@
 	}
 
 	function fieldWrappers( form ) {
-		return Array.prototype.slice.call( form.querySelectorAll( '[data-lf-name]' ) );
+		return Array.prototype.slice.call( form.querySelectorAll( '[data-lif-name]' ) );
 	}
 
 	/** Show/hide fields; hidden fields are disabled so they are neither validated nor sent. */
@@ -71,13 +71,13 @@
 		var defs = wrappers.map( function ( wrapper ) {
 			var conditions = null;
 			try {
-				conditions = JSON.parse( wrapper.getAttribute( 'data-lf-conditions' ) || 'null' );
+				conditions = JSON.parse( wrapper.getAttribute( 'data-lif-conditions' ) || 'null' );
 			} catch ( e ) {}
-			return { name: wrapper.getAttribute( 'data-lf-name' ), conditions: conditions };
+			return { name: wrapper.getAttribute( 'data-lif-name' ), conditions: conditions };
 		} );
 		var visible = logic.visibility( defs, collectValues( form ) );
 		wrappers.forEach( function ( wrapper ) {
-			var show = visible[ wrapper.getAttribute( 'data-lf-name' ) ] !== false;
+			var show = visible[ wrapper.getAttribute( 'data-lif-name' ) ] !== false;
 			wrapper.hidden = ! show;
 			if ( wrapper.tagName === 'FIELDSET' ) {
 				wrapper.disabled = ! show;
@@ -92,7 +92,7 @@
 	}
 
 	function clearErrors( form ) {
-		Array.prototype.forEach.call( form.querySelectorAll( '.lf-error, .lf-message' ), function ( el ) {
+		Array.prototype.forEach.call( form.querySelectorAll( '.lif-error, .lif-message' ), function ( el ) {
 			el.parentNode.removeChild( el );
 		} );
 		Array.prototype.forEach.call( form.querySelectorAll( '[aria-invalid]' ), function ( el ) {
@@ -109,14 +109,14 @@
 				el.removeAttribute( 'aria-describedby' );
 			}
 		} );
-		Array.prototype.forEach.call( form.querySelectorAll( '.lf-field--error' ), function ( el ) {
-			el.classList.remove( 'lf-field--error' );
+		Array.prototype.forEach.call( form.querySelectorAll( '.lif-field--error' ), function ( el ) {
+			el.classList.remove( 'lif-field--error' );
 		} );
 	}
 
 	function showMessage( form, text, type, isHtml ) {
 		var box = document.createElement( 'div' );
-		box.className = 'lf-message lf-message--' + type;
+		box.className = 'lif-message lif-message--' + type;
 		box.setAttribute( 'role', type === 'error' ? 'alert' : 'status' );
 		box.setAttribute( 'tabindex', '-1' );
 		if ( isHtml ) {
@@ -131,19 +131,19 @@
 	function showFieldErrors( form, errors ) {
 		var first = null;
 		Object.keys( errors ).forEach( function ( name ) {
-			var wrapper = form.querySelector( '[data-lf-name="' + name + '"]' );
+			var wrapper = form.querySelector( '[data-lif-name="' + name + '"]' );
 			if ( ! wrapper ) {
 				return;
 			}
-			wrapper.classList.add( 'lf-field--error' );
+			wrapper.classList.add( 'lif-field--error' );
 			// A captcha's only control is its hidden token box, which can't take focus.
-			var control = wrapper.classList.contains( 'lf-field--captcha' ) ? null : wrapper.querySelector( 'input, select, textarea' );
+			var control = wrapper.classList.contains( 'lif-field--captcha' ) ? null : wrapper.querySelector( 'input, select, textarea' );
 			var isGroup = wrapper.tagName === 'FIELDSET';
 			// Option inputs are "<prefix>-<name>-<index>"; the group's base id drops the index.
 			var base = control && control.id ? ( isGroup ? control.id.replace( /-\d+$/, '' ) : control.id ) : form.id + '-' + name;
 			var id = base + '-error';
 			var p = document.createElement( 'p' );
-			p.className = 'lf-error';
+			p.className = 'lif-error';
 			p.id = id;
 			p.textContent = errors[ name ];
 			wrapper.appendChild( p );
@@ -175,7 +175,7 @@
 
 	/** reCAPTCHA v3: fetch a fresh token right before sending. */
 	function withRecaptchaV3( form ) {
-		var input = form.querySelector( '.lf-recaptcha-v3' );
+		var input = form.querySelector( '.lif-recaptcha-v3' );
 		if ( ! input || ! window.grecaptcha || ! window.grecaptcha.execute ) {
 			return Promise.resolve();
 		}
@@ -212,10 +212,10 @@
 				done();
 			}
 		};
-		var name = form.getAttribute( 'data-lf-event' );
+		var name = form.getAttribute( 'data-lif-event' );
 		var params = {
-			form_id: form.getAttribute( 'data-lf-form' ),
-			form_name: form.getAttribute( 'data-lf-event-form' ) || '',
+			form_id: form.getAttribute( 'data-lif-form' ),
+			form_name: form.getAttribute( 'data-lif-event-form' ) || '',
 		};
 		var sent = false;
 		try {
@@ -240,34 +240,34 @@
 
 	/**
 	 * Whether a REST response was refused before it reached the plugin. The plugin's own
-	 * replies always say whether the submission succeeded, and its errors use `lf_` codes.
+	 * replies always say whether the submission succeeded, and its errors use `liforms_` codes.
 	 */
 	function blocked( status, data ) {
 		if ( [ 401, 403, 404, 405 ].indexOf( status ) === -1 ) {
 			return false;
 		}
-		if ( data && typeof data === 'object' && ( typeof data.success === 'boolean' || /^lf_/.test( String( data.code || '' ) ) ) ) {
+		if ( data && typeof data === 'object' && ( typeof data.success === 'boolean' || /^liforms_/.test( String( data.code || '' ) ) ) ) {
 			return false;
 		}
 		return true;
 	}
 
 	/**
-	 * After a no-JavaScript-style submission, the page reloads with ?lf_sent=ID and the success
+	 * After a no-JavaScript-style submission, the page reloads with ?lif_sent=ID and the success
 	 * message carries the form's analytics event: send it, then tidy the address so a reload
 	 * doesn't count the submission again.
 	 */
 	function trackSent( root ) {
-		var sent = ( root || document ).querySelector( '.lf-message[data-lf-sent][data-lf-event]' );
+		var sent = ( root || document ).querySelector( '.lif-message[data-lif-sent][data-lif-event]' );
 		if ( ! sent ) {
 			return;
 		}
-		sent.removeAttribute( 'data-lf-sent' );
+		sent.removeAttribute( 'data-lif-sent' );
 		track( sent, function () {} );
 		try {
 			var url = new window.URL( window.location.href );
-			url.searchParams.delete( 'lf_sent' );
-			url.searchParams.delete( 'lf_msg' );
+			url.searchParams.delete( 'lif_sent' );
+			url.searchParams.delete( 'lif_msg' );
 			window.history.replaceState( window.history.state, '', url.toString() );
 		} catch ( e ) {}
 	}
@@ -289,7 +289,7 @@
 				if ( config.nonce ) {
 					headers[ 'X-WP-Nonce' ] = config.nonce;
 				}
-				return window.fetch( config.restUrl + form.getAttribute( 'data-lf-form' ) + '/submit', {
+				return window.fetch( config.restUrl + form.getAttribute( 'data-lif-form' ) + '/submit', {
 					method: 'POST',
 					body: new window.FormData( form ),
 					credentials: 'same-origin',
@@ -311,23 +311,23 @@
 					// The site, a security plugin or a firewall refused the REST request before it
 					// reached the plugin (e.g. "REST API for logged-in users only"). The form works
 					// without JavaScript, so send it the ordinary way. The captcha token is unused.
-					window.launchForms.submitNatively( form );
+					window.liforms.submitNatively( form );
 					return;
 				}
 				setBusy( form, false );
 				if ( data && data.success ) {
 					if ( data.redirect ) {
 						track( form, function () {
-							window.launchForms.navigate( data.redirect );
+							window.liforms.navigate( data.redirect );
 						} );
 						return;
 					}
 					track( form, function () {} );
-					form.dispatchEvent( new window.CustomEvent( 'launch-forms:success', { bubbles: true, detail: data } ) );
+					form.dispatchEvent( new window.CustomEvent( 'liforms:success', { bubbles: true, detail: data } ) );
 					if ( data.hide_form ) {
 						var box = document.createElement( 'div' );
 						box.id = form.id;
-						box.className = 'lf-message lf-message--success';
+						box.className = 'lif-message lif-message--success';
 						box.setAttribute( 'role', 'status' );
 						box.setAttribute( 'tabindex', '-1' );
 						box.innerHTML = data.message_html || '';
@@ -346,7 +346,7 @@
 				var box2 = showMessage( form, message, 'error', false );
 				var first = showFieldErrors( form, ( data && data.errors ) || {} );
 				( first || box2 ).focus();
-				form.dispatchEvent( new window.CustomEvent( 'launch-forms:error', { bubbles: true, detail: data } ) );
+				form.dispatchEvent( new window.CustomEvent( 'liforms:error', { bubbles: true, detail: data } ) );
 			} )
 			.catch( function () {
 				setBusy( form, false );
@@ -357,11 +357,11 @@
 
 	function init( root ) {
 		trackSent( root );
-		Array.prototype.forEach.call( ( root || document ).querySelectorAll( 'form.lf-form' ), function ( form ) {
-			if ( form.__launchForms ) {
+		Array.prototype.forEach.call( ( root || document ).querySelectorAll( 'form.lif-form' ), function ( form ) {
+			if ( form.__liforms ) {
 				return;
 			}
-			form.__launchForms = true;
+			form.__liforms = true;
 			applyConditions( form );
 			form.addEventListener( 'input', function () {
 				applyConditions( form );
@@ -375,14 +375,14 @@
 		} );
 	}
 
-	window.launchForms = window.launchForms || {};
-	window.launchForms.init = init;
-	window.launchForms.applyConditions = applyConditions;
-	window.launchForms.collectValues = collectValues;
-	window.launchForms.navigate = function ( url ) {
+	window.liforms = window.liforms || {};
+	window.liforms.init = init;
+	window.liforms.applyConditions = applyConditions;
+	window.liforms.collectValues = collectValues;
+	window.liforms.navigate = function ( url ) {
 		window.location.assign( url );
 	};
-	window.launchForms.submitNatively = function ( form ) {
+	window.liforms.submitNatively = function ( form ) {
 		window.HTMLFormElement.prototype.submit.call( form ); // Skips the submit event, so no loop.
 	};
 

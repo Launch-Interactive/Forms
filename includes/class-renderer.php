@@ -4,10 +4,10 @@
  * active theme's form styles apply. The submit button carries `wp-element-button` so block
  * themes style it like every other button via theme.json.
  *
- * @package LaunchForms
+ * @package LaunchInteractiveForms
  */
 
-namespace LaunchForms;
+namespace LaunchInteractiveForms;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -56,7 +56,7 @@ class Renderer {
 		$form = $this->plugin->forms->get( $form_id );
 		if ( ! $form ) {
 			return current_user_can( 'edit_posts' )
-				? '<p class="lf-notice">' . esc_html__( 'Form not found. It may have been deleted or is not published.', 'launch-interactive-forms' ) . '</p>'
+				? '<p class="lif-notice">' . esc_html__( 'Form not found. It may have been deleted or is not published.', 'launch-interactive-forms' ) . '</p>'
 				: '';
 		}
 		return $this->render( $form, $args );
@@ -74,26 +74,26 @@ class Renderer {
 
 		$this->instances[ $form->id ] = ( $this->instances[ $form->id ] ?? 0 ) + 1;
 		$instance                     = $this->instances[ $form->id ];
-		$prefix                       = 'lf-' . $form->id . '-' . $instance;
-		$html_id                      = 1 === $instance ? 'lf-form-' . $form->id : 'lf-form-' . $form->id . '-' . $instance;
+		$prefix                       = 'lif-' . $form->id . '-' . $instance;
+		$html_id                      = 1 === $instance ? 'lif-form-' . $form->id : 'lif-form-' . $form->id . '-' . $instance;
 
 		$result = $this->plugin->processor->get_result( $form->id );
 
 		// Success after a non-JavaScript (redirected) submission.
-		$sent    = isset( $_GET['lf_sent'] ) && (int) $_GET['lf_sent'] === $form->id; // phpcs:ignore WordPress.Security.NonceVerification
+		$sent    = isset( $_GET['lif_sent'] ) && (int) $_GET['lif_sent'] === $form->id; // phpcs:ignore WordPress.Security.NonceVerification
 		$message = '';
 		$message_attrs = array(
-			'class' => 'lf-message lf-message--success',
+			'class' => 'lif-message lif-message--success',
 			'role'  => 'status',
 		);
 		if ( $sent || ( $result && $result->success ) ) {
 			$message = $result && $result->success ? $this->success_message( $form, $result ) : $this->redirected_message( $form );
 			if ( $sent && '' !== $form->settings['analytics_event'] ) {
 				// frontend.js sends the analytics event for a submission that didn't go through JavaScript.
-				$message_attrs['data-lf-sent']       = true;
-				$message_attrs['data-lf-form']       = $form->id;
-				$message_attrs['data-lf-event']      = $form->settings['analytics_event'];
-				$message_attrs['data-lf-event-form'] = $form->title;
+				$message_attrs['data-lif-sent']       = true;
+				$message_attrs['data-lif-form']       = $form->id;
+				$message_attrs['data-lif-event']      = $form->settings['analytics_event'];
+				$message_attrs['data-lif-event-form'] = $form->title;
 			}
 			if ( $form->settings['hide_form_on_success'] ) {
 				return '<div' . self::attrs( array( 'id' => $html_id ) + $message_attrs ) . '>' . $message . '</div>';
@@ -108,13 +108,13 @@ class Renderer {
 
 		$attrs = array(
 			'id'           => $html_id,
-			'class'        => trim( 'lf-form ' . ( $args['class'] ?? '' ) ),
+			'class'        => trim( 'lif-form ' . ( $args['class'] ?? '' ) ),
 			'method'       => 'post',
-			'data-lf-form' => $form->id,
+			'data-lif-form' => $form->id,
 		);
 		if ( '' !== $form->settings['analytics_event'] ) {
-			$attrs['data-lf-event']      = $form->settings['analytics_event'];
-			$attrs['data-lf-event-form'] = $form->title;
+			$attrs['data-lif-event']      = $form->settings['analytics_event'];
+			$attrs['data-lif-event-form'] = $form->title;
 		}
 		if ( $form->has_field_type( 'file' ) ) {
 			$attrs['enctype'] = 'multipart/form-data';
@@ -125,7 +125,7 @@ class Renderer {
 		if ( '' !== $message ) {
 			$html .= '<div' . self::attrs( $message_attrs ) . '>' . $message . '</div>';
 		} elseif ( $result && ! $result->success ) {
-			$html .= '<div class="lf-message lf-message--error" role="alert">' . esc_html( $result->message ) . '</div>';
+			$html .= '<div class="lif-message lif-message--error" role="alert">' . esc_html( $result->message ) . '</div>';
 		}
 
 		$this->current_form = $form;
@@ -136,13 +136,13 @@ class Renderer {
 		$this->current_form = null;
 
 		$html .= $this->honeypot( $prefix );
-		$html .= '<input type="hidden" name="lf_form_id" value="' . esc_attr( $form->id ) . '">';
+		$html .= '<input type="hidden" name="lif_form_id" value="' . esc_attr( $form->id ) . '">';
 		if ( is_user_logged_in() ) {
 			// Lets a plain POST be credited to the logged-in user (see Frontend::verified_user_id()).
 			// Logged-out pages stay nonce-free so they can be cached.
-			$html .= '<input type="hidden" name="lf_nonce" value="' . esc_attr( wp_create_nonce( 'launch_forms_submit_' . $form->id ) ) . '">';
+			$html .= '<input type="hidden" name="lif_nonce" value="' . esc_attr( wp_create_nonce( 'liforms_submit_' . $form->id ) ) . '">';
 		}
-		$html .= '<div class="lf-submit"><button type="submit" class="wp-element-button">' . esc_html( $form->settings['submit_label'] ) . '</button></div>';
+		$html .= '<div class="lif-submit"><button type="submit" class="wp-element-button">' . esc_html( $form->settings['submit_label'] ) . '</button></div>';
 		$html .= '</form>';
 
 		/**
@@ -151,7 +151,7 @@ class Renderer {
 		 * @param string $html Form HTML.
 		 * @param Form   $form Form.
 		 */
-		return apply_filters( 'launch_forms_form_html', $html, $form );
+		return apply_filters( 'liforms_form_html', $html, $form );
 	}
 
 	/**
@@ -184,7 +184,7 @@ class Renderer {
 	 * @return string
 	 */
 	private function redirected_message( Form $form ) {
-		$token = isset( $_GET['lf_msg'] ) ? sanitize_key( wp_unslash( $_GET['lf_msg'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
+		$token = isset( $_GET['lif_msg'] ) ? sanitize_key( wp_unslash( $_GET['lif_msg'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
 		if ( '' !== $token ) {
 			$stored = get_transient( Frontend::MESSAGE_TRANSIENT . $token );
 			if ( is_array( $stored ) && (int) ( $stored['form'] ?? 0 ) === $form->id && isset( $stored['html'] ) ) {
@@ -223,7 +223,7 @@ class Renderer {
 	public function render_field( array $field, $prefix, $value, $error, $visible ) {
 		$type = $field['type'];
 		$id   = $prefix . '-' . $field['name'];
-		$name = 'lf[' . $field['name'] . ']';
+		$name = 'lif[' . $field['name'] . ']';
 
 		if ( null === $value ) {
 			$value = $field['default'];
@@ -237,11 +237,11 @@ class Renderer {
 		}
 
 		$wrapper = array(
-			'class'        => trim( 'lf-field lf-field--' . $type . ( ! empty( $field['width'] ) && 'full' !== $field['width'] ? ' lf-field--' . $field['width'] : '' ) . ( $field['required'] ? ' lf-field--required' : '' ) . ( $error ? ' lf-field--error' : '' ) . ' ' . $field['css_class'] ),
-			'data-lf-name' => $field['name'],
+			'class'        => trim( 'lif-field lif-field--' . $type . ( ! empty( $field['width'] ) && 'full' !== $field['width'] ? ' lif-field--' . $field['width'] : '' ) . ( $field['required'] ? ' lif-field--required' : '' ) . ( $error ? ' lif-field--error' : '' ) . ' ' . $field['css_class'] ),
+			'data-lif-name' => $field['name'],
 		);
 		if ( ! empty( $field['conditions']['enabled'] ) ) {
-			$wrapper['data-lf-conditions'] = wp_json_encode( $field['conditions'] );
+			$wrapper['data-lif-conditions'] = wp_json_encode( $field['conditions'] );
 		}
 		if ( ! $visible ) {
 			$wrapper['hidden'] = true;
@@ -257,8 +257,8 @@ class Renderer {
 			if ( '' === $widget ) {
 				return '';
 			}
-			$wrapper['class'] .= ' lf-field--captcha';
-			$error_html        = $error ? '<p class="lf-error" id="' . esc_attr( $id . '-error' ) . '">' . esc_html( $error ) . '</p>' : '';
+			$wrapper['class'] .= ' lif-field--captcha';
+			$error_html        = $error ? '<p class="lif-error" id="' . esc_attr( $id . '-error' ) . '">' . esc_html( $error ) . '</p>' : '';
 			return '<div' . self::attrs( $wrapper ) . '>' . $widget . $error_html . '</div>';
 		}
 
@@ -272,12 +272,12 @@ class Renderer {
 		}
 		if ( '' !== $description ) {
 			$describedby[] = $id . '-desc';
-			$desc_html     = '<p class="lf-description" id="' . esc_attr( $id . '-desc' ) . '">' . esc_html( $description ) . '</p>';
+			$desc_html     = '<p class="lif-description" id="' . esc_attr( $id . '-desc' ) . '">' . esc_html( $description ) . '</p>';
 		}
 		$error_html = '';
 		if ( $error ) {
 			$describedby[] = $id . '-error';
-			$error_html    = '<p class="lf-error" id="' . esc_attr( $id . '-error' ) . '">' . esc_html( $error ) . '</p>';
+			$error_html    = '<p class="lif-error" id="' . esc_attr( $id . '-error' ) . '">' . esc_html( $error ) . '</p>';
 		}
 
 		$common = array();
@@ -313,7 +313,7 @@ class Renderer {
 					$input['required'] = true;
 				}
 				unset( $input['aria-describedby'], $input['aria-invalid'] );
-				$options .= '<div class="lf-option"><input' . self::attrs( $input ) . '> <label for="' . esc_attr( $opt_id ) . '">' . esc_html( $option['label'] ) . '</label></div>';
+				$options .= '<div class="lif-option"><input' . self::attrs( $input ) . '> <label for="' . esc_attr( $opt_id ) . '">' . esc_html( $option['label'] ) . '</label></div>';
 			}
 			$fieldset_attrs = $wrapper;
 			if ( $describedby ) {
@@ -322,7 +322,7 @@ class Renderer {
 			if ( ! $visible ) {
 				$fieldset_attrs['disabled'] = true;
 			}
-			$fieldset_attrs['class'] .= ' lf-fieldset';
+			$fieldset_attrs['class'] .= ' lif-fieldset';
 			return '<fieldset' . self::attrs( $fieldset_attrs ) . '><legend>' . $label . '</legend>' . $options . $desc_html . $error_html . '</fieldset>';
 		}
 
@@ -422,7 +422,7 @@ class Renderer {
 	 */
 	private function honeypot( $prefix ) {
 		$id = $prefix . '-hp';
-		return '<div class="lf-hp" aria-hidden="true"><label for="' . esc_attr( $id ) . '">' . esc_html__( 'Leave this field empty', 'launch-interactive-forms' ) . '</label><input type="text" id="' . esc_attr( $id ) . '" name="lf_hp" value="" tabindex="-1" autocomplete="off"></div>';
+		return '<div class="lif-hp" aria-hidden="true"><label for="' . esc_attr( $id ) . '">' . esc_html__( 'Leave this field empty', 'launch-interactive-forms' ) . '</label><input type="text" id="' . esc_attr( $id ) . '" name="lif_hp" value="" tabindex="-1" autocomplete="off"></div>';
 	}
 
 	/**
@@ -457,11 +457,11 @@ class Renderer {
 		 * @param string $marker Marker text from settings (default "*").
 		 * @param array  $field  Field.
 		 */
-		$marker = (string) apply_filters( 'launch_forms_required_marker', (string) $this->plugin->settings->get( 'required_marker' ), $field );
+		$marker = (string) apply_filters( 'liforms_required_marker', (string) $this->plugin->settings->get( 'required_marker' ), $field );
 		if ( '' === $marker ) {
 			return '';
 		}
-		return ' <span class="lf-required" aria-hidden="true">' . esc_html( $marker ) . '</span>';
+		return ' <span class="lif-required" aria-hidden="true">' . esc_html( $marker ) . '</span>';
 	}
 
 	/**

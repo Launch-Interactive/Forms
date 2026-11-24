@@ -3,7 +3,7 @@
  * Private file storage for uploads.
  *
  * Security model:
- *  - Files are stored in a dedicated directory (outside the web root when LAUNCH_FORMS_PRIVATE_DIR
+ *  - Files are stored in a dedicated directory (outside the web root when LIFORMS_PRIVATE_DIR
  *    is defined, otherwise wp-content/uploads/launch-interactive-forms) that is locked with .htaccess,
  *    web.config and index.php.
  *  - Stored names are 128-bit random hex strings with no extension, so even on servers that ignore
@@ -14,10 +14,10 @@
  *    the real file content (wp_check_filetype_and_ext), a hard block-list applied to every
  *    extension segment (catches "shell.php.jpg"), and size limits.
  *
- * @package LaunchForms
+ * @package LaunchInteractiveForms
  */
 
-namespace LaunchForms;
+namespace LaunchInteractiveForms;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -46,8 +46,8 @@ class Uploads {
 	 * @return string Absolute path with trailing slash.
 	 */
 	public function get_dir() {
-		if ( defined( 'LAUNCH_FORMS_PRIVATE_DIR' ) && LAUNCH_FORMS_PRIVATE_DIR ) {
-			$dir = LAUNCH_FORMS_PRIVATE_DIR;
+		if ( defined( 'LIFORMS_PRIVATE_DIR' ) && LIFORMS_PRIVATE_DIR ) {
+			$dir = LIFORMS_PRIVATE_DIR;
 		} else {
 			$uploads = wp_upload_dir( null, false );
 			$dir     = $uploads['basedir'] . '/' . self::DIR_NAME;
@@ -57,7 +57,7 @@ class Uploads {
 		 *
 		 * @param string $dir Directory.
 		 */
-		$dir = trailingslashit( (string) apply_filters( 'launch_forms_private_dir', $dir ) );
+		$dir = trailingslashit( (string) apply_filters( 'liforms_private_dir', $dir ) );
 
 		if ( ! is_dir( $dir ) ) {
 			wp_mkdir_p( $dir );
@@ -85,9 +85,9 @@ class Uploads {
 	}
 
 	/**
-	 * Convert PHP's $_FILES['lf'] structure into name => single-file array.
+	 * Convert PHP's $_FILES['lif'] structure into name => single-file array.
 	 *
-	 * @param mixed $files $_FILES['lf'] (or similar).
+	 * @param mixed $files $_FILES['lif'] (or similar).
 	 * @return array<string,array{name:string,type:string,tmp_name:string,error:int,size:int}>
 	 */
 	public static function normalize_files( $files ) {
@@ -135,26 +135,26 @@ class Uploads {
 				UPLOAD_ERR_FORM_SIZE => __( 'The file is too large.', 'launch-interactive-forms' ),
 				UPLOAD_ERR_PARTIAL   => __( 'The file was only partially uploaded. Please try again.', 'launch-interactive-forms' ),
 			);
-			return new \WP_Error( 'lf_upload_error', $messages[ $error ] ?? __( 'The file could not be uploaded.', 'launch-interactive-forms' ) );
+			return new \WP_Error( 'liforms_upload_error', $messages[ $error ] ?? __( 'The file could not be uploaded.', 'launch-interactive-forms' ) );
 		}
 
 		$tmp = (string) $file['tmp_name'];
 		if ( '' === $tmp || ! file_exists( $tmp ) || ! $this->is_uploaded_file( $tmp ) ) {
-			return new \WP_Error( 'lf_upload_invalid', __( 'The file could not be uploaded.', 'launch-interactive-forms' ) );
+			return new \WP_Error( 'liforms_upload_invalid', __( 'The file could not be uploaded.', 'launch-interactive-forms' ) );
 		}
 
 		$max_bytes = (int) min( $field['max_size'] * MB_IN_BYTES, wp_max_upload_size() ?: PHP_INT_MAX );
 		$size      = (int) filesize( $tmp );
 		if ( $size > $max_bytes || (int) $file['size'] > $max_bytes ) {
 			/* translators: %s: size in MB. */
-			return new \WP_Error( 'lf_upload_size', sprintf( __( 'The file must be smaller than %s MB.', 'launch-interactive-forms' ), round( $max_bytes / MB_IN_BYTES, 2 ) ) );
+			return new \WP_Error( 'liforms_upload_size', sprintf( __( 'The file must be smaller than %s MB.', 'launch-interactive-forms' ), round( $max_bytes / MB_IN_BYTES, 2 ) ) );
 		}
 		if ( 0 === $size ) {
-			return new \WP_Error( 'lf_upload_empty', __( 'The file is empty.', 'launch-interactive-forms' ) );
+			return new \WP_Error( 'liforms_upload_empty', __( 'The file is empty.', 'launch-interactive-forms' ) );
 		}
 
 		$original = wp_basename( (string) $file['name'] );
-		$type_err = new \WP_Error( 'lf_upload_type', __( 'This file type is not allowed.', 'launch-interactive-forms' ) );
+		$type_err = new \WP_Error( 'liforms_upload_type', __( 'This file type is not allowed.', 'launch-interactive-forms' ) );
 
 		// Reject dangerous extensions anywhere in the name (e.g. "shell.php.jpg") and null bytes.
 		if ( false !== strpos( $original, "\0" ) ) {
@@ -206,7 +206,7 @@ class Uploads {
 		$tmp    = (string) $file['tmp_name'];
 		$real   = is_uploaded_file( $tmp );
 		if ( ! $real && ! $this->is_uploaded_file( $tmp ) ) {
-			return new \WP_Error( 'lf_upload_move', __( 'The file could not be saved.', 'launch-interactive-forms' ) );
+			return new \WP_Error( 'liforms_upload_move', __( 'The file could not be saved.', 'launch-interactive-forms' ) );
 		}
 
 		// Let WordPress move the file, but into the private folder under a random name with
@@ -248,7 +248,7 @@ class Uploads {
 			if ( ! empty( $result['file'] ) && file_exists( $result['file'] ) && 0 === strpos( wp_normalize_path( $result['file'] ), wp_normalize_path( $dir ) . '/' ) ) {
 				wp_delete_file( $result['file'] );
 			}
-			return new \WP_Error( 'lf_upload_move', __( 'The file could not be saved.', 'launch-interactive-forms' ) );
+			return new \WP_Error( 'liforms_upload_move', __( 'The file could not be saved.', 'launch-interactive-forms' ) );
 		}
 		@chmod( $dest, 0640 ); // phpcs:ignore WordPress.PHP.NoSilencedErrors, WordPress.WP.AlternativeFunctions -- Only the web server needs to read private uploads.
 
@@ -318,7 +318,7 @@ class Uploads {
 			return 'outside';
 		}
 		$name   = bin2hex( random_bytes( 16 ) );
-		$marker = 'launch-forms-probe-' . $name;
+		$marker = 'liforms-probe-' . $name;
 		if ( false === file_put_contents( $dir . $name, $marker ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions
 			return 'unknown';
 		}
@@ -364,6 +364,6 @@ class Uploads {
 	 * @return bool
 	 */
 	private function is_uploaded_file( $tmp ) {
-		return (bool) apply_filters( 'launch_forms_is_uploaded_file', is_uploaded_file( $tmp ), $tmp );
+		return (bool) apply_filters( 'liforms_is_uploaded_file', is_uploaded_file( $tmp ), $tmp );
 	}
 }

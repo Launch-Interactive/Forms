@@ -1,10 +1,10 @@
 <?php
 /**
- * @covers \LaunchForms\Rest_Api
- * @covers \LaunchForms\Forms_Rest_Controller
+ * @covers \LaunchInteractiveForms\Rest_Api
+ * @covers \LaunchInteractiveForms\Forms_Rest_Controller
  */
 
-use LaunchForms\Forms;
+use LaunchInteractiveForms\Forms;
 
 class RestApiTest extends LF_TestCase {
 
@@ -26,7 +26,7 @@ class RestApiTest extends LF_TestCase {
 	}
 
 	private function submit( $form_id, array $body, array $files = array() ) {
-		$request = new WP_REST_Request( 'POST', '/launch-forms/v1/forms/' . $form_id . '/submit' );
+		$request = new WP_REST_Request( 'POST', '/liforms/v1/forms/' . $form_id . '/submit' );
 		$request->set_body_params( $body );
 		$request->set_file_params( $files );
 		$request->set_header( 'referer', 'https://example.org/contact/' );
@@ -35,13 +35,13 @@ class RestApiTest extends LF_TestCase {
 
 	public function test_routes_registered() {
 		$routes = $this->server->get_routes();
-		$this->assertArrayHasKey( '/launch-forms/v1/forms/(?P<id>\d+)/submit', $routes );
-		$this->assertArrayHasKey( '/launch-forms/v1/mailchimp/lists', $routes );
+		$this->assertArrayHasKey( '/liforms/v1/forms/(?P<id>\d+)/submit', $routes );
+		$this->assertArrayHasKey( '/liforms/v1/mailchimp/lists', $routes );
 	}
 
 	public function test_successful_submit() {
 		$form     = $this->contact_form( array( 'settings' => array( 'success_message' => '<p>Thanks <em>pal</em></p>' ) ) );
-		$response = $this->submit( $form->id, array( 'lf' => array( 'name' => 'Ann', 'email' => 'ann@example.com' ) ) );
+		$response = $this->submit( $form->id, array( 'lif' => array( 'name' => 'Ann', 'email' => 'ann@example.com' ) ) );
 		$this->assertSame( 200, $response->get_status() );
 		$data = $response->get_data();
 		$this->assertTrue( $data['success'] );
@@ -50,13 +50,13 @@ class RestApiTest extends LF_TestCase {
 		$this->assertTrue( $data['hide_form'] );
 		$this->assertSame( '', $data['redirect'] );
 		$this->assertCount( 1, $this->sent_emails() );
-		$sub = get_posts( array( 'post_type' => 'launch_forms_entry', 'post_parent' => $form->id ) );
-		$this->assertSame( 'https://example.org/contact/', get_post_meta( $sub[0]->ID, '_launch_forms_page_url', true ) );
+		$sub = get_posts( array( 'post_type' => 'liforms_entry', 'post_parent' => $form->id ) );
+		$this->assertSame( 'https://example.org/contact/', get_post_meta( $sub[0]->ID, '_liforms_page_url', true ) );
 	}
 
 	public function test_validation_errors_return_422() {
 		$form     = $this->contact_form();
-		$response = $this->submit( $form->id, array( 'lf' => array( 'email' => 'nope' ) ) );
+		$response = $this->submit( $form->id, array( 'lif' => array( 'email' => 'nope' ) ) );
 		$this->assertSame( 422, $response->get_status() );
 		$data = $response->get_data();
 		$this->assertFalse( $data['success'] );
@@ -75,7 +75,7 @@ class RestApiTest extends LF_TestCase {
 		$form  = $this->make_form( array( $this->field( 'file', 'photo', array( 'allowed_types' => 'png', 'required' => true ) ) ) );
 		$file  = $this->fake_upload( 'me.png', $this->png_bytes() );
 		$files = array(
-			'lf' => array(
+			'lif' => array(
 				'name'     => array( 'photo' => $file['name'] ),
 				'type'     => array( 'photo' => 'image/png' ),
 				'tmp_name' => array( 'photo' => $file['tmp_name'] ),
@@ -83,12 +83,12 @@ class RestApiTest extends LF_TestCase {
 				'size'     => array( 'photo' => $file['size'] ),
 			),
 		);
-		$response = $this->submit( $form->id, array( 'lf' => array() ), $files );
+		$response = $this->submit( $form->id, array( 'lif' => array() ), $files );
 		$this->assertSame( 200, $response->get_status(), wp_json_encode( $response->get_data() ) );
 	}
 
 	private function preview( $form_id, $config, $class = '' ) {
-		$request = new WP_REST_Request( 'POST', '/launch-forms/v1/forms/' . $form_id . '/preview' );
+		$request = new WP_REST_Request( 'POST', '/liforms/v1/forms/' . $form_id . '/preview' );
 		$request->set_body_params( array( 'config' => is_string( $config ) ? $config : wp_json_encode( $config ), 'className' => $class ) );
 		return $this->server->dispatch( $request );
 	}
@@ -103,12 +103,12 @@ class RestApiTest extends LF_TestCase {
 		$response = $this->preview( $form->id, $config, 'is-style-wide bad"class' );
 		$this->assertSame( 200, $response->get_status() );
 		$html = $response->get_data()['html'];
-		$this->assertStringContainsString( 'name="lf[company]"', $html, 'The field added in the editor shows.' );
-		$this->assertStringContainsString( 'class="lf-form wp-block-launch-forms-form is-style-wide badclass"', $html );
+		$this->assertStringContainsString( 'name="lif[company]"', $html, 'The field added in the editor shows.' );
+		$this->assertStringContainsString( 'class="lif-form wp-block-liforms-form is-style-wide badclass"', $html );
 
-		$saved = launch_forms()->forms->get( $form->id );
+		$saved = liforms()->forms->get( $form->id );
 		$this->assertNull( $saved->get_field( 'company' ), 'Nothing is saved.' );
-		$this->assertStringNotContainsString( 'lf[company]', launch_forms()->renderer->render( $saved ) );
+		$this->assertStringNotContainsString( 'lif[company]', liforms()->renderer->render( $saved ) );
 	}
 
 	public function test_block_preview_sanitises_the_config() {
@@ -134,14 +134,14 @@ class RestApiTest extends LF_TestCase {
 	}
 
 	public function test_mailchimp_lists_requires_permission() {
-		$request = new WP_REST_Request( 'GET', '/launch-forms/v1/mailchimp/lists' );
+		$request = new WP_REST_Request( 'GET', '/liforms/v1/mailchimp/lists' );
 		$this->assertSame( 401, $this->server->dispatch( $request )->get_status() );
 
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'author' ) ) );
 		$this->assertSame( 403, $this->server->dispatch( $request )->get_status() );
 
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
-		launch_forms()->settings->update( array( 'mailchimp_api_key' => 'k-us1' ) );
+		liforms()->settings->update( array( 'mailchimp_api_key' => 'k-us1' ) );
 		$this->mock_http(
 			static function () {
 				return array( 'body' => array( 'lists' => array( array( 'id' => 'a1', 'name' => 'Main' ) ) ) );
@@ -154,7 +154,7 @@ class RestApiTest extends LF_TestCase {
 
 	public function test_mailchimp_lists_error_is_400() {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
-		$response = $this->server->dispatch( new WP_REST_Request( 'GET', '/launch-forms/v1/mailchimp/lists' ) );
+		$response = $this->server->dispatch( new WP_REST_Request( 'GET', '/liforms/v1/mailchimp/lists' ) );
 		$this->assertSame( 400, $response->get_status() );
 	}
 
@@ -163,11 +163,11 @@ class RestApiTest extends LF_TestCase {
 	 */
 	public function test_form_definitions_are_not_publicly_readable() {
 		$form = $this->contact_form();
-		$this->assertSame( 401, $this->server->dispatch( new WP_REST_Request( 'GET', '/wp/v2/launch-forms' ) )->get_status() );
-		$this->assertSame( 401, $this->server->dispatch( new WP_REST_Request( 'GET', '/wp/v2/launch-forms/' . $form->id ) )->get_status() );
+		$this->assertSame( 401, $this->server->dispatch( new WP_REST_Request( 'GET', '/wp/v2/liforms' ) )->get_status() );
+		$this->assertSame( 401, $this->server->dispatch( new WP_REST_Request( 'GET', '/wp/v2/liforms/' . $form->id ) )->get_status() );
 
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
-		$this->assertSame( 403, $this->server->dispatch( new WP_REST_Request( 'GET', '/wp/v2/launch-forms/' . $form->id ) )->get_status() );
+		$this->assertSame( 403, $this->server->dispatch( new WP_REST_Request( 'GET', '/wp/v2/liforms/' . $form->id ) )->get_status() );
 	}
 
 	/**
@@ -176,7 +176,7 @@ class RestApiTest extends LF_TestCase {
 	public function test_editors_can_create_and_update_forms_via_rest() {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
 
-		$request = new WP_REST_Request( 'POST', '/wp/v2/launch-forms' );
+		$request = new WP_REST_Request( 'POST', '/wp/v2/liforms' );
 		$request->set_body_params(
 			array(
 				'title'  => 'Built in Gutenberg',
@@ -187,20 +187,20 @@ class RestApiTest extends LF_TestCase {
 		$response = $this->server->dispatch( $request );
 		$this->assertSame( 201, $response->get_status(), wp_json_encode( $response->get_data() ) );
 		$id   = $response->get_data()['id'];
-		$form = launch_forms()->forms->get( $id );
+		$form = liforms()->forms->get( $id );
 		$this->assertSame( 'email_address', $form->fields[0]['name'] );
 		$this->assertSame( 'Email "address"', $form->fields[0]['label'] );
 
-		$get  = new WP_REST_Request( 'GET', '/wp/v2/launch-forms/' . $id );
+		$get  = new WP_REST_Request( 'GET', '/wp/v2/liforms/' . $id );
 		$get->set_param( 'context', 'edit' );
 		$data = $this->server->dispatch( $get )->get_data();
 		$this->assertArrayHasKey( Forms::META_KEY, $data['meta'] );
 		$this->assertSame( 'email_address', json_decode( $data['meta'][ Forms::META_KEY ], true )['fields'][0]['name'] );
 
-		$update = new WP_REST_Request( 'POST', '/wp/v2/launch-forms/' . $id );
+		$update = new WP_REST_Request( 'POST', '/wp/v2/liforms/' . $id );
 		$update->set_body_params( array( 'meta' => array( Forms::META_KEY => '{"fields":[{"type":"evil"}],"settings":{"submit_label":"Send it"}}' ) ) );
 		$this->assertSame( 200, $this->server->dispatch( $update )->get_status() );
-		$form = launch_forms()->forms->get( $id );
+		$form = liforms()->forms->get( $id );
 		$this->assertSame( array(), $form->fields, 'Config is sanitised on REST writes too.' );
 		$this->assertSame( 'Send it', $form->settings['submit_label'] );
 	}
@@ -208,7 +208,7 @@ class RestApiTest extends LF_TestCase {
 	public function test_authors_cannot_edit_forms_via_rest() {
 		$form = $this->contact_form();
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'author' ) ) );
-		$update = new WP_REST_Request( 'POST', '/wp/v2/launch-forms/' . $form->id );
+		$update = new WP_REST_Request( 'POST', '/wp/v2/liforms/' . $form->id );
 		$update->set_body_params( array( 'meta' => array( Forms::META_KEY => '{}' ) ) );
 		$this->assertContains( $this->server->dispatch( $update )->get_status(), array( 401, 403 ) );
 	}

@@ -1,15 +1,15 @@
 <?php
 /**
- * @covers \LaunchForms\Processor
- * @covers \LaunchForms\Submission_Result
+ * @covers \LaunchInteractiveForms\Processor
+ * @covers \LaunchInteractiveForms\Submission_Result
  */
 
-use LaunchForms\Submissions;
+use LaunchInteractiveForms\Submissions;
 
 class ProcessorTest extends LF_TestCase {
 
 	private function submit( $form, array $values, array $files = array(), array $extra = array() ) {
-		return launch_forms()->processor->process( $form, array_merge( array( 'lf' => $values ), $extra ), $files, array( 'page_url' => 'https://example.org/contact/' ) );
+		return liforms()->processor->process( $form, array_merge( array( 'lif' => $values ), $extra ), $files, array( 'page_url' => 'https://example.org/contact/' ) );
 	}
 
 	private function submissions_for( $form ) {
@@ -30,7 +30,7 @@ class ProcessorTest extends LF_TestCase {
 		$this->assertSame( 'Cheers', $result->message );
 		$this->assertGreaterThan( 0, $result->submission_id );
 
-		$entries = launch_forms()->submissions->get_entries( $result->submission_id );
+		$entries = liforms()->submissions->get_entries( $result->submission_id );
 		$this->assertSame( array( 'name', 'email', 'message' ), wp_list_pluck( $entries, 'name' ) );
 		$this->assertSame( "Hi\nthere", $entries[2]['value'] );
 		$this->assertSame( 'Message', $entries[2]['label'] );
@@ -41,7 +41,7 @@ class ProcessorTest extends LF_TestCase {
 		$this->assertSame( get_option( 'admin_email' ), $emails[0]['to'][0][0] );
 		$this->assertStringContainsString( 'Email: ann@example.com', $emails[0]['body'] );
 
-		$log = launch_forms()->submissions->get_log( $result->submission_id );
+		$log = liforms()->submissions->get_log( $result->submission_id );
 		$this->assertTrue( $log[0]['success'] );
 	}
 
@@ -53,12 +53,12 @@ class ProcessorTest extends LF_TestCase {
 		$this->assertSame( 'bad', $result->values['email'] );
 		$this->assertCount( 0, $this->submissions_for( $form ) );
 		$this->assertCount( 0, $this->sent_emails() );
-		$this->assertSame( $result, launch_forms()->processor->get_result( $form->id ) );
+		$this->assertSame( $result, liforms()->processor->get_result( $form->id ) );
 	}
 
 	public function test_honeypot_silently_discards() {
 		$form   = $this->contact_form();
-		$result = $this->submit( $form, array( 'name' => 'Bot', 'email' => 'bot@example.com' ), array(), array( 'lf_hp' => 'http://spam' ) );
+		$result = $this->submit( $form, array( 'name' => 'Bot', 'email' => 'bot@example.com' ), array(), array( 'lif_hp' => 'http://spam' ) );
 		$this->assertTrue( $result->success, 'Bots should see success.' );
 		$this->assertTrue( $result->spam );
 		$this->assertCount( 0, $this->submissions_for( $form ) );
@@ -99,7 +99,7 @@ class ProcessorTest extends LF_TestCase {
 		);
 		$result  = $this->submit( $form, array( 'topic' => 'Sales', 'order_number' => 'smuggled' ) );
 		$this->assertTrue( $result->success );
-		$entries = launch_forms()->submissions->get_entries( $result->submission_id );
+		$entries = liforms()->submissions->get_entries( $result->submission_id );
 		$this->assertSame( array( 'topic' ), wp_list_pluck( $entries, 'name' ) );
 
 		$result = $this->submit( $form, array( 'topic' => 'Support' ) );
@@ -117,10 +117,10 @@ class ProcessorTest extends LF_TestCase {
 		$result = $this->submit( $form, array( 'email' => 'ann@example.com' ), array( 'cv' => $this->fake_upload( 'My CV.pdf', $this->pdf_bytes() ) ) );
 		$this->assertTrue( $result->success, wp_json_encode( $result->errors ) );
 
-		$entries = launch_forms()->submissions->get_entries( $result->submission_id );
+		$entries = liforms()->submissions->get_entries( $result->submission_id );
 		$file    = $entries[1]['value'];
 		$this->assertSame( 'My-CV.pdf', $file['name'] );
-		$this->assertFileExists( launch_forms()->uploads->path( $file['file'] ) );
+		$this->assertFileExists( liforms()->uploads->path( $file['file'] ) );
 		$this->assertStringContainsString( 'Cv: My-CV.pdf', $this->sent_emails()[0]['body'] );
 	}
 
@@ -194,13 +194,13 @@ class ProcessorTest extends LF_TestCase {
 		$form  = $this->contact_form();
 		$calls = array();
 		add_action(
-			'launch_forms_before_actions',
+			'liforms_before_actions',
 			static function () use ( &$calls ) {
 				$calls[] = 'before';
 			}
 		);
 		add_action(
-			'launch_forms_submission',
+			'liforms_submission',
 			static function ( $id, $f, $entries, $log ) use ( &$calls ) {
 				$calls[] = array( $id, wp_list_pluck( $entries, "name" ), count( $log ) );
 			},
@@ -212,7 +212,7 @@ class ProcessorTest extends LF_TestCase {
 	}
 
 	public function test_mailchimp_runs_and_failures_are_logged_not_fatal() {
-		launch_forms()->settings->update( array( 'mailchimp_api_key' => 'abc-us5' ) );
+		liforms()->settings->update( array( 'mailchimp_api_key' => 'abc-us5' ) );
 		$this->mock_http(
 			static function () {
 				return array(
@@ -232,14 +232,14 @@ class ProcessorTest extends LF_TestCase {
 		);
 		$result = $this->submit( $form, array( 'name' => 'A', 'email' => 'a@example.com' ) );
 		$this->assertTrue( $result->success, 'An integration failure must not lose the submission.' );
-		$log = launch_forms()->submissions->get_log( $result->submission_id );
+		$log = liforms()->submissions->get_log( $result->submission_id );
 		$this->assertSame( 'mailchimp', $log[1]['action'] );
 		$this->assertFalse( $log[1]['success'] );
 		$this->assertStringContainsString( 'looks fake', $log[1]['message'] );
 	}
 
 	public function test_captcha_failure_blocks_submission() {
-		launch_forms()->settings->update( array( 'turnstile_site_key' => 'site', 'turnstile_secret_key' => 'secret' ) );
+		liforms()->settings->update( array( 'turnstile_site_key' => 'site', 'turnstile_secret_key' => 'secret' ) );
 		$this->mock_http(
 			static function () {
 				return array( 'body' => array( 'success' => false ) );

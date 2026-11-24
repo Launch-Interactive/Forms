@@ -1,6 +1,6 @@
 <?php
 /**
- * @covers \LaunchForms\Notifications
+ * @covers \LaunchInteractiveForms\Notifications
  */
 
 class NotificationsTest extends LF_TestCase {
@@ -34,7 +34,7 @@ class NotificationsTest extends LF_TestCase {
 
 	public function test_merge_tags() {
 		$form = $this->contact_form();
-		$n    = launch_forms()->notifications;
+		$n    = liforms()->notifications;
 		$out  = $n->replace_tags(
 			'{field:name} <{field:email}> [{field:topics}] {field:missing}|{form_title}|{form_id}|{site_name}|{admin_email}|{submission_id}|{page_url}',
 			$form,
@@ -46,13 +46,13 @@ class NotificationsTest extends LF_TestCase {
 	}
 
 	public function test_all_fields_format() {
-		$text = launch_forms()->notifications->all_fields( $this->entries() );
+		$text = liforms()->notifications->all_fields( $this->entries() );
 		$this->assertSame( "Name: Ann Lee\nEmail: ann@example.com\nTopics: News, Offers\nAgree: Yes\nMessage: \nLine 1\nLine 2", $text );
 	}
 
 	public function test_sends_with_headers() {
 		$form   = $this->contact_form();
-		$result = launch_forms()->notifications->send(
+		$result = liforms()->notifications->send(
 			$this->notification(
 				array(
 					'to'         => 'a@example.com, {field:email}; not-an-email',
@@ -80,7 +80,7 @@ class NotificationsTest extends LF_TestCase {
 		// Values are sanitised on input, but defend in depth against raw newlines too.
 		$entries[0]['value'] = "Evil\r\nBcc: victim@example.com";
 		$entries[1]['value'] = "x@example.com\r\nBcc: victim@example.com";
-		launch_forms()->notifications->send( $this->notification( array( 'subject' => 'Hi {field:name}', 'reply_to' => '{field:email}' ) ), $form, $entries );
+		liforms()->notifications->send( $this->notification( array( 'subject' => 'Hi {field:name}', 'reply_to' => '{field:email}' ) ), $form, $entries );
 		$mail = $this->sent_emails()[0];
 		$this->assertSame( array(), $mail['bcc'] );
 		$this->assertSame( array( 'owner@example.com' ), array_column( $mail['to'], 0 ) );
@@ -89,7 +89,7 @@ class NotificationsTest extends LF_TestCase {
 	}
 
 	public function test_no_valid_recipient_returns_error() {
-		$result = launch_forms()->notifications->send( $this->notification( array( 'to' => '{field:missing}' ) ), $this->contact_form(), $this->entries() );
+		$result = liforms()->notifications->send( $this->notification( array( 'to' => '{field:missing}' ) ), $this->contact_form(), $this->entries() );
 		$this->assertWPError( $result );
 		$this->assertCount( 0, $this->sent_emails() );
 	}
@@ -104,7 +104,7 @@ class NotificationsTest extends LF_TestCase {
 				),
 			)
 		);
-		$log = launch_forms()->notifications->send_all( $form, $this->entries() );
+		$log = liforms()->notifications->send_all( $form, $this->entries() );
 		$this->assertSame( array( 'Admin', 'Autoresponder' ), wp_list_pluck( $log, 'name' ) );
 		$this->assertCount( 2, $this->sent_emails() );
 		$this->assertStringContainsString( 'Thanks Ann Lee', $this->sent_emails()[1]['body'] );
@@ -118,20 +118,20 @@ class NotificationsTest extends LF_TestCase {
 				return false;
 			}
 		);
-		$result = launch_forms()->notifications->send( $this->notification( array() ), $this->contact_form(), $this->entries() );
+		$result = liforms()->notifications->send( $this->notification( array() ), $this->contact_form(), $this->entries() );
 		$this->assertWPError( $result );
 		$this->assertSame( 'SMTP connect() failed.', $result->get_error_message() );
 	}
 
 	public function test_email_filter() {
 		add_filter(
-			'launch_forms_notification_email',
+			'liforms_notification_email',
 			static function ( $email ) {
 				$email['subject'] = 'Filtered';
 				return $email;
 			}
 		);
-		launch_forms()->notifications->send( $this->notification( array() ), $this->contact_form(), $this->entries() );
+		liforms()->notifications->send( $this->notification( array() ), $this->contact_form(), $this->entries() );
 		$this->assertSame( 'Filtered', $this->sent_emails()[0]['subject'] );
 	}
 }

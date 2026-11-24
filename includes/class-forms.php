@@ -1,11 +1,11 @@
 <?php
 /**
- * Form storage: the lf_form post type and its config meta.
+ * Form storage: the liforms_form post type and its config meta.
  *
- * @package LaunchForms
+ * @package LaunchInteractiveForms
  */
 
-namespace LaunchForms;
+namespace LaunchInteractiveForms;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -14,8 +14,8 @@ defined( 'ABSPATH' ) || exit;
  */
 class Forms {
 
-	const POST_TYPE = 'launch_forms_form';
-	const META_KEY  = 'launch_forms_config';
+	const POST_TYPE = 'liforms_form';
+	const META_KEY  = 'liforms_config';
 
 	/**
 	 * Hooks.
@@ -71,7 +71,7 @@ class Forms {
 				'map_meta_cap'          => true,
 				'supports'              => array( 'title', 'custom-fields' ),
 				'show_in_rest'          => true,
-				'rest_base'             => 'launch-forms',
+				'rest_base'             => 'liforms',
 				'rest_controller_class' => Forms_Rest_Controller::class,
 				'rewrite'               => false,
 				'query_var'             => false,
@@ -185,10 +185,10 @@ class Forms {
 	 * @param \WP_Post $post    Post.
 	 */
 	public function save_classic_editor( $post_id, $post ) {
-		if ( ! isset( $_POST['launch_forms_builder_nonce'], $_POST[ self::META_KEY ] ) ) {
+		if ( ! isset( $_POST['liforms_builder_nonce'], $_POST[ self::META_KEY ] ) ) {
 			return;
 		}
-		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['launch_forms_builder_nonce'] ) ), 'launch_forms_builder_' . $post_id ) ) {
+		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['liforms_builder_nonce'] ) ), 'liforms_builder_' . $post_id ) ) {
 			return;
 		}
 		if ( ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) || wp_is_post_revision( $post_id ) ) {

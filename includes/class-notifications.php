@@ -5,10 +5,10 @@
  * Merge tags: {field:name}, {all_fields}, {form_title}, {form_id}, {site_name}, {site_url},
  * {admin_email}, {submission_id}, {page_url}, {date}.
  *
- * @package LaunchForms
+ * @package LaunchInteractiveForms
  */
 
-namespace LaunchForms;
+namespace LaunchInteractiveForms;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -66,7 +66,7 @@ class Notifications {
 	public function send( array $notification, Form $form, array $entries, array $context = array() ) {
 		$to = $this->parse_addresses( $this->replace_tags( $notification['to'], $form, $entries, $context ) );
 		if ( empty( $to ) ) {
-			return new \WP_Error( 'lf_no_recipient', __( 'No valid recipient address.', 'launch-interactive-forms' ) );
+			return new \WP_Error( 'liforms_no_recipient', __( 'No valid recipient address.', 'launch-interactive-forms' ) );
 		}
 
 		$subject = self::single_line( $this->replace_tags( $notification['subject'], $form, $entries, $context ) );
@@ -101,7 +101,7 @@ class Notifications {
 		 * @param Form  $form         Form.
 		 * @param array $entries      Entries.
 		 */
-		$email = apply_filters( 'launch_forms_notification_email', compact( 'to', 'subject', 'message', 'headers', 'attachments' ), $notification, $form, $entries );
+		$email = apply_filters( 'liforms_notification_email', compact( 'to', 'subject', 'message', 'headers', 'attachments' ), $notification, $form, $entries );
 
 		$error   = null;
 		$catcher = static function ( $wp_error ) use ( &$error ) {
@@ -116,7 +116,7 @@ class Notifications {
 		}
 
 		if ( ! $sent ) {
-			return $error instanceof \WP_Error ? $error : new \WP_Error( 'lf_mail_failed', __( 'wp_mail() could not send the email.', 'launch-interactive-forms' ) );
+			return $error instanceof \WP_Error ? $error : new \WP_Error( 'liforms_mail_failed', __( 'wp_mail() could not send the email.', 'launch-interactive-forms' ) );
 		}
 		return true;
 	}

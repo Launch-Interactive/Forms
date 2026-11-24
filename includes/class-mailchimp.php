@@ -2,10 +2,10 @@
 /**
  * Mailchimp signup action (Marketing API v3).
  *
- * @package LaunchForms
+ * @package LaunchInteractiveForms
  */
 
-namespace LaunchForms;
+namespace LaunchInteractiveForms;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -63,14 +63,14 @@ class Mailchimp {
 			return null; // Visitor did not opt in.
 		}
 		if ( '' === $this->datacenter() ) {
-			return new \WP_Error( 'lf_mailchimp_key', __( 'Mailchimp API key is missing or invalid.', 'launch-interactive-forms' ) );
+			return new \WP_Error( 'liforms_mailchimp_key', __( 'Mailchimp API key is missing or invalid.', 'launch-interactive-forms' ) );
 		}
 		if ( '' === $settings['list_id'] ) {
-			return new \WP_Error( 'lf_mailchimp_list', __( 'No Mailchimp audience selected.', 'launch-interactive-forms' ) );
+			return new \WP_Error( 'liforms_mailchimp_list', __( 'No Mailchimp audience selected.', 'launch-interactive-forms' ) );
 		}
 		$email = isset( $values[ $settings['email_field'] ] ) ? sanitize_email( (string) $values[ $settings['email_field'] ] ) : '';
 		if ( ! is_email( $email ) ) {
-			return new \WP_Error( 'lf_mailchimp_email', __( 'No valid email address to subscribe.', 'launch-interactive-forms' ) );
+			return new \WP_Error( 'liforms_mailchimp_email', __( 'No valid email address to subscribe.', 'launch-interactive-forms' ) );
 		}
 
 		$merge = array();
@@ -96,7 +96,7 @@ class Mailchimp {
 		 * @param Form  $form   Form.
 		 * @param array $values Values.
 		 */
-		$body = apply_filters( 'launch_forms_mailchimp_member', $body, $form, $values );
+		$body = apply_filters( 'liforms_mailchimp_member', $body, $form, $values );
 
 		$hash   = md5( strtolower( $email ) );
 		$member = 'lists/' . rawurlencode( $settings['list_id'] ) . '/members/' . $hash;
@@ -137,7 +137,7 @@ class Mailchimp {
 	 */
 	public function get_lists() {
 		if ( '' === $this->datacenter() ) {
-			return new \WP_Error( 'lf_mailchimp_key', __( 'Mailchimp API key is missing or invalid.', 'launch-interactive-forms' ) );
+			return new \WP_Error( 'liforms_mailchimp_key', __( 'Mailchimp API key is missing or invalid.', 'launch-interactive-forms' ) );
 		}
 		$data = $this->request( 'GET', 'lists?count=1000&fields=lists.id,lists.name' );
 		if ( is_wp_error( $data ) ) {
@@ -183,7 +183,7 @@ class Mailchimp {
 		if ( $code < 200 || $code >= 300 ) {
 			$detail = is_array( $data ) ? ( $data['detail'] ?? $data['title'] ?? '' ) : '';
 			/* translators: 1: HTTP status, 2: Mailchimp error detail. */
-			return new \WP_Error( 'lf_mailchimp_http', trim( sprintf( __( 'Mailchimp error %1$d: %2$s', 'launch-interactive-forms' ), $code, $detail ) ) );
+			return new \WP_Error( 'liforms_mailchimp_http', trim( sprintf( __( 'Mailchimp error %1$d: %2$s', 'launch-interactive-forms' ), $code, $detail ) ) );
 		}
 		return is_array( $data ) ? $data : array();
 	}

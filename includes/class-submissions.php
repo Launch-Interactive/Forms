@@ -1,11 +1,11 @@
 <?php
 /**
- * Stored submissions (lf_submission post type) and their admin screens.
+ * Stored submissions (liforms_submission post type) and their admin screens.
  *
- * @package LaunchForms
+ * @package LaunchInteractiveForms
  */
 
-namespace LaunchForms;
+namespace LaunchInteractiveForms;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -14,11 +14,11 @@ defined( 'ABSPATH' ) || exit;
  */
 class Submissions {
 
-	const POST_TYPE    = 'launch_forms_entry';
-	const META_FORM    = '_launch_forms_form_id';
-	const META_ENTRIES = '_launch_forms_entries';
-	const META_LOG     = '_launch_forms_log';
-	const META_PAGE    = '_launch_forms_page_url';
+	const POST_TYPE    = 'liforms_entry';
+	const META_FORM    = '_liforms_form_id';
+	const META_ENTRIES = '_liforms_entries';
+	const META_LOG     = '_liforms_log';
+	const META_PAGE    = '_liforms_page_url';
 
 	/** @var Uploads */
 	private $uploads;
@@ -38,8 +38,8 @@ class Submissions {
 	public function register_hooks() {
 		add_action( 'init', array( $this, 'register' ) );
 		add_action( 'before_delete_post', array( $this, 'delete_files' ) );
-		add_action( 'admin_post_launch_forms_download', array( $this, 'handle_download' ) );
-		add_action( 'admin_post_nopriv_launch_forms_download', array( $this, 'handle_logged_out_download' ) );
+		add_action( 'admin_post_liforms_download', array( $this, 'handle_download' ) );
+		add_action( 'admin_post_nopriv_liforms_download', array( $this, 'handle_logged_out_download' ) );
 		add_filter( 'manage_' . self::POST_TYPE . '_posts_columns', array( $this, 'columns' ) );
 		add_action( 'manage_' . self::POST_TYPE . '_posts_custom_column', array( $this, 'column' ), 10, 2 );
 		add_action( 'restrict_manage_posts', array( $this, 'form_filter' ) );
@@ -201,13 +201,13 @@ class Submissions {
 		return wp_nonce_url(
 			add_query_arg(
 				array(
-					'action'     => 'launch_forms_download',
+					'action'     => 'liforms_download',
 					'submission' => (int) $submission_id,
 					'file'       => $file,
 				),
 				admin_url( 'admin-post.php' )
 			),
-			'launch_forms_download_' . (int) $submission_id
+			'liforms_download_' . (int) $submission_id
 		);
 	}
 
@@ -220,10 +220,10 @@ class Submissions {
 	 */
 	public function resolve_download( $submission_id, $file ) {
 		if ( ! current_user_can( Plugin::manage_capability() ) ) {
-			return new \WP_Error( 'lf_forbidden', __( 'You are not allowed to download this file.', 'launch-interactive-forms' ), array( 'status' => 403 ) );
+			return new \WP_Error( 'liforms_forbidden', __( 'You are not allowed to download this file.', 'launch-interactive-forms' ), array( 'status' => 403 ) );
 		}
 		if ( self::POST_TYPE !== get_post_type( $submission_id ) ) {
-			return new \WP_Error( 'lf_not_found', __( 'Submission not found.', 'launch-interactive-forms' ), array( 'status' => 404 ) );
+			return new \WP_Error( 'liforms_not_found', __( 'Submission not found.', 'launch-interactive-forms' ), array( 'status' => 404 ) );
 		}
 		foreach ( $this->get_entries( $submission_id ) as $entry ) {
 			if ( 'file' === $entry['type'] && isset( $entry['value']['file'] ) && hash_equals( (string) $entry['value']['file'], (string) $file ) ) {
@@ -237,7 +237,7 @@ class Submissions {
 				);
 			}
 		}
-		return new \WP_Error( 'lf_not_found', __( 'File not found.', 'launch-interactive-forms' ), array( 'status' => 404 ) );
+		return new \WP_Error( 'liforms_not_found', __( 'File not found.', 'launch-interactive-forms' ), array( 'status' => 404 ) );
 	}
 
 	/**
@@ -288,7 +288,7 @@ class Submissions {
 		$back_text     = $is_submission ? __( 'Open the submission', 'launch-interactive-forms' ) : __( 'View all submissions', 'launch-interactive-forms' );
 
 		$nonce = isset( $_GET['_wpnonce'] ) ? sanitize_key( wp_unslash( $_GET['_wpnonce'] ) ) : '';
-		if ( ! wp_verify_nonce( $nonce, 'launch_forms_download_' . $submission_id ) ) {
+		if ( ! wp_verify_nonce( $nonce, 'liforms_download_' . $submission_id ) ) {
 			$this->download_error(
 				__( 'This download link has expired. Download links only work for the person who opened them and for a limited time. Open the submission again to get a fresh link.', 'launch-interactive-forms' ),
 				403,
@@ -329,8 +329,8 @@ class Submissions {
 		return array(
 			'cb'         => $columns['cb'] ?? '',
 			'title'      => __( 'Submission', 'launch-interactive-forms' ),
-			'lf_form'    => __( 'Form', 'launch-interactive-forms' ),
-			'lf_summary' => __( 'Summary', 'launch-interactive-forms' ),
+			'liforms_form'    => __( 'Form', 'launch-interactive-forms' ),
+			'liforms_summary' => __( 'Summary', 'launch-interactive-forms' ),
 			'date'       => __( 'Date', 'launch-interactive-forms' ),
 		);
 	}
@@ -342,7 +342,7 @@ class Submissions {
 	 * @param int    $post_id Post ID.
 	 */
 	public function column( $column, $post_id ) {
-		if ( 'lf_form' === $column ) {
+		if ( 'liforms_form' === $column ) {
 			$form_id = (int) wp_get_post_parent_id( $post_id );
 			$link    = $form_id ? get_edit_post_link( $form_id ) : '';
 			if ( ! $form_id ) {
@@ -353,7 +353,7 @@ class Submissions {
 				echo esc_html( get_the_title( $form_id ) );
 			}
 		}
-		if ( 'lf_summary' === $column ) {
+		if ( 'liforms_summary' === $column ) {
 			$parts = array();
 			foreach ( array_slice( $this->get_entries( $post_id ), 0, 3 ) as $entry ) {
 				$parts[] = '<strong>' . esc_html( $entry['label'] ) . ':</strong> ' . esc_html( wp_trim_words( Notifications::entry_text( $entry ), 8 ) );
@@ -371,10 +371,10 @@ class Submissions {
 		if ( self::POST_TYPE !== $post_type ) {
 			return;
 		}
-		$current = isset( $_GET['lf_form'] ) ? absint( $_GET['lf_form'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification
-		echo '<label class="screen-reader-text" for="lf-form-filter">' . esc_html__( 'Filter by form', 'launch-interactive-forms' ) . '</label>';
-		echo '<select name="lf_form" id="lf-form-filter"><option value="0">' . esc_html__( 'All forms', 'launch-interactive-forms' ) . '</option>';
-		foreach ( launch_forms()->forms->all() as $id => $title ) {
+		$current = isset( $_GET['lif_form'] ) ? absint( $_GET['lif_form'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification
+		echo '<label class="screen-reader-text" for="lif-form-filter">' . esc_html__( 'Filter by form', 'launch-interactive-forms' ) . '</label>';
+		echo '<select name="liforms_form" id="lif-form-filter"><option value="0">' . esc_html__( 'All forms', 'launch-interactive-forms' ) . '</option>';
+		foreach ( liforms()->forms->all() as $id => $title ) {
 			echo '<option value="' . esc_attr( $id ) . '"' . selected( $current, $id, false ) . '>' . esc_html( $title ) . '</option>';
 		}
 		echo '</select>';
@@ -389,7 +389,7 @@ class Submissions {
 		if ( ! is_admin() || ! $query->is_main_query() || self::POST_TYPE !== $query->get( 'post_type' ) ) {
 			return;
 		}
-		$form = isset( $_GET['lf_form'] ) ? absint( $_GET['lf_form'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification
+		$form = isset( $_GET['lif_form'] ) ? absint( $_GET['lif_form'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification
 		if ( $form ) {
 			$query->set( 'post_parent', $form );
 		}
@@ -420,8 +420,8 @@ class Submissions {
 	public function meta_boxes() {
 		remove_meta_box( 'submitdiv', self::POST_TYPE, 'side' );
 		remove_meta_box( 'slugdiv', self::POST_TYPE, 'normal' );
-		add_meta_box( 'lf-submission-data', __( 'Submission', 'launch-interactive-forms' ), array( $this, 'render_data_box' ), self::POST_TYPE, 'normal', 'high' );
-		add_meta_box( 'lf-submission-info', __( 'Details', 'launch-interactive-forms' ), array( $this, 'render_info_box' ), self::POST_TYPE, 'side', 'high' );
+		add_meta_box( 'lif-submission-data', __( 'Submission', 'launch-interactive-forms' ), array( $this, 'render_data_box' ), self::POST_TYPE, 'normal', 'high' );
+		add_meta_box( 'lif-submission-info', __( 'Details', 'launch-interactive-forms' ), array( $this, 'render_info_box' ), self::POST_TYPE, 'side', 'high' );
 	}
 
 	/**
