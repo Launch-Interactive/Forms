@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Forms {
 
-	const POST_TYPE = 'lf_form';
+	const POST_TYPE = 'launch_forms_form';
 	const META_KEY  = 'launch_forms_config';
 
 	/**
@@ -47,17 +47,17 @@ class Forms {
 			self::POST_TYPE,
 			array(
 				'labels'                => array(
-					'name'               => __( 'Forms', 'launch-forms' ),
-					'singular_name'      => __( 'Form', 'launch-forms' ),
-					'add_new'            => __( 'Add New Form', 'launch-forms' ),
-					'add_new_item'       => __( 'Add New Form', 'launch-forms' ),
-					'edit_item'          => __( 'Edit Form', 'launch-forms' ),
-					'new_item'           => __( 'New Form', 'launch-forms' ),
-					'search_items'       => __( 'Search Forms', 'launch-forms' ),
-					'not_found'          => __( 'No forms found.', 'launch-forms' ),
-					'not_found_in_trash' => __( 'No forms found in Trash.', 'launch-forms' ),
-					'all_items'          => __( 'All Forms', 'launch-forms' ),
-					'menu_name'          => __( 'Forms', 'launch-forms' ),
+					'name'               => __( 'Forms', 'launch-interactive-forms' ),
+					'singular_name'      => __( 'Form', 'launch-interactive-forms' ),
+					'add_new'            => __( 'Add New Form', 'launch-interactive-forms' ),
+					'add_new_item'       => __( 'Add New Form', 'launch-interactive-forms' ),
+					'edit_item'          => __( 'Edit Form', 'launch-interactive-forms' ),
+					'new_item'           => __( 'New Form', 'launch-interactive-forms' ),
+					'search_items'       => __( 'Search Forms', 'launch-interactive-forms' ),
+					'not_found'          => __( 'No forms found.', 'launch-interactive-forms' ),
+					'not_found_in_trash' => __( 'No forms found in Trash.', 'launch-interactive-forms' ),
+					'all_items'          => __( 'All Forms', 'launch-interactive-forms' ),
+					'menu_name'          => __( 'Forms', 'launch-interactive-forms' ),
 				),
 				'public'                => false,
 				'publicly_queryable'    => false,

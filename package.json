@@ -2,7 +2,7 @@
   "name": "launch-forms",
   "version": "1.0.0",
   "private": true,
-  "description": "JavaScript tests for the Launch Forms WordPress plugin.",
+  "description": "JavaScript tests for the Launch Interactive Forms WordPress plugin.",
   "license": "GPL-2.0-or-later",
   "scripts": {
     "test": "node --test tests/js/"

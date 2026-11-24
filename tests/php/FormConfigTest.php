@@ -183,7 +183,7 @@ class FormConfigTest extends LF_TestCase {
 		$this->assertTrue( $mc['enabled'] );
 		$this->assertSame( 'abc123', $mc['list_id'] );
 		$this->assertSame( 'email', $mc['email_field'] );
-		$this->assertSame( '', $mc['consent_field'] );
+		$this->assertSame( 'ghost', $mc['consent_field'], 'A missing consent field is kept so the gate stays closed.' );
 		$this->assertSame( array( array( 'tag' => 'FNAME', 'field' => 'first' ) ), $mc['merge_fields'] );
 	}
 

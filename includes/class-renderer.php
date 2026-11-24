@@ -56,7 +56,7 @@ class Renderer {
 		$form = $this->plugin->forms->get( $form_id );
 		if ( ! $form ) {
 			return current_user_can( 'edit_posts' )
-				? '<p class="lf-notice">' . esc_html__( 'Form not found. It may have been deleted or is not published.', 'launch-forms' ) . '</p>'
+				? '<p class="lf-notice">' . esc_html__( 'Form not found. It may have been deleted or is not published.', 'launch-interactive-forms' ) . '</p>'
 				: '';
 		}
 		return $this->render( $form, $args );
@@ -163,15 +163,17 @@ class Renderer {
 	 * @return string
 	 */
 	public function success_message( Form $form, ?Submission_Result $result = null ) {
-		// Visitor values are escaped as they're inserted into the admin's (already filtered) HTML.
+		// Visitor values are escaped as they're inserted into the admin's HTML, and the finished
+		// HTML is filtered afterwards, so a value that lands in a link (href="{all_fields}") can't
+		// become a javascript: URL.
 		$html = $this->plugin->notifications->replace_tags(
-			wp_kses_post( $form->settings['success_message'] ),
+			(string) $form->settings['success_message'],
 			$form,
 			$result ? $result->entries : array(),
 			$result ? $result->context : array(),
 			'esc_html'
 		);
-		return wpautop( $html );
+		return wpautop( wp_kses_post( $html ) );
 	}
 
 	/**
@@ -265,7 +267,7 @@ class Renderer {
 		$description = $field['description'];
 		if ( 'file' === $type ) {
 			/* translators: 1: allowed extensions, 2: max size in MB. */
-			$hint        = sprintf( __( 'Allowed: %1$s. Max %2$s MB.', 'launch-forms' ), implode( ', ', $field['allowed_types'] ), self::format_number( $field['max_size'] ) );
+			$hint        = sprintf( __( 'Allowed: %1$s. Max %2$s MB.', 'launch-interactive-forms' ), implode( ', ', $field['allowed_types'] ), self::format_number( $field['max_size'] ) );
 			$description = trim( $description . ' ' . $hint );
 		}
 		if ( '' !== $description ) {
@@ -361,7 +363,7 @@ class Renderer {
 				unset( $input['placeholder'] );
 				$options = '';
 				if ( ! $field['multiple'] ) {
-					$options .= '<option value="">' . esc_html( '' !== $field['placeholder'] ? $field['placeholder'] : __( '— Select —', 'launch-forms' ) ) . '</option>';
+					$options .= '<option value="">' . esc_html( '' !== $field['placeholder'] ? $field['placeholder'] : __( '— Select —', 'launch-interactive-forms' ) ) . '</option>';
 				}
 				foreach ( $field['options'] as $option ) {
 					$options .= '<option value="' . esc_attr( $option['value'] ) . '"' . ( in_array( (string) $option['value'], $selected, true ) ? ' selected' : '' ) . '>' . esc_html( $option['label'] ) . '</option>';
@@ -373,7 +375,7 @@ class Renderer {
 				unset( $input['placeholder'] );
 				$input['autocomplete'] = 'country-name';
 				$current               = is_array( $value ) ? '' : (string) $value;
-				$options               = '<option value="">' . esc_html( '' !== $field['placeholder'] ? $field['placeholder'] : __( '— Select —', 'launch-forms' ) ) . '</option>';
+				$options               = '<option value="">' . esc_html( '' !== $field['placeholder'] ? $field['placeholder'] : __( '— Select —', 'launch-interactive-forms' ) ) . '</option>';
 				foreach ( Countries::all() as $code => $country ) {
 					$options .= '<option value="' . esc_attr( $country ) . '" data-code="' . esc_attr( $code ) . '"' . selected( $current, $country, false ) . '>' . esc_html( $country ) . '</option>';
 				}
@@ -420,7 +422,7 @@ class Renderer {
 	 */
 	private function honeypot( $prefix ) {
 		$id = $prefix . '-hp';
-		return '<div class="lf-hp" aria-hidden="true"><label for="' . esc_attr( $id ) . '">' . esc_html__( 'Leave this field empty', 'launch-forms' ) . '</label><input type="text" id="' . esc_attr( $id ) . '" name="lf_hp" value="" tabindex="-1" autocomplete="off"></div>';
+		return '<div class="lf-hp" aria-hidden="true"><label for="' . esc_attr( $id ) . '">' . esc_html__( 'Leave this field empty', 'launch-interactive-forms' ) . '</label><input type="text" id="' . esc_attr( $id ) . '" name="lf_hp" value="" tabindex="-1" autocomplete="off"></div>';
 	}
 
 	/**

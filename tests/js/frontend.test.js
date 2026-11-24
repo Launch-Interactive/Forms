@@ -317,7 +317,7 @@ test( 'a firewall page (not JSON) also falls back', async () => {
 	assert.equal( native.length, 1 );
 } );
 
-test( 'Launch Forms errors are shown, not retried', async () => {
+test( 'the plugin\'s own errors are shown, not retried', async () => {
 	const missing = blockedSetup( 404, { code: 'lf_form_not_found', message: 'Form not found.', data: { status: 404 } } );
 	await submitOk( missing.window, missing.form );
 	assert.equal( missing.native.length, 0 );

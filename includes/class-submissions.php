@@ -14,11 +14,11 @@ defined( 'ABSPATH' ) || exit;
  */
 class Submissions {
 
-	const POST_TYPE    = 'lf_submission';
-	const META_FORM    = '_lf_form_id';
-	const META_ENTRIES = '_lf_entries';
-	const META_LOG     = '_lf_log';
-	const META_PAGE    = '_lf_page_url';
+	const POST_TYPE    = 'launch_forms_entry';
+	const META_FORM    = '_launch_forms_form_id';
+	const META_ENTRIES = '_launch_forms_entries';
+	const META_LOG     = '_launch_forms_log';
+	const META_PAGE    = '_launch_forms_page_url';
 
 	/** @var Uploads */
 	private $uploads;
@@ -57,12 +57,12 @@ class Submissions {
 			self::POST_TYPE,
 			array(
 				'labels'              => array(
-					'name'          => __( 'Submissions', 'launch-forms' ),
-					'singular_name' => __( 'Submission', 'launch-forms' ),
-					'edit_item'     => __( 'View Submission', 'launch-forms' ),
-					'search_items'  => __( 'Search Submissions', 'launch-forms' ),
-					'not_found'     => __( 'No submissions yet.', 'launch-forms' ),
-					'all_items'     => __( 'Submissions', 'launch-forms' ),
+					'name'          => __( 'Submissions', 'launch-interactive-forms' ),
+					'singular_name' => __( 'Submission', 'launch-interactive-forms' ),
+					'edit_item'     => __( 'View Submission', 'launch-interactive-forms' ),
+					'search_items'  => __( 'Search Submissions', 'launch-interactive-forms' ),
+					'not_found'     => __( 'No submissions yet.', 'launch-interactive-forms' ),
+					'all_items'     => __( 'Submissions', 'launch-interactive-forms' ),
 				),
 				'public'              => false,
 				'publicly_queryable'  => false,
@@ -107,7 +107,7 @@ class Submissions {
 				'post_parent' => $form->id,
 				'post_author' => (int) ( $context['user_id'] ?? 0 ),
 				/* translators: %s: form title. */
-				'post_title'  => sprintf( __( '%s submission', 'launch-forms' ), $form->title ),
+				'post_title'  => sprintf( __( '%s submission', 'launch-interactive-forms' ), $form->title ),
 			),
 			true
 		);
@@ -220,10 +220,10 @@ class Submissions {
 	 */
 	public function resolve_download( $submission_id, $file ) {
 		if ( ! current_user_can( Plugin::manage_capability() ) ) {
-			return new \WP_Error( 'lf_forbidden', __( 'You are not allowed to download this file.', 'launch-forms' ), array( 'status' => 403 ) );
+			return new \WP_Error( 'lf_forbidden', __( 'You are not allowed to download this file.', 'launch-interactive-forms' ), array( 'status' => 403 ) );
 		}
 		if ( self::POST_TYPE !== get_post_type( $submission_id ) ) {
-			return new \WP_Error( 'lf_not_found', __( 'Submission not found.', 'launch-forms' ), array( 'status' => 404 ) );
+			return new \WP_Error( 'lf_not_found', __( 'Submission not found.', 'launch-interactive-forms' ), array( 'status' => 404 ) );
 		}
 		foreach ( $this->get_entries( $submission_id ) as $entry ) {
 			if ( 'file' === $entry['type'] && isset( $entry['value']['file'] ) && hash_equals( (string) $entry['value']['file'], (string) $file ) ) {
@@ -237,7 +237,7 @@ class Submissions {
 				);
 			}
 		}
-		return new \WP_Error( 'lf_not_found', __( 'File not found.', 'launch-forms' ), array( 'status' => 404 ) );
+		return new \WP_Error( 'lf_not_found', __( 'File not found.', 'launch-interactive-forms' ), array( 'status' => 404 ) );
 	}
 
 	/**
@@ -263,7 +263,7 @@ class Submissions {
 			$args['link_url']  = $link_url;
 			$args['link_text'] = $link;
 		}
-		wp_die( esc_html( $message ), esc_html__( 'Download unavailable', 'launch-forms' ), $args ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_die() escapes link_url and link_text.
+		wp_die( esc_html( $message ), esc_html__( 'Download unavailable', 'launch-interactive-forms' ), $args ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_die() escapes link_url and link_text.
 	}
 
 	/**
@@ -275,22 +275,22 @@ class Submissions {
 
 		if ( ! current_user_can( Plugin::manage_capability() ) ) {
 			$this->download_error(
-				__( 'Your account does not have permission to download files from form submissions. Ask a site administrator if you need this file.', 'launch-forms' ),
+				__( 'Your account does not have permission to download files from form submissions. Ask a site administrator if you need this file.', 'launch-interactive-forms' ),
 				403,
 				admin_url(),
-				__( 'Go to the dashboard', 'launch-forms' )
+				__( 'Go to the dashboard', 'launch-interactive-forms' )
 			);
 			return;
 		}
 
 		$is_submission = self::POST_TYPE === get_post_type( $submission_id );
 		$back_url      = $is_submission ? (string) get_edit_post_link( $submission_id, 'raw' ) : admin_url( 'edit.php?post_type=' . self::POST_TYPE );
-		$back_text     = $is_submission ? __( 'Open the submission', 'launch-forms' ) : __( 'View all submissions', 'launch-forms' );
+		$back_text     = $is_submission ? __( 'Open the submission', 'launch-interactive-forms' ) : __( 'View all submissions', 'launch-interactive-forms' );
 
 		$nonce = isset( $_GET['_wpnonce'] ) ? sanitize_key( wp_unslash( $_GET['_wpnonce'] ) ) : '';
 		if ( ! wp_verify_nonce( $nonce, 'launch_forms_download_' . $submission_id ) ) {
 			$this->download_error(
-				__( 'This download link has expired. Download links only work for the person who opened them and for a limited time. Open the submission again to get a fresh link.', 'launch-forms' ),
+				__( 'This download link has expired. Download links only work for the person who opened them and for a limited time. Open the submission again to get a fresh link.', 'launch-interactive-forms' ),
 				403,
 				$back_url,
 				$back_text
@@ -301,7 +301,7 @@ class Submissions {
 		$download = $this->resolve_download( $submission_id, $file );
 		if ( is_wp_error( $download ) ) {
 			$this->download_error(
-				__( 'This file is no longer available. It may have been deleted, or the submission it belonged to was removed.', 'launch-forms' ),
+				__( 'This file is no longer available. It may have been deleted, or the submission it belonged to was removed.', 'launch-interactive-forms' ),
 				(int) ( $download->get_error_data()['status'] ?? 404 ),
 				$back_url,
 				$back_text
@@ -328,10 +328,10 @@ class Submissions {
 	public function columns( $columns ) {
 		return array(
 			'cb'         => $columns['cb'] ?? '',
-			'title'      => __( 'Submission', 'launch-forms' ),
-			'lf_form'    => __( 'Form', 'launch-forms' ),
-			'lf_summary' => __( 'Summary', 'launch-forms' ),
-			'date'       => __( 'Date', 'launch-forms' ),
+			'title'      => __( 'Submission', 'launch-interactive-forms' ),
+			'lf_form'    => __( 'Form', 'launch-interactive-forms' ),
+			'lf_summary' => __( 'Summary', 'launch-interactive-forms' ),
+			'date'       => __( 'Date', 'launch-interactive-forms' ),
 		);
 	}
 
@@ -372,8 +372,8 @@ class Submissions {
 			return;
 		}
 		$current = isset( $_GET['lf_form'] ) ? absint( $_GET['lf_form'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification
-		echo '<label class="screen-reader-text" for="lf-form-filter">' . esc_html__( 'Filter by form', 'launch-forms' ) . '</label>';
-		echo '<select name="lf_form" id="lf-form-filter"><option value="0">' . esc_html__( 'All forms', 'launch-forms' ) . '</option>';
+		echo '<label class="screen-reader-text" for="lf-form-filter">' . esc_html__( 'Filter by form', 'launch-interactive-forms' ) . '</label>';
+		echo '<select name="lf_form" id="lf-form-filter"><option value="0">' . esc_html__( 'All forms', 'launch-interactive-forms' ) . '</option>';
 		foreach ( launch_forms()->forms->all() as $id => $title ) {
 			echo '<option value="' . esc_attr( $id ) . '"' . selected( $current, $id, false ) . '>' . esc_html( $title ) . '</option>';
 		}
@@ -409,7 +409,7 @@ class Submissions {
 		unset( $actions['inline hide-if-no-js'] );
 		$link = get_edit_post_link( $post->ID );
 		if ( isset( $actions['edit'] ) && $link ) {
-			$actions['edit'] = '<a href="' . esc_url( $link ) . '">' . esc_html__( 'View', 'launch-forms' ) . '</a>';
+			$actions['edit'] = '<a href="' . esc_url( $link ) . '">' . esc_html__( 'View', 'launch-interactive-forms' ) . '</a>';
 		}
 		return $actions;
 	}
@@ -420,8 +420,8 @@ class Submissions {
 	public function meta_boxes() {
 		remove_meta_box( 'submitdiv', self::POST_TYPE, 'side' );
 		remove_meta_box( 'slugdiv', self::POST_TYPE, 'normal' );
-		add_meta_box( 'lf-submission-data', __( 'Submission', 'launch-forms' ), array( $this, 'render_data_box' ), self::POST_TYPE, 'normal', 'high' );
-		add_meta_box( 'lf-submission-info', __( 'Details', 'launch-forms' ), array( $this, 'render_info_box' ), self::POST_TYPE, 'side', 'high' );
+		add_meta_box( 'lf-submission-data', __( 'Submission', 'launch-interactive-forms' ), array( $this, 'render_data_box' ), self::POST_TYPE, 'normal', 'high' );
+		add_meta_box( 'lf-submission-info', __( 'Details', 'launch-interactive-forms' ), array( $this, 'render_info_box' ), self::POST_TYPE, 'side', 'high' );
 	}
 
 	/**
@@ -437,7 +437,7 @@ class Submissions {
 				if ( $this->uploads->path( $entry['value']['file'] ) ) {
 					echo '<a href="' . esc_url( $this->download_url( $post->ID, $entry['value']['file'] ) ) . '">' . esc_html( $entry['value']['name'] ) . '</a> (' . esc_html( size_format( (int) $entry['value']['size'] ) ) . ')';
 				} else {
-					echo esc_html( $entry['value']['name'] ) . ' &mdash; ' . esc_html__( 'file missing', 'launch-forms' );
+					echo esc_html( $entry['value']['name'] ) . ' &mdash; ' . esc_html__( 'file missing', 'launch-interactive-forms' );
 				}
 			} else {
 				echo nl2br( esc_html( Notifications::entry_text( $entry ) ) );
@@ -448,7 +448,7 @@ class Submissions {
 
 		$log = $this->get_log( $post->ID );
 		if ( $log ) {
-			echo '<h3>' . esc_html__( 'Actions', 'launch-forms' ) . '</h3><ul>';
+			echo '<h3>' . esc_html__( 'Actions', 'launch-interactive-forms' ) . '</h3><ul>';
 			foreach ( $log as $row ) {
 				echo '<li>' . ( $row['success'] ? '&#10003; ' : '&#10007; ' ) . esc_html( $row['name'] . ': ' . $row['message'] ) . '</li>';
 			}
@@ -463,17 +463,17 @@ class Submissions {
 	 */
 	public function render_info_box( $post ) {
 		$form_id = (int) $post->post_parent;
-		echo '<p><strong>' . esc_html__( 'Form:', 'launch-forms' ) . '</strong> ' . ( $form_id ? esc_html( get_the_title( $form_id ) ) : '&mdash;' ) . '</p>';
-		echo '<p><strong>' . esc_html__( 'Date:', 'launch-forms' ) . '</strong> ' . esc_html( get_the_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $post ) ) . '</p>';
+		echo '<p><strong>' . esc_html__( 'Form:', 'launch-interactive-forms' ) . '</strong> ' . ( $form_id ? esc_html( get_the_title( $form_id ) ) : '&mdash;' ) . '</p>';
+		echo '<p><strong>' . esc_html__( 'Date:', 'launch-interactive-forms' ) . '</strong> ' . esc_html( get_the_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $post ) ) . '</p>';
 		$page = get_post_meta( $post->ID, self::META_PAGE, true );
 		if ( $page ) {
-			echo '<p><strong>' . esc_html__( 'Page:', 'launch-forms' ) . '</strong> <a href="' . esc_url( $page ) . '">' . esc_html( $page ) . '</a></p>';
+			echo '<p><strong>' . esc_html__( 'Page:', 'launch-interactive-forms' ) . '</strong> <a href="' . esc_url( $page ) . '">' . esc_html( $page ) . '</a></p>';
 		}
 		if ( $post->post_author ) {
 			$user = get_userdata( $post->post_author );
-			echo '<p><strong>' . esc_html__( 'User:', 'launch-forms' ) . '</strong> ' . esc_html( $user ? $user->display_name : '#' . $post->post_author ) . '</p>';
+			echo '<p><strong>' . esc_html__( 'User:', 'launch-interactive-forms' ) . '</strong> ' . esc_html( $user ? $user->display_name : '#' . $post->post_author ) . '</p>';
 		}
-		echo '<p><a class="button" href="' . esc_url( admin_url( 'edit.php?post_type=' . self::POST_TYPE ) ) . '">' . esc_html__( 'Back to submissions', 'launch-forms' ) . '</a> ';
-		echo '<a class="submitdelete" style="color:#b32d2e" href="' . esc_url( get_delete_post_link( $post->ID ) ) . '">' . esc_html__( 'Move to Trash', 'launch-forms' ) . '</a></p>';
+		echo '<p><a class="button" href="' . esc_url( admin_url( 'edit.php?post_type=' . self::POST_TYPE ) ) . '">' . esc_html__( 'Back to submissions', 'launch-interactive-forms' ) . '</a> ';
+		echo '<a class="submitdelete" style="color:#b32d2e" href="' . esc_url( get_delete_post_link( $post->ID ) ) . '">' . esc_html__( 'Move to Trash', 'launch-interactive-forms' ) . '</a></p>';
 	}
 }

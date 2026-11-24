@@ -58,12 +58,12 @@ class Form_Config {
 	 */
 	public static function width_labels() {
 		return array(
-			'full'           => __( 'Full width', 'launch-forms' ),
-			'half'           => __( 'Half (1/2)', 'launch-forms' ),
-			'third'          => __( 'One third (1/3)', 'launch-forms' ),
-			'two-thirds'     => __( 'Two thirds (2/3)', 'launch-forms' ),
-			'quarter'        => __( 'Quarter (1/4)', 'launch-forms' ),
-			'three-quarters' => __( 'Three quarters (3/4)', 'launch-forms' ),
+			'full'           => __( 'Full width', 'launch-interactive-forms' ),
+			'half'           => __( 'Half (1/2)', 'launch-interactive-forms' ),
+			'third'          => __( 'One third (1/3)', 'launch-interactive-forms' ),
+			'two-thirds'     => __( 'Two thirds (2/3)', 'launch-interactive-forms' ),
+			'quarter'        => __( 'Quarter (1/4)', 'launch-interactive-forms' ),
+			'three-quarters' => __( 'Three quarters (3/4)', 'launch-interactive-forms' ),
 		);
 	}
 
@@ -74,23 +74,23 @@ class Form_Config {
 	 */
 	public static function field_type_labels() {
 		return array(
-			'text'     => __( 'Text', 'launch-forms' ),
-			'email'    => __( 'Email', 'launch-forms' ),
-			'url'      => __( 'Website / URL', 'launch-forms' ),
-			'tel'      => __( 'Phone', 'launch-forms' ),
-			'number'   => __( 'Number', 'launch-forms' ),
-			'textarea' => __( 'Paragraph', 'launch-forms' ),
-			'select'   => __( 'Dropdown', 'launch-forms' ),
-			'radio'    => __( 'Radio buttons', 'launch-forms' ),
-			'checkbox' => __( 'Checkboxes', 'launch-forms' ),
-			'consent'  => __( 'Single checkbox / consent', 'launch-forms' ),
-			'date'     => __( 'Date', 'launch-forms' ),
-			'country'  => __( 'Country', 'launch-forms' ),
-			'hidden'   => __( 'Hidden', 'launch-forms' ),
-			'file'     => __( 'File upload', 'launch-forms' ),
-			'content'   => __( 'Text / HTML content', 'launch-forms' ),
-			'recaptcha' => __( 'Google reCAPTCHA', 'launch-forms' ),
-			'turnstile' => __( 'Cloudflare Turnstile', 'launch-forms' ),
+			'text'     => __( 'Text', 'launch-interactive-forms' ),
+			'email'    => __( 'Email', 'launch-interactive-forms' ),
+			'url'      => __( 'Website / URL', 'launch-interactive-forms' ),
+			'tel'      => __( 'Phone', 'launch-interactive-forms' ),
+			'number'   => __( 'Number', 'launch-interactive-forms' ),
+			'textarea' => __( 'Paragraph', 'launch-interactive-forms' ),
+			'select'   => __( 'Dropdown', 'launch-interactive-forms' ),
+			'radio'    => __( 'Radio buttons', 'launch-interactive-forms' ),
+			'checkbox' => __( 'Checkboxes', 'launch-interactive-forms' ),
+			'consent'  => __( 'Single checkbox / consent', 'launch-interactive-forms' ),
+			'date'     => __( 'Date', 'launch-interactive-forms' ),
+			'country'  => __( 'Country', 'launch-interactive-forms' ),
+			'hidden'   => __( 'Hidden', 'launch-interactive-forms' ),
+			'file'     => __( 'File upload', 'launch-interactive-forms' ),
+			'content'   => __( 'Text / HTML content', 'launch-interactive-forms' ),
+			'recaptcha' => __( 'Google reCAPTCHA', 'launch-interactive-forms' ),
+			'turnstile' => __( 'Cloudflare Turnstile', 'launch-interactive-forms' ),
 		);
 	}
 
@@ -103,8 +103,8 @@ class Form_Config {
 		return array(
 			'fields'        => array(),
 			'settings'      => array(
-				'submit_label'         => __( 'Submit', 'launch-forms' ),
-				'success_message'      => __( 'Thanks! Your submission has been received.', 'launch-forms' ),
+				'submit_label'         => __( 'Submit', 'launch-interactive-forms' ),
+				'success_message'      => __( 'Thanks! Your submission has been received.', 'launch-interactive-forms' ),
 				'redirect_url'         => '',
 				'store_submissions'    => true,
 				'hide_form_on_success' => true,
@@ -114,9 +114,9 @@ class Form_Config {
 			'notifications' => array(
 				array(
 					'enabled'      => true,
-					'name'         => __( 'Admin notification', 'launch-forms' ),
+					'name'         => __( 'Admin notification', 'launch-interactive-forms' ),
 					'to'           => '{admin_email}',
-					'subject'      => __( 'New submission: {form_title}', 'launch-forms' ),
+					'subject'      => __( 'New submission: {form_title}', 'launch-interactive-forms' ),
 					'message'      => '{all_fields}',
 					'reply_to'     => '',
 					'from_name'    => '',
@@ -569,7 +569,9 @@ class Form_Config {
 			'enabled'       => self::bool( $raw['enabled'] ),
 			'list_id'       => preg_replace( '/[^A-Za-z0-9]/', '', (string) $raw['list_id'] ),
 			'email_field'   => $field_or_empty( $raw['email_field'] ),
-			'consent_field' => $field_or_empty( $raw['consent_field'] ),
+			// Kept even if the field no longer exists: a missing consent field means nobody is
+			// subscribed, rather than silently switching to "always subscribe".
+			'consent_field' => self::sanitize_name( (string) $raw['consent_field'] ),
 			'double_optin'  => self::bool( $raw['double_optin'] ),
 			'tags'          => sanitize_text_field( (string) $raw['tags'] ),
 			'merge_fields'  => $merge,

@@ -4,7 +4,7 @@
  *
  * Security model:
  *  - Files are stored in a dedicated directory (outside the web root when LAUNCH_FORMS_PRIVATE_DIR
- *    is defined, otherwise wp-content/uploads/launch-forms-private) that is locked with .htaccess,
+ *    is defined, otherwise wp-content/uploads/launch-interactive-forms) that is locked with .htaccess,
  *    web.config and index.php.
  *  - Stored names are 128-bit random hex strings with no extension, so even on servers that ignore
  *    .htaccess (nginx) files cannot be guessed, listed or executed.
@@ -26,6 +26,12 @@ defined( 'ABSPATH' ) || exit;
  */
 class Uploads {
 
+	/** Default private folder under uploads, named after the plugin slug. */
+	const DIR_NAME = 'launch-interactive-forms';
+
+	/** Default folder used before 2.0.0 (moved by Upgrade). */
+	const LEGACY_DIR_NAME = 'launch-forms-private';
+
 	const BLOCKED_EXTENSIONS = array(
 		'php', 'php3', 'php4', 'php5', 'php7', 'php8', 'phtml', 'pht', 'phps', 'phar', 'inc',
 		'cgi', 'pl', 'py', 'rb', 'sh', 'bash', 'asp', 'aspx', 'jsp', 'jspx', 'cfm',
@@ -44,7 +50,7 @@ class Uploads {
 			$dir = LAUNCH_FORMS_PRIVATE_DIR;
 		} else {
 			$uploads = wp_upload_dir( null, false );
-			$dir     = $uploads['basedir'] . '/launch-forms-private';
+			$dir     = $uploads['basedir'] . '/' . self::DIR_NAME;
 		}
 		/**
 		 * Filters the private upload directory. Point this outside the web root for best security.
@@ -67,7 +73,7 @@ class Uploads {
 	 */
 	public function protect_dir( $dir ) {
 		$files = array(
-			'.htaccess'  => "# Launch Forms: deny all direct access.\n<IfModule mod_authz_core.c>\n\tRequire all denied\n</IfModule>\n<IfModule !mod_authz_core.c>\n\tOrder deny,allow\n\tDeny from all\n</IfModule>\nOptions -Indexes\n",
+			'.htaccess'  => "# Launch Interactive Forms: deny all direct access.\n<IfModule mod_authz_core.c>\n\tRequire all denied\n</IfModule>\n<IfModule !mod_authz_core.c>\n\tOrder deny,allow\n\tDeny from all\n</IfModule>\nOptions -Indexes\n",
 			'web.config' => "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<configuration><system.webServer><authorization><deny users=\"*\" /></authorization></system.webServer></configuration>\n",
 			'index.php'  => "<?php\n// Silence is golden.\n",
 		);
@@ -125,30 +131,30 @@ class Uploads {
 		$error = (int) $file['error'];
 		if ( UPLOAD_ERR_OK !== $error ) {
 			$messages = array(
-				UPLOAD_ERR_INI_SIZE  => __( 'The file is too large.', 'launch-forms' ),
-				UPLOAD_ERR_FORM_SIZE => __( 'The file is too large.', 'launch-forms' ),
-				UPLOAD_ERR_PARTIAL   => __( 'The file was only partially uploaded. Please try again.', 'launch-forms' ),
+				UPLOAD_ERR_INI_SIZE  => __( 'The file is too large.', 'launch-interactive-forms' ),
+				UPLOAD_ERR_FORM_SIZE => __( 'The file is too large.', 'launch-interactive-forms' ),
+				UPLOAD_ERR_PARTIAL   => __( 'The file was only partially uploaded. Please try again.', 'launch-interactive-forms' ),
 			);
-			return new \WP_Error( 'lf_upload_error', $messages[ $error ] ?? __( 'The file could not be uploaded.', 'launch-forms' ) );
+			return new \WP_Error( 'lf_upload_error', $messages[ $error ] ?? __( 'The file could not be uploaded.', 'launch-interactive-forms' ) );
 		}
 
 		$tmp = (string) $file['tmp_name'];
 		if ( '' === $tmp || ! file_exists( $tmp ) || ! $this->is_uploaded_file( $tmp ) ) {
-			return new \WP_Error( 'lf_upload_invalid', __( 'The file could not be uploaded.', 'launch-forms' ) );
+			return new \WP_Error( 'lf_upload_invalid', __( 'The file could not be uploaded.', 'launch-interactive-forms' ) );
 		}
 
 		$max_bytes = (int) min( $field['max_size'] * MB_IN_BYTES, wp_max_upload_size() ?: PHP_INT_MAX );
 		$size      = (int) filesize( $tmp );
 		if ( $size > $max_bytes || (int) $file['size'] > $max_bytes ) {
 			/* translators: %s: size in MB. */
-			return new \WP_Error( 'lf_upload_size', sprintf( __( 'The file must be smaller than %s MB.', 'launch-forms' ), round( $max_bytes / MB_IN_BYTES, 2 ) ) );
+			return new \WP_Error( 'lf_upload_size', sprintf( __( 'The file must be smaller than %s MB.', 'launch-interactive-forms' ), round( $max_bytes / MB_IN_BYTES, 2 ) ) );
 		}
 		if ( 0 === $size ) {
-			return new \WP_Error( 'lf_upload_empty', __( 'The file is empty.', 'launch-forms' ) );
+			return new \WP_Error( 'lf_upload_empty', __( 'The file is empty.', 'launch-interactive-forms' ) );
 		}
 
 		$original = wp_basename( (string) $file['name'] );
-		$type_err = new \WP_Error( 'lf_upload_type', __( 'This file type is not allowed.', 'launch-forms' ) );
+		$type_err = new \WP_Error( 'lf_upload_type', __( 'This file type is not allowed.', 'launch-interactive-forms' ) );
 
 		// Reject dangerous extensions anywhere in the name (e.g. "shell.php.jpg") and null bytes.
 		if ( false !== strpos( $original, "\0" ) ) {
@@ -200,7 +206,7 @@ class Uploads {
 		$tmp    = (string) $file['tmp_name'];
 		$real   = is_uploaded_file( $tmp );
 		if ( ! $real && ! $this->is_uploaded_file( $tmp ) ) {
-			return new \WP_Error( 'lf_upload_move', __( 'The file could not be saved.', 'launch-forms' ) );
+			return new \WP_Error( 'lf_upload_move', __( 'The file could not be saved.', 'launch-interactive-forms' ) );
 		}
 
 		// Let WordPress move the file, but into the private folder under a random name with
@@ -242,7 +248,7 @@ class Uploads {
 			if ( ! empty( $result['file'] ) && file_exists( $result['file'] ) && 0 === strpos( wp_normalize_path( $result['file'] ), wp_normalize_path( $dir ) . '/' ) ) {
 				wp_delete_file( $result['file'] );
 			}
-			return new \WP_Error( 'lf_upload_move', __( 'The file could not be saved.', 'launch-forms' ) );
+			return new \WP_Error( 'lf_upload_move', __( 'The file could not be saved.', 'launch-interactive-forms' ) );
 		}
 		@chmod( $dest, 0640 ); // phpcs:ignore WordPress.PHP.NoSilencedErrors, WordPress.WP.AlternativeFunctions -- Only the web server needs to read private uploads.
 

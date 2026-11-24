@@ -12,7 +12,7 @@ class TestEmailTest extends LF_TestCase {
 		$this->assertStringContainsString( 'me@example.com', $result['message'] );
 		$mail = $this->sent_emails()[0];
 		$this->assertSame( 'me@example.com', $mail['to'][0][0] );
-		$this->assertStringContainsString( 'Launch Forms test email', $mail['subject'] );
+		$this->assertStringContainsString( 'Launch Interactive Forms test email', $mail['subject'] );
 		$this->assertStringContainsString( 'WordPress can send email', $mail['body'] );
 	}
 

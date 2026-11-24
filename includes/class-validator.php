@@ -107,14 +107,14 @@ class Validator {
 	public function validate_field( array $field, &$value ) {
 		$empty = is_array( $value ) ? empty( $value ) : '' === trim( (string) $value );
 		if ( $empty ) {
-			return $field['required'] ? __( 'This field is required.', 'launch-forms' ) : null;
+			return $field['required'] ? __( 'This field is required.', 'launch-interactive-forms' ) : null;
 		}
 
 		switch ( $field['type'] ) {
 			case 'email':
 				$clean = sanitize_email( $value );
 				if ( ! is_email( $clean ) ) {
-					return __( 'Please enter a valid email address.', 'launch-forms' );
+					return __( 'Please enter a valid email address.', 'launch-interactive-forms' );
 				}
 				$value = $clean;
 				break;
@@ -123,35 +123,35 @@ class Validator {
 				$clean = preg_match( '/\s/', trim( $value ) ) ? '' : esc_url_raw( trim( $value ), array( 'http', 'https' ) );
 				$host  = '' !== $clean ? (string) wp_parse_url( $clean, PHP_URL_HOST ) : '';
 				if ( '' === $clean || ! filter_var( $clean, FILTER_VALIDATE_URL ) || false === strpos( $host, '.' ) ) {
-					return __( 'Please enter a valid URL, including https://.', 'launch-forms' );
+					return __( 'Please enter a valid URL, including https://.', 'launch-interactive-forms' );
 				}
 				$value = $clean;
 				break;
 
 			case 'tel':
 				if ( ! preg_match( '/^[0-9+().\-\s\/x#*]{3,40}$/i', $value ) ) {
-					return __( 'Please enter a valid phone number.', 'launch-forms' );
+					return __( 'Please enter a valid phone number.', 'launch-interactive-forms' );
 				}
 				break;
 
 			case 'number':
 				if ( ! is_numeric( $value ) ) {
-					return __( 'Please enter a number.', 'launch-forms' );
+					return __( 'Please enter a number.', 'launch-interactive-forms' );
 				}
 				if ( '' !== $field['min'] && (float) $value < (float) $field['min'] ) {
 					/* translators: %s: minimum. */
-					return sprintf( __( 'Please enter a number of at least %s.', 'launch-forms' ), $field['min'] );
+					return sprintf( __( 'Please enter a number of at least %s.', 'launch-interactive-forms' ), $field['min'] );
 				}
 				if ( '' !== $field['max'] && (float) $value > (float) $field['max'] ) {
 					/* translators: %s: maximum. */
-					return sprintf( __( 'Please enter a number no greater than %s.', 'launch-forms' ), $field['max'] );
+					return sprintf( __( 'Please enter a number no greater than %s.', 'launch-interactive-forms' ), $field['max'] );
 				}
 				break;
 
 			case 'date':
 				$date = \DateTime::createFromFormat( '!Y-m-d', $value );
 				if ( ! $date || $date->format( 'Y-m-d' ) !== $value ) {
-					return __( 'Please enter a valid date.', 'launch-forms' );
+					return __( 'Please enter a valid date.', 'launch-interactive-forms' );
 				}
 				break;
 
@@ -161,7 +161,7 @@ class Validator {
 				$allowed = wp_list_pluck( $field['options'], 'value' );
 				foreach ( (array) $value as $item ) {
 					if ( ! in_array( (string) $item, $allowed, true ) ) {
-						return __( 'Please choose a valid option.', 'launch-forms' );
+						return __( 'Please choose a valid option.', 'launch-interactive-forms' );
 					}
 				}
 				if ( is_array( $value ) ) {
@@ -175,7 +175,7 @@ class Validator {
 
 			case 'country':
 				if ( ! Countries::is_valid( $value ) ) {
-					return __( 'Please choose a country from the list.', 'launch-forms' );
+					return __( 'Please choose a country from the list.', 'launch-interactive-forms' );
 				}
 				break;
 		}

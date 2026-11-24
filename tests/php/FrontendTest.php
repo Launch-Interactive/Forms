@@ -31,10 +31,10 @@ class FrontendTest extends LF_TestCase {
 			array()
 		);
 		$this->assertSame( 'http://example.org/contact/?x=1&lf_sent=' . $form->id . '#lf-form-' . $form->id, $redirect );
-		$sub     = get_posts( array( 'post_type' => 'lf_submission', 'post_parent' => $form->id ) );
+		$sub     = get_posts( array( 'post_type' => 'launch_forms_entry', 'post_parent' => $form->id ) );
 		$entries = launch_forms()->submissions->get_entries( $sub[0]->ID );
 		$this->assertSame( "O'Brien", $entries[0]['value'], 'POST data is unslashed once.' );
-		$this->assertSame( 'http://example.org/contact/?x=1', get_post_meta( $sub[0]->ID, '_lf_page_url', true ) );
+		$this->assertSame( 'http://example.org/contact/?x=1', get_post_meta( $sub[0]->ID, '_launch_forms_page_url', true ) );
 	}
 
 	public function test_custom_redirect_allows_configured_external_host() {

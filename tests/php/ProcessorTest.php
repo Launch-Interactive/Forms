@@ -160,11 +160,13 @@ class ProcessorTest extends LF_TestCase {
 			)
 		);
 		$attachments = array();
+		$perms       = array();
 		add_filter(
 			'wp_mail',
-			static function ( $args ) use ( &$attachments ) {
+			static function ( $args ) use ( &$attachments, &$perms ) {
 				foreach ( $args['attachments'] as $path ) {
 					$attachments[ $path ] = file_get_contents( $path );
+					$perms[]              = fileperms( dirname( $path ) ) & 0777;
 				}
 				return $args;
 			}
@@ -173,6 +175,9 @@ class ProcessorTest extends LF_TestCase {
 		$this->assertCount( 1, $attachments );
 		$path = array_keys( $attachments )[0];
 		$this->assertSame( 'cv.pdf', basename( $path ), 'Attachment keeps the original file name.' );
+		$this->assertStringStartsWith( trailingslashit( $this->private_dir ), $path, 'Copies live in the protected private folder, not the system temp dir.' );
+		$this->assertSame( array( 0700 ), $perms, 'The copy folder is owner-only.' );
+		$this->assertDirectoryDoesNotExist( dirname( $path ), 'The copy folder is removed after sending.' );
 		$this->assertSame( $this->pdf_bytes(), $attachments[ $path ] );
 		$this->assertFileDoesNotExist( $path, 'Temporary attachment copy is cleaned up.' );
 		$this->assertStringContainsString( 'filename=cv.pdf', $this->sent_emails()[0]['body'] );

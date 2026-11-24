@@ -1,5 +1,5 @@
 /**
- * Launch Forms builder UI.
+ * Launch Interactive Forms builder UI.
  *
  * One React component shared by the Forms admin screen (assets/js/admin.js) and the
  * Form block in the block editor (assets/js/block.js). Written with createElement so the
@@ -254,9 +254,8 @@
 			if ( mc.email_field === name ) {
 				mc.email_field = '';
 			}
-			if ( mc.consent_field === name ) {
-				mc.consent_field = '';
-			}
+			// The consent field is kept on purpose: with it gone nobody is subscribed until
+			// another field (or "Always subscribe") is chosen, instead of subscribing everyone.
 			mc.merge_fields = ( mc.merge_fields || [] ).filter( function ( m ) {
 				return m.field !== name;
 			} );
@@ -386,7 +385,7 @@
 			};
 
 			if ( ! others.length ) {
-				return el( 'p', { className: 'lf-builder__hint' }, __( 'Add another field to use conditional logic.', 'launch-forms' ) );
+				return el( 'p', { className: 'lf-builder__hint' }, __( 'Add another field to use conditional logic.', 'launch-interactive-forms' ) );
 			}
 
 			var rules = cond.rules || [];
@@ -395,7 +394,7 @@
 				{ className: 'lf-builder__conditions' },
 				el( c.ToggleControl, {
 					__nextHasNoMarginBottom: true,
-					label: __( 'Conditional logic', 'launch-forms' ),
+					label: __( 'Conditional logic', 'launch-interactive-forms' ),
 					checked: !! cond.enabled,
 					onChange: function ( on ) {
 						update( {
@@ -414,11 +413,11 @@
 							el( c.SelectControl, {
 								__nextHasNoMarginBottom: true,
 								__next40pxDefaultSize: true,
-								label: __( 'Action', 'launch-forms' ),
+								label: __( 'Action', 'launch-interactive-forms' ),
 								value: cond.action,
 								options: [
-									{ label: __( 'Show this field', 'launch-forms' ), value: 'show' },
-									{ label: __( 'Hide this field', 'launch-forms' ), value: 'hide' },
+									{ label: __( 'Show this field', 'launch-interactive-forms' ), value: 'show' },
+									{ label: __( 'Hide this field', 'launch-interactive-forms' ), value: 'hide' },
 								],
 								onChange: function ( v ) {
 									update( { action: v } );
@@ -427,11 +426,11 @@
 							el( c.SelectControl, {
 								__nextHasNoMarginBottom: true,
 								__next40pxDefaultSize: true,
-								label: __( 'When', 'launch-forms' ),
+								label: __( 'When', 'launch-interactive-forms' ),
 								value: cond.match,
 								options: [
-									{ label: __( 'all rules match', 'launch-forms' ), value: 'all' },
-									{ label: __( 'any rule matches', 'launch-forms' ), value: 'any' },
+									{ label: __( 'all rules match', 'launch-interactive-forms' ), value: 'all' },
+									{ label: __( 'any rule matches', 'launch-interactive-forms' ), value: 'any' },
 								],
 								onChange: function ( v ) {
 									update( { match: v } );
@@ -455,7 +454,7 @@
 										? el( c.SelectControl, {
 												__nextHasNoMarginBottom: true,
 												__next40pxDefaultSize: true,
-												label: __( 'Value', 'launch-forms' ),
+												label: __( 'Value', 'launch-interactive-forms' ),
 												value: rule.value,
 												options: [ { label: '—', value: '' } ].concat(
 													choicesFor( controller ).map( function ( o ) {
@@ -469,7 +468,7 @@
 										: el( c.TextControl, {
 												__nextHasNoMarginBottom: true,
 												__next40pxDefaultSize: true,
-												label: __( 'Value', 'launch-forms' ),
+												label: __( 'Value', 'launch-interactive-forms' ),
 												value: rule.value,
 												onChange: function ( v ) {
 													setRule( 'value', v );
@@ -482,7 +481,7 @@
 								el( c.SelectControl, {
 									__nextHasNoMarginBottom: true,
 									__next40pxDefaultSize: true,
-									label: __( 'Field', 'launch-forms' ),
+									label: __( 'Field', 'launch-interactive-forms' ),
 									value: rule.field,
 									options: fieldChoices( others ),
 									onChange: function ( v ) {
@@ -492,7 +491,7 @@
 								el( c.SelectControl, {
 									__nextHasNoMarginBottom: true,
 									__next40pxDefaultSize: true,
-									label: __( 'Operator', 'launch-forms' ),
+									label: __( 'Operator', 'launch-interactive-forms' ),
 									value: rule.operator,
 									options: Object.keys( operators ).map( function ( k ) {
 										return { label: operators[ k ], value: k };
@@ -504,7 +503,7 @@
 								valueControl,
 								el( c.Button, {
 									icon: 'no-alt',
-									label: __( 'Remove rule', 'launch-forms' ),
+									label: __( 'Remove rule', 'launch-interactive-forms' ),
 									isDestructive: true,
 									onClick: function () {
 										var next = rules.filter( function ( r, j ) {
@@ -523,7 +522,7 @@
 									update( { rules: rules.concat( [ { field: others[ 0 ].name, operator: 'is', value: '' } ] ) } );
 								},
 							},
-							__( 'Add rule', 'launch-forms' )
+							__( 'Add rule', 'launch-interactive-forms' )
 						)
 					)
 			);
@@ -559,13 +558,13 @@
 						c.Notice,
 						{ key: 'captcha', status: configured ? 'info' : 'warning', isDismissible: false },
 						configured
-							? __( 'The spam check appears here in the form. It is always shown and checked on the server, so it cannot use conditional logic.', 'launch-forms' )
-							: __( 'Add the site and secret keys in Forms → Settings. Until then this field is not shown and the form is submitted without this check.', 'launch-forms' ),
-						! configured && data.settingsUrl ? el( Fragment, null, ' ', el( 'a', { href: data.settingsUrl, target: '_blank', rel: 'noreferrer' }, __( 'Open settings', 'launch-forms' ) ) ) : null
+							? __( 'The spam check appears here in the form. It is always shown and checked on the server, so it cannot use conditional logic.', 'launch-interactive-forms' )
+							: __( 'Add the site and secret keys in Forms → Settings. Until then this field is not shown and the form is submitted without this check.', 'launch-interactive-forms' ),
+						! configured && data.settingsUrl ? el( Fragment, null, ' ', el( 'a', { href: data.settingsUrl, target: '_blank', rel: 'noreferrer' }, __( 'Open settings', 'launch-interactive-forms' ) ) ) : null
 					)
 				);
 				if ( type === 'recaptcha' && data.recaptchaVersion === 'v3' ) {
-					parts.push( el( 'p', { key: 'v3', className: 'lf-builder__hint' }, __( 'reCAPTCHA v3 is invisible, so its position only matters for where errors appear. Google shows its badge in the corner of the page.', 'launch-forms' ) ) );
+					parts.push( el( 'p', { key: 'v3', className: 'lf-builder__hint' }, __( 'reCAPTCHA v3 is invisible, so its position only matters for where errors appear. Google shows its badge in the corner of the page.', 'launch-interactive-forms' ) ) );
 				}
 			}
 			if ( ! noInput ) {
@@ -576,10 +575,10 @@
 						el( c.TextControl, {
 							__nextHasNoMarginBottom: true,
 							__next40pxDefaultSize: true,
-							label: __( 'Label', 'launch-forms' ),
+							label: __( 'Label', 'launch-interactive-forms' ),
 							help:
 								type === 'consent'
-									? __( 'Links allowed, e.g. I agree to the <a href="/terms">terms and conditions</a>. Add target="_blank" to open in a new tab.', 'launch-forms' )
+									? __( 'Links allowed, e.g. I agree to the <a href="/terms">terms and conditions</a>. Add target="_blank" to open in a new tab.', 'launch-interactive-forms' )
 									: undefined,
 							value: field.label,
 							onChange: props.onLabelChange,
@@ -587,8 +586,8 @@
 						el( c.TextControl, {
 							__nextHasNoMarginBottom: true,
 							__next40pxDefaultSize: true,
-							label: __( 'Field key', 'launch-forms' ),
-							help: __( 'Used in merge tags, e.g. {field:key}', 'launch-forms' ),
+							label: __( 'Field key', 'launch-interactive-forms' ),
+							help: __( 'Used in merge tags, e.g. {field:key}', 'launch-interactive-forms' ),
 							value: field.name,
 							onChange: props.onNameChange,
 						} )
@@ -601,7 +600,7 @@
 					el( c.TextareaControl, {
 						key: 'content',
 						__nextHasNoMarginBottom: true,
-						label: __( 'Content (HTML allowed)', 'launch-forms' ),
+						label: __( 'Content (HTML allowed)', 'launch-interactive-forms' ),
 						rows: 4,
 						value: field.content || '',
 						onChange: function ( v ) {
@@ -616,8 +615,8 @@
 					el( c.TextareaControl, {
 						key: 'options',
 						__nextHasNoMarginBottom: true,
-						label: __( 'Choices', 'launch-forms' ),
-						help: __( 'One per line. Use "Label|value" to store a different value.', 'launch-forms' ),
+						label: __( 'Choices', 'launch-interactive-forms' ),
+						help: __( 'One per line. Use "Label|value" to store a different value.', 'launch-interactive-forms' ),
 						rows: 4,
 						value: props.optionsText,
 						onChange: props.onOptionsChange,
@@ -627,7 +626,7 @@
 
 			var row = [];
 			if ( PLACEHOLDER_TYPES.indexOf( type ) !== -1 ) {
-				row.push( el( 'div', { key: 'ph' }, text( 'placeholder', __( 'Placeholder', 'launch-forms' ) ) ) );
+				row.push( el( 'div', { key: 'ph' }, text( 'placeholder', __( 'Placeholder', 'launch-interactive-forms' ) ) ) );
 			}
 			if ( type === 'country' ) {
 				row.push(
@@ -635,9 +634,9 @@
 						key: 'def',
 						__nextHasNoMarginBottom: true,
 						__next40pxDefaultSize: true,
-						label: __( 'Default country', 'launch-forms' ),
+						label: __( 'Default country', 'launch-interactive-forms' ),
 						value: field.default || '',
-						options: [ { label: __( 'None', 'launch-forms' ), value: '' } ].concat( countryOptions ),
+						options: [ { label: __( 'None', 'launch-interactive-forms' ), value: '' } ].concat( countryOptions ),
 						onChange: function ( v ) {
 							change( 'default', v );
 						},
@@ -650,8 +649,8 @@
 						{ key: 'def' },
 						text(
 							'default',
-							type === 'hidden' ? __( 'Value', 'launch-forms' ) : __( 'Default value', 'launch-forms' ),
-							type === 'checkbox' ? __( 'Comma separated values', 'launch-forms' ) : undefined
+							type === 'hidden' ? __( 'Value', 'launch-interactive-forms' ) : __( 'Default value', 'launch-interactive-forms' ),
+							type === 'checkbox' ? __( 'Comma separated values', 'launch-interactive-forms' ) : undefined
 						)
 					)
 				);
@@ -665,9 +664,9 @@
 					el(
 						'div',
 						{ className: 'lf-builder__row', key: 'num' },
-						text( 'min', __( 'Minimum', 'launch-forms' ) ),
-						text( 'max', __( 'Maximum', 'launch-forms' ) ),
-						text( 'step', __( 'Step', 'launch-forms' ) )
+						text( 'min', __( 'Minimum', 'launch-interactive-forms' ) ),
+						text( 'max', __( 'Maximum', 'launch-interactive-forms' ) ),
+						text( 'step', __( 'Step', 'launch-interactive-forms' ) )
 					)
 				);
 			}
@@ -680,8 +679,8 @@
 						el( c.TextControl, {
 							__nextHasNoMarginBottom: true,
 							__next40pxDefaultSize: true,
-							label: __( 'Allowed file types', 'launch-forms' ),
-							help: __( 'Comma separated extensions. Scripts and executables are always blocked.', 'launch-forms' ),
+							label: __( 'Allowed file types', 'launch-interactive-forms' ),
+							help: __( 'Comma separated extensions. Scripts and executables are always blocked.', 'launch-interactive-forms' ),
 							value: props.fileTypesText,
 							onChange: props.onFileTypesChange,
 						} ),
@@ -691,7 +690,7 @@
 							type: 'number',
 							min: 0.1,
 							step: 0.1,
-							label: __( 'Max size (MB)', 'launch-forms' ),
+							label: __( 'Max size (MB)', 'launch-interactive-forms' ),
 							value: String( field.max_size ),
 							onChange: function ( v ) {
 								change( 'max_size', v );
@@ -702,7 +701,7 @@
 			}
 
 			if ( ! noInput && type !== 'hidden' ) {
-				parts.push( el( 'div', { key: 'desc' }, text( 'description', __( 'Help text', 'launch-forms' ) ) ) );
+				parts.push( el( 'div', { key: 'desc' }, text( 'description', __( 'Help text', 'launch-interactive-forms' ) ) ) );
 			}
 
 			var toggles = [];
@@ -711,7 +710,7 @@
 					el( c.ToggleControl, {
 						key: 'req',
 						__nextHasNoMarginBottom: true,
-						label: __( 'Required', 'launch-forms' ),
+						label: __( 'Required', 'launch-interactive-forms' ),
 						checked: !! field.required,
 						onChange: function ( v ) {
 							change( 'required', v );
@@ -724,7 +723,7 @@
 					el( c.ToggleControl, {
 						key: 'multi',
 						__nextHasNoMarginBottom: true,
-						label: __( 'Allow multiple selections', 'launch-forms' ),
+						label: __( 'Allow multiple selections', 'launch-interactive-forms' ),
 						checked: !! field.multiple,
 						onChange: function ( v ) {
 							change( 'multiple', v );
@@ -745,8 +744,8 @@
 						el( c.SelectControl, {
 							__nextHasNoMarginBottom: true,
 							__next40pxDefaultSize: true,
-							label: __( 'Width', 'launch-forms' ),
-							help: __( 'Fields narrower than full width sit side by side. They stack on small screens.', 'launch-forms' ),
+							label: __( 'Width', 'launch-interactive-forms' ),
+							help: __( 'Fields narrower than full width sit side by side. They stack on small screens.', 'launch-interactive-forms' ),
 							value: field.width || 'full',
 							options: Object.keys( widths ).map( function ( k ) {
 								return { label: widths[ k ], value: k };
@@ -755,7 +754,7 @@
 								change( 'width', v );
 							},
 						} ),
-					text( 'css_class', __( 'CSS class(es)', 'launch-forms' ) )
+					text( 'css_class', __( 'CSS class(es)', 'launch-interactive-forms' ) )
 				)
 			);
 
@@ -1019,10 +1018,10 @@
 			return el(
 				'div',
 				{ className: 'lf-builder__fields' + ( dragging ? ' is-sorting' : '' ), ref: sortable.listRef },
-				! fields.length && el( 'p', { className: 'lf-builder__hint' }, __( 'No fields yet. Add your first field below.', 'launch-forms' ) ),
+				! fields.length && el( 'p', { className: 'lf-builder__hint' }, __( 'No fields yet. Add your first field below.', 'launch-interactive-forms' ) ),
 				fields.map( function ( field, index ) {
 					var isOpen = open === index;
-					var title = field.type === 'content' ? __( 'Content', 'launch-forms' ) : h.isCaptcha( field ) ? typeLabels[ field.type ] || field.type : h.stripTags( field.label ) || field.name;
+					var title = field.type === 'content' ? __( 'Content', 'launch-interactive-forms' ) : h.isCaptcha( field ) ? typeLabels[ field.type ] || field.type : h.stripTags( field.label ) || field.name;
 					return el(
 						'div',
 						{
@@ -1040,10 +1039,10 @@
 										className: 'lf-builder__handle',
 										role: 'button',
 										tabIndex: 0,
-										title: __( 'Drag to reorder', 'launch-forms' ),
+										title: __( 'Drag to reorder', 'launch-interactive-forms' ),
 										'aria-label': wp.i18n.sprintf(
 											/* translators: %s: field name. */
-											__( 'Reorder %s. Use the up and down arrow keys to move it.', 'launch-forms' ),
+											__( 'Reorder %s. Use the up and down arrow keys to move it.', 'launch-interactive-forms' ),
 											title
 										),
 										onPointerDown: function ( e ) {
@@ -1065,7 +1064,7 @@
 												wp.a11y.speak(
 													wp.i18n.sprintf(
 														/* translators: 1: field name, 2: new position, 3: number of fields. */
-														__( '%1$s moved to position %2$d of %3$d.', 'launch-forms' ),
+														__( '%1$s moved to position %2$d of %3$d.', 'launch-interactive-forms' ),
 														title,
 														to + 1,
 														fields.length
@@ -1088,13 +1087,13 @@
 								},
 								el( 'strong', null, title ),
 								field.required ? ' *' : '',
-								el( 'span', { className: 'lf-builder__meta' }, h.isCaptcha( field ) ? __( 'Spam check', 'launch-forms' ) : ( typeLabels[ field.type ] || field.type ) + ( h.isInput( field ) ? ' · ' + field.name : '' ) ),
+								el( 'span', { className: 'lf-builder__meta' }, h.isCaptcha( field ) ? __( 'Spam check', 'launch-interactive-forms' ) : ( typeLabels[ field.type ] || field.type ) + ( h.isInput( field ) ? ' · ' + field.name : '' ) ),
 								WIDTH_BADGES[ field.width ] ? el( 'span', { className: 'lf-builder__badge', title: ( data.widths || {} )[ field.width ] }, WIDTH_BADGES[ field.width ] ) : null,
-								field.conditions && field.conditions.enabled ? el( 'span', { className: 'lf-builder__badge' }, __( 'conditional', 'launch-forms' ) ) : null
+								field.conditions && field.conditions.enabled ? el( 'span', { className: 'lf-builder__badge' }, __( 'conditional', 'launch-interactive-forms' ) ) : null
 							),
 							el( c.Button, {
 								icon: 'admin-page',
-								label: __( 'Duplicate', 'launch-forms' ),
+								label: __( 'Duplicate', 'launch-interactive-forms' ),
 								onClick: function () {
 									var copy = JSON.parse( JSON.stringify( field ) );
 									copy.name = h.uniqueName( field.name, fields, -1 );
@@ -1107,11 +1106,11 @@
 							} ),
 							el( c.Button, {
 								icon: 'trash',
-								label: __( 'Delete', 'launch-forms' ),
+								label: __( 'Delete', 'launch-interactive-forms' ),
 								isDestructive: true,
 								onClick: function () {
 									// eslint-disable-next-line no-alert
-									if ( ! window.confirm( __( 'Delete this field?', 'launch-forms' ) ) ) {
+									if ( ! window.confirm( __( 'Delete this field?', 'launch-interactive-forms' ) ) ) {
 										return;
 									}
 									var cleaned = h.removeReferences( config, field.name );
@@ -1178,7 +1177,7 @@
 					el( c.SelectControl, {
 						__nextHasNoMarginBottom: true,
 						__next40pxDefaultSize: true,
-						label: __( 'Field type', 'launch-forms' ),
+						label: __( 'Field type', 'launch-interactive-forms' ),
 						hideLabelFromVision: true,
 						value: addType[ 0 ],
 						options: Object.keys( typeLabels )
@@ -1188,7 +1187,7 @@
 							} )
 							.map( function ( k ) {
 								var missing = h.CAPTCHA_TYPES.indexOf( k ) !== -1 && ! ( data.captcha && data.captcha[ k ] );
-								return { label: typeLabels[ k ] + ( missing ? ' ' + __( '(keys not set)', 'launch-forms' ) : '' ), value: k };
+								return { label: typeLabels[ k ] + ( missing ? ' ' + __( '(keys not set)', 'launch-interactive-forms' ) : '' ), value: k };
 							} ),
 						onChange: addType[ 1 ],
 					} ),
@@ -1205,7 +1204,7 @@
 								setOpen( fields.length );
 							},
 						},
-						__( 'Add field', 'launch-forms' )
+						__( 'Add field', 'launch-interactive-forms' )
 					)
 				)
 			);
@@ -1225,7 +1224,7 @@
 				el( c.TextControl, {
 					__nextHasNoMarginBottom: true,
 					__next40pxDefaultSize: true,
-					label: __( 'Submit button text', 'launch-forms' ),
+					label: __( 'Submit button text', 'launch-interactive-forms' ),
 					value: s.submit_label,
 					onChange: function ( v ) {
 						change( 'submit_label', v );
@@ -1236,8 +1235,8 @@
 					null,
 					el( c.TextareaControl, {
 						__nextHasNoMarginBottom: true,
-						label: __( 'Success message', 'launch-forms' ),
-						help: __( 'Basic HTML is allowed. Merge tags are replaced with what the visitor entered, e.g. "A confirmation email was sent to {field:email}."', 'launch-forms' ),
+						label: __( 'Success message', 'launch-interactive-forms' ),
+						help: __( 'Basic HTML is allowed. Merge tags are replaced with what the visitor entered, e.g. "A confirmation email was sent to {field:email}."', 'launch-interactive-forms' ),
 						rows: 4,
 						value: s.success_message,
 						onChange: function ( v ) {
@@ -1247,7 +1246,7 @@
 					el(
 						'p',
 						{ className: 'lf-builder__hint' },
-						__( 'Merge tags:', 'launch-forms' ),
+						__( 'Merge tags:', 'launch-interactive-forms' ),
 						' ',
 						h.mergeTags( props.config ).map( function ( t ) {
 							return el( 'code', { key: t }, t );
@@ -1257,8 +1256,8 @@
 				el( c.TextControl, {
 					__nextHasNoMarginBottom: true,
 					__next40pxDefaultSize: true,
-					label: __( 'Redirect URL (optional)', 'launch-forms' ),
-					help: __( 'Send people to this page after submitting instead of showing the message.', 'launch-forms' ),
+					label: __( 'Redirect URL (optional)', 'launch-interactive-forms' ),
+					help: __( 'Send people to this page after submitting instead of showing the message.', 'launch-interactive-forms' ),
 					type: 'url',
 					value: s.redirect_url,
 					onChange: function ( v ) {
@@ -1267,7 +1266,7 @@
 				} ),
 				el( c.ToggleControl, {
 					__nextHasNoMarginBottom: true,
-					label: __( 'Hide the form after a successful submission', 'launch-forms' ),
+					label: __( 'Hide the form after a successful submission', 'launch-interactive-forms' ),
 					checked: !! s.hide_form_on_success,
 					onChange: function ( v ) {
 						change( 'hide_form_on_success', v );
@@ -1276,8 +1275,8 @@
 				el( c.TextControl, {
 					__nextHasNoMarginBottom: true,
 					__next40pxDefaultSize: true,
-					label: __( 'Google Analytics event (optional)', 'launch-forms' ),
-					help: __( 'Event name sent to Google Analytics or Google Tag Manager when this form is submitted successfully, e.g. contact_form_submit or generate_lead. It includes form_id and form_name. Your site must already load Google Analytics. Leave empty to send nothing.', 'launch-forms' ),
+					label: __( 'Google Analytics event (optional)', 'launch-interactive-forms' ),
+					help: __( 'Event name sent to Google Analytics or Google Tag Manager when this form is submitted successfully, e.g. contact_form_submit or generate_lead. It includes form_id and form_name. Your site must already load Google Analytics. Leave empty to send nothing.', 'launch-interactive-forms' ),
 					placeholder: 'contact_form_submit',
 					value: s.analytics_event || '',
 					onChange: function ( v ) {
@@ -1286,8 +1285,8 @@
 				} ),
 				el( c.ToggleControl, {
 					__nextHasNoMarginBottom: true,
-					label: __( 'Save submissions in WordPress', 'launch-forms' ),
-					help: s.store_submissions ? null : __( 'Uploaded files are deleted right after notifications are sent.', 'launch-forms' ),
+					label: __( 'Save submissions in WordPress', 'launch-interactive-forms' ),
+					help: s.store_submissions ? null : __( 'Uploaded files are deleted right after notifications are sent.', 'launch-interactive-forms' ),
 					checked: !! s.store_submissions,
 					onChange: function ( v ) {
 						change( 'store_submissions', v );
@@ -1296,17 +1295,17 @@
 				el(
 					'div',
 					null,
-					el( 'p', { className: 'lf-builder__label' }, __( 'Spam protection', 'launch-forms' ) ),
+					el( 'p', { className: 'lf-builder__label' }, __( 'Spam protection', 'launch-interactive-forms' ) ),
 					el(
 						'p',
 						{ className: 'lf-builder__hint' },
 						captchaField
 							? wp.i18n.sprintf(
 									/* translators: %s: Google reCAPTCHA or Cloudflare Turnstile. */
-									__( 'Every form has a hidden honeypot. This form also uses %s; move or remove it on the Fields tab.', 'launch-forms' ),
+									__( 'Every form has a hidden honeypot. This form also uses %s; move or remove it on the Fields tab.', 'launch-interactive-forms' ),
 									typeLabels[ captchaField.type ] || captchaField.type
 							  )
-							: __( 'Every form has a hidden honeypot. For stronger protection, add a Google reCAPTCHA or Cloudflare Turnstile field on the Fields tab and drag it where you want it.', 'launch-forms' )
+							: __( 'Every form has a hidden honeypot. For stronger protection, add a Google reCAPTCHA or Cloudflare Turnstile field on the Fields tab and drag it where you want it.', 'launch-interactive-forms' )
 					)
 				)
 			);
@@ -1327,7 +1326,7 @@
 			return el(
 				'div',
 				{ className: 'lf-builder__panel' },
-				el( 'p', { className: 'lf-builder__hint' }, __( 'Merge tags:', 'launch-forms' ), ' ', tags.map( function ( t ) {
+				el( 'p', { className: 'lf-builder__hint' }, __( 'Merge tags:', 'launch-interactive-forms' ), ' ', tags.map( function ( t ) {
 					return el( 'code', { key: t }, t );
 				} ) ),
 				list.map( function ( n, i ) {
@@ -1356,7 +1355,7 @@
 							{ className: 'lf-builder__row' },
 							el( c.ToggleControl, {
 								__nextHasNoMarginBottom: true,
-								label: __( 'Enabled', 'launch-forms' ),
+								label: __( 'Enabled', 'launch-interactive-forms' ),
 								checked: !! n.enabled,
 								onChange: function ( v ) {
 									change( 'enabled', v );
@@ -1375,26 +1374,26 @@
 										);
 									},
 								},
-								__( 'Remove notification', 'launch-forms' )
+								__( 'Remove notification', 'launch-interactive-forms' )
 							)
 						),
-						text( 'name', __( 'Name (for your reference)', 'launch-forms' ) ),
-						text( 'to', __( 'Send to', 'launch-forms' ), __( 'Comma separated. Merge tags allowed, e.g. {field:email} for an autoresponder.', 'launch-forms' ) ),
-						text( 'subject', __( 'Subject', 'launch-forms' ) ),
+						text( 'name', __( 'Name (for your reference)', 'launch-interactive-forms' ) ),
+						text( 'to', __( 'Send to', 'launch-interactive-forms' ), __( 'Comma separated. Merge tags allowed, e.g. {field:email} for an autoresponder.', 'launch-interactive-forms' ) ),
+						text( 'subject', __( 'Subject', 'launch-interactive-forms' ) ),
 						el( c.TextareaControl, {
 							__nextHasNoMarginBottom: true,
-							label: __( 'Message', 'launch-forms' ),
+							label: __( 'Message', 'launch-interactive-forms' ),
 							rows: 5,
 							value: n.message || '',
 							onChange: function ( v ) {
 								change( 'message', v );
 							},
 						} ),
-						el( 'div', { className: 'lf-builder__row' }, text( 'reply_to', __( 'Reply-To', 'launch-forms' ) ), text( 'from_name', __( 'From name', 'launch-forms' ) ), text( 'from_email', __( 'From email', 'launch-forms' ) ) ),
+						el( 'div', { className: 'lf-builder__row' }, text( 'reply_to', __( 'Reply-To', 'launch-interactive-forms' ) ), text( 'from_name', __( 'From name', 'launch-interactive-forms' ) ), text( 'from_email', __( 'From email', 'launch-interactive-forms' ) ) ),
 						hasFiles &&
 							el( c.ToggleControl, {
 								__nextHasNoMarginBottom: true,
-								label: __( 'Attach uploaded files', 'launch-forms' ),
+								label: __( 'Attach uploaded files', 'launch-interactive-forms' ),
 								checked: !! n.attach_files,
 								onChange: function ( v ) {
 									change( 'attach_files', v );
@@ -1411,7 +1410,7 @@
 							setList( list.concat( [ Object.assign( {}, template, { name: '' } ) ] ) );
 						},
 					},
-					__( 'Add notification', 'launch-forms' )
+					__( 'Add notification', 'launch-interactive-forms' )
 				)
 			);
 		}
@@ -1420,6 +1419,11 @@
 		function MailchimpPanel( props ) {
 			var config = props.config;
 			var mc = config.mailchimp;
+			var consentMissing =
+				!! mc.consent_field &&
+				! ( config.fields || [] ).some( function ( f ) {
+					return f.name === mc.consent_field;
+				} );
 			var listsState = useState( null );
 			var errorState = useState( '' );
 			var change = function ( key, value ) {
@@ -1448,8 +1452,8 @@
 				return el(
 					c.Notice,
 					{ status: 'info', isDismissible: false },
-					__( 'Add your Mailchimp API key in Forms → Settings to subscribe people when they submit this form.', 'launch-forms' ),
-					data.settingsUrl ? el( Fragment, null, ' ', el( 'a', { href: data.settingsUrl, target: '_blank', rel: 'noreferrer' }, __( 'Open settings', 'launch-forms' ) ) ) : null
+					__( 'Add your Mailchimp API key in Forms → Settings to subscribe people when they submit this form.', 'launch-interactive-forms' ),
+					data.settingsUrl ? el( Fragment, null, ' ', el( 'a', { href: data.settingsUrl, target: '_blank', rel: 'noreferrer' }, __( 'Open settings', 'launch-interactive-forms' ) ) ) : null
 				);
 			}
 
@@ -1460,7 +1464,7 @@
 				{ className: 'lf-builder__panel' },
 				el( c.ToggleControl, {
 					__nextHasNoMarginBottom: true,
-					label: __( 'Subscribe submitters to Mailchimp', 'launch-forms' ),
+					label: __( 'Subscribe submitters to Mailchimp', 'launch-interactive-forms' ),
 					checked: !! mc.enabled,
 					onChange: function ( v ) {
 						change( 'enabled', v );
@@ -1475,7 +1479,7 @@
 							? el( c.SelectControl, {
 									__nextHasNoMarginBottom: true,
 									__next40pxDefaultSize: true,
-									label: __( 'Audience', 'launch-forms' ),
+									label: __( 'Audience', 'launch-interactive-forms' ),
 									value: mc.list_id,
 									options: [ { label: '—', value: '' } ].concat(
 										lists.map( function ( l ) {
@@ -1489,8 +1493,8 @@
 							: el( c.TextControl, {
 									__nextHasNoMarginBottom: true,
 									__next40pxDefaultSize: true,
-									label: __( 'Audience ID', 'launch-forms' ),
-									help: lists === null ? __( 'Loading audiences…', 'launch-forms' ) : undefined,
+									label: __( 'Audience ID', 'launch-interactive-forms' ),
+									help: lists === null ? __( 'Loading audiences…', 'launch-interactive-forms' ) : undefined,
 									value: mc.list_id,
 									onChange: function ( v ) {
 										change( 'list_id', v );
@@ -1499,7 +1503,7 @@
 						el( c.SelectControl, {
 							__nextHasNoMarginBottom: true,
 							__next40pxDefaultSize: true,
-							label: __( 'Email field', 'launch-forms' ),
+							label: __( 'Email field', 'launch-interactive-forms' ),
 							value: mc.email_field,
 							options: fieldChoices(
 								config.fields,
@@ -1515,22 +1519,29 @@
 						el( c.SelectControl, {
 							__nextHasNoMarginBottom: true,
 							__next40pxDefaultSize: true,
-							label: __( 'Only subscribe when this field is ticked', 'launch-forms' ),
+							label: __( 'Only subscribe when this field is ticked', 'launch-interactive-forms' ),
 							value: mc.consent_field,
 							options: fieldChoices(
 								config.fields,
 								function ( f ) {
 									return f.type === 'consent' || f.type === 'checkbox';
 								},
-								__( 'Always subscribe', 'launch-forms' )
+								__( 'Always subscribe', 'launch-interactive-forms' )
+							).concat(
+								consentMissing
+									? [ { label: wp.i18n.sprintf( /* translators: %s: field name. */ __( 'Removed field (%s)', 'launch-interactive-forms' ), mc.consent_field ), value: mc.consent_field } ]
+									: []
 							),
+							help: consentMissing
+								? __( 'This field no longer exists, so nobody is subscribed. Choose another field, or "Always subscribe".', 'launch-interactive-forms' )
+								: undefined,
 							onChange: function ( v ) {
 								change( 'consent_field', v );
 							},
 						} ),
 						el( c.ToggleControl, {
 							__nextHasNoMarginBottom: true,
-							label: __( 'Double opt-in (send a confirmation email)', 'launch-forms' ),
+							label: __( 'Double opt-in (send a confirmation email)', 'launch-interactive-forms' ),
 							checked: !! mc.double_optin,
 							onChange: function ( v ) {
 								change( 'double_optin', v );
@@ -1539,14 +1550,14 @@
 						el( c.TextControl, {
 							__nextHasNoMarginBottom: true,
 							__next40pxDefaultSize: true,
-							label: __( 'Tags', 'launch-forms' ),
-							help: __( 'Comma separated', 'launch-forms' ),
+							label: __( 'Tags', 'launch-interactive-forms' ),
+							help: __( 'Comma separated', 'launch-interactive-forms' ),
 							value: mc.tags,
 							onChange: function ( v ) {
 								change( 'tags', v );
 							},
 						} ),
-						el( 'h4', null, __( 'Merge fields', 'launch-forms' ) ),
+						el( 'h4', null, __( 'Merge fields', 'launch-interactive-forms' ) ),
 						mergeFields.map( function ( m, i ) {
 							var setMap = function ( key, value ) {
 								var next = mergeFields.slice();
@@ -1559,7 +1570,7 @@
 								el( c.TextControl, {
 									__nextHasNoMarginBottom: true,
 									__next40pxDefaultSize: true,
-									label: __( 'Mailchimp tag', 'launch-forms' ),
+									label: __( 'Mailchimp tag', 'launch-interactive-forms' ),
 									placeholder: 'FNAME',
 									value: m.tag,
 									onChange: function ( v ) {
@@ -1569,7 +1580,7 @@
 								el( c.SelectControl, {
 									__nextHasNoMarginBottom: true,
 									__next40pxDefaultSize: true,
-									label: __( 'Form field', 'launch-forms' ),
+									label: __( 'Form field', 'launch-interactive-forms' ),
 									value: m.field,
 									options: fieldChoices( config.fields, null, '—' ),
 									onChange: function ( v ) {
@@ -1578,7 +1589,7 @@
 								} ),
 								el( c.Button, {
 									icon: 'no-alt',
-									label: __( 'Remove', 'launch-forms' ),
+									label: __( 'Remove', 'launch-interactive-forms' ),
 									isDestructive: true,
 									onClick: function () {
 										change(
@@ -1599,7 +1610,7 @@
 									change( 'merge_fields', mergeFields.concat( [ { tag: '', field: '' } ] ) );
 								},
 							},
-							__( 'Add merge field', 'launch-forms' )
+							__( 'Add merge field', 'launch-interactive-forms' )
 						)
 					)
 			);
@@ -1617,10 +1628,10 @@
 					{
 						className: 'lf-builder__tabs',
 						tabs: [
-							{ name: 'fields', title: __( 'Fields', 'launch-forms' ) },
-							{ name: 'settings', title: __( 'Settings', 'launch-forms' ) },
-							{ name: 'notifications', title: __( 'Notifications', 'launch-forms' ) },
-							{ name: 'mailchimp', title: __( 'Mailchimp', 'launch-forms' ) },
+							{ name: 'fields', title: __( 'Fields', 'launch-interactive-forms' ) },
+							{ name: 'settings', title: __( 'Settings', 'launch-interactive-forms' ) },
+							{ name: 'notifications', title: __( 'Notifications', 'launch-interactive-forms' ) },
+							{ name: 'mailchimp', title: __( 'Mailchimp', 'launch-interactive-forms' ) },
 						],
 					},
 					function ( tab ) {

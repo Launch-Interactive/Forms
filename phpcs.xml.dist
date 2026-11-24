@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
-<ruleset name="Launch Forms security">
+<ruleset name="Launch Interactive Forms security">
 	<description>Security-focused WordPress checks: escaping, nonces, input sanitising, SQL, redirects and risky PHP functions. Run with `composer security`.</description>
 
-	<file>launch-forms.php</file>
+	<file>launch-interactive-forms.php</file>
 	<file>uninstall.php</file>
 	<file>includes</file>
 	<arg name="extensions" value="php"/>

@@ -1,5 +1,5 @@
 /**
- * Launch Forms front end: live conditional logic and AJAX submission.
+ * Launch Interactive Forms front end: live conditional logic and AJAX submission.
  * Forms work without this script (plain POST + server-side conditional logic).
  */
 ( function () {
@@ -239,7 +239,7 @@
 	var BLOCKED = {};
 
 	/**
-	 * Whether a REST response was refused before it reached Launch Forms. Launch Forms' own
+	 * Whether a REST response was refused before it reached the plugin. The plugin's own
 	 * replies always say whether the submission succeeded, and its errors use `lf_` codes.
 	 */
 	function blocked( status, data ) {
@@ -309,7 +309,7 @@
 			.then( function ( data ) {
 				if ( data === BLOCKED ) {
 					// The site, a security plugin or a firewall refused the REST request before it
-					// reached Launch Forms (e.g. "REST API for logged-in users only"). The form works
+					// reached the plugin (e.g. "REST API for logged-in users only"). The form works
 					// without JavaScript, so send it the ordinary way. The captcha token is unused.
 					window.launchForms.submitNatively( form );
 					return;

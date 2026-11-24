@@ -1,6 +1,6 @@
 <?php
 /**
- * Shared helpers for Launch Forms tests.
+ * Shared helpers for Launch Interactive Forms tests.
  *
  * @package LaunchForms
  */

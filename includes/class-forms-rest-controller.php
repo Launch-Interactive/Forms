@@ -61,6 +61,6 @@ class Forms_Rest_Controller extends \WP_REST_Posts_Controller {
 	 * @return \WP_Error
 	 */
 	private function forbidden() {
-		return new \WP_Error( 'rest_forbidden', __( 'Sorry, you are not allowed to view forms.', 'launch-forms' ), array( 'status' => rest_authorization_required_code() ) );
+		return new \WP_Error( 'rest_forbidden', __( 'Sorry, you are not allowed to view forms.', 'launch-interactive-forms' ), array( 'status' => rest_authorization_required_code() ) );
 	}
 }

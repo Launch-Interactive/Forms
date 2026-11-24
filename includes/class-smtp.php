@@ -77,7 +77,7 @@ class Smtp {
 		$phpmailer->Timeout = 15; // phpcs:ignore WordPress.NamingConventions.ValidVariableName
 
 		/**
-		 * Fires after Launch Forms configures SMTP, for extra PHPMailer options.
+		 * Fires after Launch Interactive Forms configures SMTP, for extra PHPMailer options.
 		 *
 		 * @param \PHPMailer\PHPMailer\PHPMailer $phpmailer Mailer.
 		 */

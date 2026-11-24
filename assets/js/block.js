@@ -22,7 +22,7 @@
 	var ServerSideRender = wp.serverSideRender;
 	var builder = window.launchFormsBuilder;
 	var META = 'launch_forms_config';
-	var TYPE = 'lf_form';
+	var TYPE = 'launch_forms_form';
 
 	function starterConfig() {
 		var defaults = builder.data.defaults || {};
@@ -35,9 +35,9 @@
 			f.required = required;
 			fields.push( f );
 		};
-		add( 'text', __( 'Name', 'launch-forms' ), true );
-		add( 'email', __( 'Email', 'launch-forms' ), true );
-		add( 'textarea', __( 'Message', 'launch-forms' ), true );
+		add( 'text', __( 'Name', 'launch-interactive-forms' ), true );
+		add( 'email', __( 'Email', 'launch-interactive-forms' ), true );
+		add( 'textarea', __( 'Message', 'launch-interactive-forms' ), true );
 		var config = builder.normalizeConfig( { fields: fields }, defaults );
 		if ( config.notifications[ 0 ] ) {
 			config.notifications[ 0 ] = Object.assign( {}, config.notifications[ 0 ], { reply_to: '{field:email}' } );
@@ -59,14 +59,14 @@
 			el( c.TextControl, {
 				__nextHasNoMarginBottom: true,
 				__next40pxDefaultSize: true,
-				label: __( 'Form name', 'launch-forms' ),
+				label: __( 'Form name', 'launch-interactive-forms' ),
 				value: typeof titleProp[ 0 ] === 'string' ? titleProp[ 0 ] : '',
 				onChange: titleProp[ 1 ],
 			} ),
 			el(
 				c.Notice,
 				{ status: 'info', isDismissible: false },
-				__( 'This is a reusable form. Changes are saved when you save this page and apply everywhere the form is used.', 'launch-forms' )
+				__( 'This is a reusable form. Changes are saved when you save this page and apply everywhere the form is used.', 'launch-interactive-forms' )
 			),
 			el( builder.Builder, {
 				config: builder.parseConfig( meta[ META ], builder.data.defaults ),
@@ -119,7 +119,7 @@
 						} )
 						.catch( function ( err ) {
 							if ( ! cancelled ) {
-								setState( { html: null, error: ( err && err.message ) || __( 'Could not load the preview.', 'launch-forms' ) } );
+								setState( { html: null, error: ( err && err.message ) || __( 'Could not load the preview.', 'launch-interactive-forms' ) } );
 							}
 						} );
 				}, 250 );
@@ -159,7 +159,7 @@
 			return select( 'core' ).getEntityRecords( 'postType', TYPE, { per_page: 100, status: 'publish', orderby: 'title', order: 'asc' } );
 		}, [] );
 
-		var formOptions = [ { label: __( '— Select a form —', 'launch-forms' ), value: 0 } ].concat(
+		var formOptions = [ { label: __( '— Select a form —', 'launch-interactive-forms' ), value: 0 } ].concat(
 			( forms || [] ).map( function ( f ) {
 				return { label: ( f.title && f.title.raw ) || ( f.title && f.title.rendered ) || '#' + f.id, value: f.id };
 			} )
@@ -170,7 +170,7 @@
 			errorState[ 1 ]( '' );
 			var meta = {};
 			meta[ META ] = JSON.stringify( starterConfig() );
-			saveEntityRecord( 'postType', TYPE, { title: __( 'Contact form', 'launch-forms' ), status: 'publish', meta: meta }, { throwOnError: true } )
+			saveEntityRecord( 'postType', TYPE, { title: __( 'Contact form', 'launch-interactive-forms' ), status: 'publish', meta: meta }, { throwOnError: true } )
 				.then( function ( record ) {
 					creatingState[ 1 ]( false );
 					if ( record && record.id ) {
@@ -180,7 +180,7 @@
 				} )
 				.catch( function ( err ) {
 					creatingState[ 1 ]( false );
-					errorState[ 1 ]( ( err && err.message ) || __( 'Could not create the form.', 'launch-forms' ) );
+					errorState[ 1 ]( ( err && err.message ) || __( 'Could not create the form.', 'launch-interactive-forms' ) );
 				} );
 		}
 
@@ -188,8 +188,8 @@
 			c.Placeholder,
 			{
 				icon: 'feedback',
-				label: __( 'Form', 'launch-forms' ),
-				instructions: __( 'Choose an existing form or build a new one here. Forms are reusable across pages.', 'launch-forms' ),
+				label: __( 'Form', 'launch-interactive-forms' ),
+				instructions: __( 'Choose an existing form or build a new one here. Forms are reusable across pages.', 'launch-interactive-forms' ),
 			},
 			errorState[ 0 ] && el( c.Notice, { status: 'error', isDismissible: false }, errorState[ 0 ] ),
 			forms === null
@@ -201,7 +201,7 @@
 							el( c.SelectControl, {
 								__nextHasNoMarginBottom: true,
 								__next40pxDefaultSize: true,
-								label: __( 'Existing form', 'launch-forms' ),
+								label: __( 'Existing form', 'launch-interactive-forms' ),
 								value: formId,
 								options: formOptions,
 								onChange: function ( v ) {
@@ -212,7 +212,7 @@
 						el(
 							c.Button,
 							{ variant: 'primary', isBusy: creatingState[ 0 ], disabled: creatingState[ 0 ], onClick: createForm },
-							__( 'Create new form', 'launch-forms' )
+							__( 'Create new form', 'launch-interactive-forms' )
 						)
 				  )
 		);
@@ -227,15 +227,15 @@
 					null,
 					el( c.ToolbarButton, {
 						icon: mode === 'edit' ? 'visibility' : 'edit',
-						label: mode === 'edit' ? __( 'Preview form', 'launch-forms' ) : __( 'Edit form', 'launch-forms' ),
-						text: mode === 'edit' ? __( 'Preview', 'launch-forms' ) : __( 'Edit form', 'launch-forms' ),
+						label: mode === 'edit' ? __( 'Preview form', 'launch-interactive-forms' ) : __( 'Edit form', 'launch-interactive-forms' ),
+						text: mode === 'edit' ? __( 'Preview', 'launch-interactive-forms' ) : __( 'Edit form', 'launch-interactive-forms' ),
 						onClick: function () {
 							setMode( mode === 'edit' ? 'preview' : 'edit' );
 						},
 					} ),
 					el( c.ToolbarButton, {
 						icon: 'randomize',
-						label: __( 'Use a different form', 'launch-forms' ),
+						label: __( 'Use a different form', 'launch-interactive-forms' ),
 						onClick: function () {
 							setAttributes( { formId: 0 } );
 							setMode( 'pick' );
@@ -249,12 +249,12 @@
 			null,
 			el(
 				c.PanelBody,
-				{ title: __( 'Form', 'launch-forms' ) },
+				{ title: __( 'Form', 'launch-interactive-forms' ) },
 				forms &&
 					el( c.SelectControl, {
 						__nextHasNoMarginBottom: true,
 						__next40pxDefaultSize: true,
-						label: __( 'Form', 'launch-forms' ),
+						label: __( 'Form', 'launch-interactive-forms' ),
 						value: formId,
 						options: formOptions,
 						onChange: function ( v ) {
@@ -265,12 +265,12 @@
 					el(
 						Fragment,
 						null,
-						el( 'p', null, __( 'Shortcode for other builders:', 'launch-forms' ) ),
+						el( 'p', null, __( 'Shortcode for other builders:', 'launch-interactive-forms' ) ),
 						el( 'code', null, '[launch_form id="' + formId + '"]' ),
 						el(
 							'p',
 							null,
-							el( 'a', { href: 'post.php?post=' + formId + '&action=edit', target: '_blank', rel: 'noreferrer' }, __( 'Open in the Forms screen', 'launch-forms' ) )
+							el( 'a', { href: 'post.php?post=' + formId + '&action=edit', target: '_blank', rel: 'noreferrer' }, __( 'Open in the Forms screen', 'launch-interactive-forms' ) )
 						)
 					)
 			)

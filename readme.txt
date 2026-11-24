@@ -1,10 +1,10 @@
-=== Launch Forms ===
+=== Launch Interactive Forms ===
 Contributors: launchinteractive
 Tags: form, contact form, form builder, mailchimp, turnstile
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.8.0
+Stable tag: 2.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,7 +12,7 @@ A lightweight form builder that outputs clean HTML and takes its look from your 
 
 == Description ==
 
-Launch Forms is a form builder for people who want forms that look like the rest of their site. It outputs minimal, accessible HTML with no inline styles, so your theme's styles for inputs and buttons apply as they are. Block themes style the submit button through theme.json.
+Launch Interactive Forms is a form builder for people who want forms that look like the rest of their site. It outputs minimal, accessible HTML with no inline styles, so your theme's styles for inputs and buttons apply as they are. Block themes style the submit button through theme.json.
 
 **Build anywhere, reuse everywhere**
 
@@ -50,7 +50,7 @@ Developer documentation, hooks and filters are on [GitHub](https://github.com/La
 
 == External services ==
 
-Launch Forms works without any external service. The services below are used only if you turn them on.
+Launch Interactive Forms works without any external service. The services below are used only if you turn them on.
 
 **Google reCAPTCHA** checks that a submission comes from a person. It is used only when you add a reCAPTCHA field to a form and enter reCAPTCHA keys under Forms → Settings. On pages with that form, the visitor's browser loads Google's script from www.google.com, which may collect information about the visitor and their device. When the form is submitted, your site sends the reCAPTCHA response token, your secret key and the visitor's IP address to Google to verify it.
 Google [Terms of Service](https://policies.google.com/terms) and [Privacy Policy](https://policies.google.com/privacy).
@@ -70,18 +70,18 @@ Intuit Mailchimp [Terms of Use](https://mailchimp.com/legal/terms/) and [Privacy
 3. Add a Form block to any page and choose "Create new form", or go to Forms → Add New.
 4. Optional: enter reCAPTCHA or Turnstile keys, a Mailchimp API key and SMTP details under Forms → Settings, then use Send a test email to check delivery.
 
-If your site runs on nginx, block web access to `wp-content/uploads/launch-forms-private/` or move uploads outside the web root (see the FAQ). Tools → Site Health tells you whether the folder is protected.
+If your site runs on nginx, block web access to `wp-content/uploads/launch-interactive-forms/` or move uploads outside the web root (see the FAQ). Tools → Site Health tells you whether the folder is protected.
 
 == Frequently Asked Questions ==
 
 = How do I track submissions in Google Analytics? =
 
-Open the form, go to the Settings tab and enter a **Google Analytics event** name, such as `contact_form_submit` or GA4's recommended `generate_lead`. Each successful submission then calls `gtag( 'event', 'contact_form_submit', { form_id, form_name } )`, or pushes the same event to the Google Tag Manager `dataLayer` if your site uses GTM. Launch Forms doesn't add Google Analytics itself, so your site needs to load it already (for example through Site Kit or your theme). To report on it, mark the event as a key event in Google Analytics, or add a Custom Event trigger in Tag Manager.
+Open the form, go to the Settings tab and enter a **Google Analytics event** name, such as `contact_form_submit` or GA4's recommended `generate_lead`. Each successful submission then calls `gtag( 'event', 'contact_form_submit', { form_id, form_name } )`, or pushes the same event to the Google Tag Manager `dataLayer` if your site uses GTM. The plugin doesn't add Google Analytics itself, so your site needs to load it already (for example through Site Kit or your theme). To report on it, mark the event as a key event in Google Analytics, or add a Custom Event trigger in Tag Manager.
 
 
 = Why doesn't the form have its own styling? =
 
-On purpose. Launch Forms uses your theme's styles for inputs, labels and buttons, so forms match your site without extra CSS. A tiny structural stylesheet handles layout (side-by-side fields, error messages) and can be turned off under Forms → Settings.
+On purpose. The plugin uses your theme's styles for inputs, labels and buttons, so forms match your site without extra CSS. A tiny structural stylesheet handles layout (side-by-side fields, error messages) and can be turned off under Forms → Settings.
 
 = How do I use a form in Elementor or another page builder? =
 
@@ -89,7 +89,7 @@ Use the shortcode shown on the form's edit screen, e.g. `[launch_form id="123"]`
 
 = Are uploaded files public? =
 
-No. They are stored in a private folder under random names with no file extension, and only administrators can download them, through a logged-in, nonce-checked link. Apache and IIS are protected automatically. On nginx, add `location ^~ /wp-content/uploads/launch-forms-private/ { deny all; }` to your server config, or add `define( 'LAUNCH_FORMS_PRIVATE_DIR', '/path/outside/webroot' );` to wp-config.php.
+No. They are stored in a private folder under random names with no file extension, and only administrators can download them, through a logged-in, nonce-checked link. Apache and IIS are protected automatically. On nginx, add `location ^~ /wp-content/uploads/launch-interactive-forms/ { deny all; }` to your server config, or add `define( 'LAUNCH_FORMS_PRIVATE_DIR', '/path/outside/webroot' );` to wp-config.php.
 
 = Can I keep API keys out of the database? =
 
@@ -108,6 +108,14 @@ Yes. Forms normally send without reloading the page, through the WordPress REST 
 Yes. Forms submit normally when JavaScript isn't available, and conditional logic is still applied on the server.
 
 == Changelog ==
+
+= 2.0.0 =
+* Renamed from Launch Forms to Launch Interactive Forms (slug `launch-interactive-forms`).
+* Changed: the post types are now `launch_forms_form` and `launch_forms_entry`, submission meta keys start with `_launch_forms_`, and private uploads live in `wp-content/uploads/launch-interactive-forms/`. Existing forms, submissions and files are moved automatically.
+* Fixed: removing the field a Mailchimp action uses for consent no longer switches it to "always subscribe". Nobody is subscribed until another field is chosen.
+* Security: the success message is filtered after merge tags are filled in, so a visitor's value can't turn a link into a `javascript:` URL.
+* Changed: email attachment copies are made inside the protected private upload folder instead of the system temp folder.
+* Changed: the settings page script is an enqueued file instead of an inline script.
 
 = 1.8.0 =
 * Changed: simpler form markup. Fields sit directly in the form, without the `lf-fields` wrapper, and the submit button follows them as the last item. The form is laid out with CSS grid (12 columns).
@@ -164,6 +172,9 @@ Yes. Forms submit normally when JavaScript isn't available, and conditional logi
 * First release.
 
 == Upgrade Notice ==
+
+= 2.0.0 =
+New name and folder (launch-interactive-forms). Forms, submissions and uploads move to the new names automatically the first time it loads.
 
 = 1.8.0 =
 The `lf-fields` wrapper is gone and forms use CSS grid. If your theme styles `.lf-fields`, move those styles to `.lf-form`.

@@ -1,5 +1,5 @@
 /**
- * Launch Forms conditional logic evaluator.
+ * Launch Interactive Forms conditional logic evaluator.
  *
  * Pure functions with no DOM access so they can be unit tested in Node. Mirrors
  * includes/class-conditional-logic.php — keep the two in sync.

@@ -63,14 +63,14 @@ class Mailchimp {
 			return null; // Visitor did not opt in.
 		}
 		if ( '' === $this->datacenter() ) {
-			return new \WP_Error( 'lf_mailchimp_key', __( 'Mailchimp API key is missing or invalid.', 'launch-forms' ) );
+			return new \WP_Error( 'lf_mailchimp_key', __( 'Mailchimp API key is missing or invalid.', 'launch-interactive-forms' ) );
 		}
 		if ( '' === $settings['list_id'] ) {
-			return new \WP_Error( 'lf_mailchimp_list', __( 'No Mailchimp audience selected.', 'launch-forms' ) );
+			return new \WP_Error( 'lf_mailchimp_list', __( 'No Mailchimp audience selected.', 'launch-interactive-forms' ) );
 		}
 		$email = isset( $values[ $settings['email_field'] ] ) ? sanitize_email( (string) $values[ $settings['email_field'] ] ) : '';
 		if ( ! is_email( $email ) ) {
-			return new \WP_Error( 'lf_mailchimp_email', __( 'No valid email address to subscribe.', 'launch-forms' ) );
+			return new \WP_Error( 'lf_mailchimp_email', __( 'No valid email address to subscribe.', 'launch-interactive-forms' ) );
 		}
 
 		$merge = array();
@@ -137,7 +137,7 @@ class Mailchimp {
 	 */
 	public function get_lists() {
 		if ( '' === $this->datacenter() ) {
-			return new \WP_Error( 'lf_mailchimp_key', __( 'Mailchimp API key is missing or invalid.', 'launch-forms' ) );
+			return new \WP_Error( 'lf_mailchimp_key', __( 'Mailchimp API key is missing or invalid.', 'launch-interactive-forms' ) );
 		}
 		$data = $this->request( 'GET', 'lists?count=1000&fields=lists.id,lists.name' );
 		if ( is_wp_error( $data ) ) {
@@ -183,7 +183,7 @@ class Mailchimp {
 		if ( $code < 200 || $code >= 300 ) {
 			$detail = is_array( $data ) ? ( $data['detail'] ?? $data['title'] ?? '' ) : '';
 			/* translators: 1: HTTP status, 2: Mailchimp error detail. */
-			return new \WP_Error( 'lf_mailchimp_http', trim( sprintf( __( 'Mailchimp error %1$d: %2$s', 'launch-forms' ), $code, $detail ) ) );
+			return new \WP_Error( 'lf_mailchimp_http', trim( sprintf( __( 'Mailchimp error %1$d: %2$s', 'launch-interactive-forms' ), $code, $detail ) ) );
 		}
 		return is_array( $data ) ? $data : array();
 	}

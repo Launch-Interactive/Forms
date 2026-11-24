@@ -73,7 +73,7 @@ test( 'renameReferences updates conditions, mailchimp and merge tags', () => {
 	assert.equal( h.renameReferences( config, 'email', 'email' ), config );
 } );
 
-test( 'removeReferences drops rules and mailchimp mappings', () => {
+test( 'removeReferences drops rules and mailchimp mappings but keeps the consent gate', () => {
 	const config = {
 		fields: [ { name: 'a' }, { name: 'b', conditions: { enabled: true, rules: [ { field: 'a', operator: 'empty' } ] } } ],
 		mailchimp: { email_field: 'a', consent_field: 'a', merge_fields: [ { tag: 'X', field: 'a' } ] },
@@ -82,7 +82,7 @@ test( 'removeReferences drops rules and mailchimp mappings', () => {
 	assert.deepEqual( out.fields[ 1 ].conditions.rules, [] );
 	assert.equal( out.fields[ 1 ].conditions.enabled, false );
 	assert.equal( out.mailchimp.email_field, '' );
-	assert.equal( out.mailchimp.consent_field, '' );
+	assert.equal( out.mailchimp.consent_field, 'a' ); // Kept, so nobody is subscribed without consent.
 	assert.deepEqual( out.mailchimp.merge_fields, [] );
 } );
 

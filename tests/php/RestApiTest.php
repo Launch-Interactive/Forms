@@ -50,8 +50,8 @@ class RestApiTest extends LF_TestCase {
 		$this->assertTrue( $data['hide_form'] );
 		$this->assertSame( '', $data['redirect'] );
 		$this->assertCount( 1, $this->sent_emails() );
-		$sub = get_posts( array( 'post_type' => 'lf_submission', 'post_parent' => $form->id ) );
-		$this->assertSame( 'https://example.org/contact/', get_post_meta( $sub[0]->ID, '_lf_page_url', true ) );
+		$sub = get_posts( array( 'post_type' => 'launch_forms_entry', 'post_parent' => $form->id ) );
+		$this->assertSame( 'https://example.org/contact/', get_post_meta( $sub[0]->ID, '_launch_forms_page_url', true ) );
 	}
 
 	public function test_validation_errors_return_422() {

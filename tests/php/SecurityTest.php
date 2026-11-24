@@ -190,7 +190,7 @@ class SecurityTest extends LF_TestCase {
 
 	public function test_uninstall_only_deletes_files_the_plugin_created() {
 		$uploads = wp_upload_dir( null, false );
-		$dir     = trailingslashit( $uploads['basedir'] ) . 'launch-forms-private/';
+		$dir     = trailingslashit( $uploads['basedir'] ) . 'launch-interactive-forms/';
 		$created = ! is_dir( $dir );
 		wp_mkdir_p( $dir );
 		launch_forms()->uploads->protect_dir( $dir );
@@ -201,7 +201,7 @@ class SecurityTest extends LF_TestCase {
 
 		update_option( 'launch_forms_settings', array( 'delete_data_on_uninstall' => true ) );
 		if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
-			define( 'WP_UNINSTALL_PLUGIN', 'launch-forms/launch-forms.php' );
+			define( 'WP_UNINSTALL_PLUGIN', 'launch-interactive-forms/launch-interactive-forms.php' );
 		}
 		include LAUNCH_FORMS_DIR . 'uninstall.php';
 

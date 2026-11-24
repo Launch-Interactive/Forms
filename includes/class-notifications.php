@@ -48,7 +48,7 @@ class Notifications {
 				'action'  => 'email',
 				'name'    => '' !== $notification['name'] ? $notification['name'] : sprintf( 'Notification %d', $index + 1 ),
 				'success' => true === $result,
-				'message' => is_wp_error( $result ) ? $result->get_error_message() : __( 'Sent', 'launch-forms' ),
+				'message' => is_wp_error( $result ) ? $result->get_error_message() : __( 'Sent', 'launch-interactive-forms' ),
 			);
 		}
 		return $log;
@@ -66,13 +66,13 @@ class Notifications {
 	public function send( array $notification, Form $form, array $entries, array $context = array() ) {
 		$to = $this->parse_addresses( $this->replace_tags( $notification['to'], $form, $entries, $context ) );
 		if ( empty( $to ) ) {
-			return new \WP_Error( 'lf_no_recipient', __( 'No valid recipient address.', 'launch-forms' ) );
+			return new \WP_Error( 'lf_no_recipient', __( 'No valid recipient address.', 'launch-interactive-forms' ) );
 		}
 
 		$subject = self::single_line( $this->replace_tags( $notification['subject'], $form, $entries, $context ) );
 		if ( '' === $subject ) {
 			/* translators: %s: form title. */
-			$subject = sprintf( __( 'New submission: %s', 'launch-forms' ), $form->title );
+			$subject = sprintf( __( 'New submission: %s', 'launch-interactive-forms' ), $form->title );
 		}
 		$message = $this->replace_tags( '' !== $notification['message'] ? $notification['message'] : '{all_fields}', $form, $entries, $context );
 
@@ -116,7 +116,7 @@ class Notifications {
 		}
 
 		if ( ! $sent ) {
-			return $error instanceof \WP_Error ? $error : new \WP_Error( 'lf_mail_failed', __( 'wp_mail() could not send the email.', 'launch-forms' ) );
+			return $error instanceof \WP_Error ? $error : new \WP_Error( 'lf_mail_failed', __( 'wp_mail() could not send the email.', 'launch-interactive-forms' ) );
 		}
 		return true;
 	}
@@ -196,7 +196,7 @@ class Notifications {
 			return is_array( $value ) && isset( $value['name'] ) ? $value['name'] : '';
 		}
 		if ( 'consent' === $entry['type'] ) {
-			return '' !== (string) $value ? __( 'Yes', 'launch-forms' ) : __( 'No', 'launch-forms' );
+			return '' !== (string) $value ? __( 'Yes', 'launch-interactive-forms' ) : __( 'No', 'launch-interactive-forms' );
 		}
 		return is_array( $value ) ? implode( ', ', $value ) : (string) $value;
 	}
@@ -226,7 +226,9 @@ class Notifications {
 	 */
 	private function prepare_attachments( array $entries ) {
 		$paths = array();
-		$dir   = trailingslashit( get_temp_dir() ) . 'launch-forms-' . bin2hex( random_bytes( 8 ) ) . '/';
+		// Copies get the visitor's original file name, so they go in a random folder inside the
+		// private upload folder (denied to the web) and are deleted as soon as the email is sent.
+		$dir = $this->uploads->get_dir() . 'mail-' . bin2hex( random_bytes( 16 ) ) . '/';
 		foreach ( $entries as $entry ) {
 			if ( 'file' !== $entry['type'] || empty( $entry['value']['file'] ) ) {
 				continue;
@@ -237,6 +239,7 @@ class Notifications {
 			}
 			if ( ! is_dir( $dir ) ) {
 				wp_mkdir_p( $dir );
+				chmod( $dir, 0700 ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_chmod -- Owner-only: holds copies of private uploads.
 			}
 			$name = sanitize_file_name( $entry['value']['name'] );
 			$dest = $dir . ( '' !== $name ? $name : $entry['value']['file'] );

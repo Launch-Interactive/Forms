@@ -17,7 +17,7 @@ class Frontend {
 	const SHORTCODE = 'launch_form';
 
 	/** Transient prefix for filled-in success messages carried across the no-JS redirect. */
-	const MESSAGE_TRANSIENT = 'lf_msg_';
+	const MESSAGE_TRANSIENT = 'launch_forms_msg_';
 
 	/** @var Plugin */
 	private $plugin;
@@ -60,7 +60,7 @@ class Frontend {
 			array(
 				'restUrl' => esc_url_raw( rest_url( 'launch-forms/v1/forms/' ) ),
 				'i18n'    => array(
-					'error' => __( 'Something went wrong. Please try again.', 'launch-forms' ),
+					'error' => __( 'Something went wrong. Please try again.', 'launch-interactive-forms' ),
 				),
 			)
 		);
@@ -74,6 +74,8 @@ class Frontend {
 			$ver,
 			true
 		);
+		wp_set_script_translations( 'launch-forms-builder', 'launch-interactive-forms' );
+		wp_set_script_translations( 'launch-forms-block-editor', 'launch-interactive-forms' );
 	}
 
 	/**

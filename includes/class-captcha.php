@@ -119,7 +119,7 @@ class Captcha {
 
 		$field = 'turnstile' === $provider ? 'cf-turnstile-response' : 'g-recaptcha-response';
 		$token = isset( $request[ $field ] ) && is_string( $request[ $field ] ) ? trim( $request[ $field ] ) : '';
-		$fail  = new \WP_Error( 'lf_captcha', __( 'Please complete the spam check and try again.', 'launch-forms' ) );
+		$fail  = new \WP_Error( 'lf_captcha', __( 'Please complete the spam check and try again.', 'launch-interactive-forms' ) );
 		if ( '' === $token || strlen( $token ) > 4096 ) {
 			return $fail;
 		}
@@ -140,7 +140,7 @@ class Captcha {
 			)
 		);
 		if ( is_wp_error( $response ) ) {
-			return new \WP_Error( 'lf_captcha_unreachable', __( 'The spam check could not be verified. Please try again.', 'launch-forms' ) );
+			return new \WP_Error( 'lf_captcha_unreachable', __( 'The spam check could not be verified. Please try again.', 'launch-interactive-forms' ) );
 		}
 		$data = json_decode( (string) wp_remote_retrieve_body( $response ), true );
 		if ( ! is_array( $data ) || empty( $data['success'] ) ) {

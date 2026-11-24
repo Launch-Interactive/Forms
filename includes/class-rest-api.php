@@ -118,7 +118,7 @@ class Rest_Api {
 	public function submit( \WP_REST_Request $request ) {
 		$form = $this->plugin->forms->get( (int) $request['id'] );
 		if ( ! $form ) {
-			return new \WP_Error( 'lf_form_not_found', __( 'Form not found.', 'launch-forms' ), array( 'status' => 404 ) );
+			return new \WP_Error( 'lf_form_not_found', __( 'Form not found.', 'launch-interactive-forms' ), array( 'status' => 404 ) );
 		}
 
 		$files  = $request->get_file_params();

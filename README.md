@@ -1,4 +1,4 @@
-# Launch Forms
+# Launch Interactive Forms
 
 A lightweight WordPress form builder that outputs minimal, semantic HTML and takes its styling from the active theme.
 
@@ -22,21 +22,21 @@ A lightweight WordPress form builder that outputs minimal, semantic HTML and tak
 - **Test email**: **Forms → Settings → Send a test email** shows the exact `wp_mail()` failure reason when sending fails.
 - **Mailchimp**: per-form audience, email field, merge fields, tags, double opt-in, and an optional "only if this box is ticked" consent field.
 - **Spam protection**: a built-in honeypot on every form, plus Google reCAPTCHA (v2 checkbox or v3 score) or Cloudflare Turnstile as a **field**: add it from the field list and drag it where you want it (with a width, like any field). One per form; it is always shown and checked, so it can't use conditional logic, and a failed check is reported at the widget. Keys go in **Forms → Settings**; until they are set the field isn't shown. Forms that chose a captcha in the old per-form setting get the field added at the end automatically.
-- **Works without JavaScript**: forms submit with a plain POST when JavaScript is unavailable; otherwise they submit with AJAX through the REST API. If the REST request is refused before it reaches Launch Forms (a 401, 403, 404 or 405 reply that isn't Launch Forms' own, e.g. from a security plugin that limits the REST API to logged-in users or from a firewall), the script falls back to the plain POST. Allow the `launch-forms/v1` routes to keep AJAX submission.
+- **Works without JavaScript**: forms submit with a plain POST when JavaScript is unavailable; otherwise they submit with AJAX through the REST API. If the REST request is refused before it reaches the plugin (a 401, 403, 404 or 405 reply that isn't the plugin's own, e.g. from a security plugin that limits the REST API to logged-in users or from a firewall), the script falls back to the plain POST. Allow the `launch-forms/v1` routes to keep AJAX submission.
 
 ## Upload security
 
 - Each field has its own extension allow-list, which is intersected with WordPress' allowed MIME types. The file content must match its extension (`wp_check_filetype_and_ext`).
 - Executable and script types (php, phtml, phar, html, svg, js, exe, and so on) are always blocked, in **any** part of the name, so `shell.php.jpg` is rejected.
 - Each field has its own size limit, capped by the server limit.
-- Files are stored in `wp-content/uploads/launch-forms-private/` under random 128-bit names with no extension. They never enter the media library. The folder is locked with `.htaccess` (Apache), `web.config` (IIS) and `index.php`.
+- Files are stored in `wp-content/uploads/launch-interactive-forms/` under random 128-bit names with no extension. They never enter the media library. The folder is locked with `.htaccess` (Apache), `web.config` (IIS) and `index.php`.
 - Files can only be downloaded through a nonce-checked admin handler that requires the manage capability. They are served as `application/octet-stream` attachments with `nosniff` and a sandbox CSP.
-- **nginx ignores `.htaccess`.** On nginx, either add `location ^~ /wp-content/uploads/launch-forms-private/ { deny all; }` or, better, store files outside the web root:
+- **nginx ignores `.htaccess`.** On nginx, either add `location ^~ /wp-content/uploads/launch-interactive-forms/ { deny all; }` or, better, store files outside the web root:
   ```php
   define( 'LAUNCH_FORMS_PRIVATE_DIR', '/var/private/launch-forms' ); // wp-config.php
   ```
 - Files are deleted when a submission is permanently deleted, when a submission fails validation, and right after emails are sent if storage is turned off.
-- **Tools → Site Health** includes a "Launch Forms uploads are private" check. It writes a harmless test file to the private folder and requests it over HTTP, so it tells you whether your server actually blocks the folder.
+- **Tools → Site Health** includes a "Launch Interactive Forms uploads are private" check. It writes a harmless test file to the private folder and requests it over HTTP, so it tells you whether your server actually blocks the folder.
 
 ## Submission security
 
@@ -80,6 +80,14 @@ If the security keys (salts) in wp-config.php change, a saved SMTP password can 
 | `launch_forms_client_ip` | filter | Visitor IP used for rate limiting and captcha (for trusted proxies) |
 
 The front end also dispatches `launch-forms:success` and `launch-forms:error` DOM events on the form.
+
+## Moving from Launch Forms 1.x
+
+Version 2.0.0 renamed the plugin from Launch Forms (`launch-forms`) to Launch Interactive Forms (`launch-interactive-forms`), so WordPress sees it as a new plugin:
+
+1. Deactivate **Launch Forms**. Don't delete it yet.
+2. Upload and activate **Launch Interactive Forms**. On first load it moves forms (`lf_form` → `launch_forms_form`), submissions (`lf_submission` → `launch_forms_entry`, meta `_lf_*` → `_launch_forms_*`) and uploaded files (`uploads/launch-forms-private/` → `uploads/launch-interactive-forms/`). Settings, blocks, shortcodes, hooks and the `launch-forms/v1` REST routes keep their names.
+3. Remove the old `wp-content/plugins/launch-forms` folder over SFTP or your host's file manager. **Don't use Delete on the Plugins screen**: the old version's uninstall routine deletes the settings, which the new version shares.
 
 ## Development and tests
 

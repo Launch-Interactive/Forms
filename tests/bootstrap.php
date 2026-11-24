@@ -21,7 +21,7 @@ require_once $tests_dir . '/includes/functions.php';
 tests_add_filter(
 	'muplugins_loaded',
 	static function () use ( $root ) {
-		require $root . '/launch-forms.php';
+		require $root . '/launch-interactive-forms.php';
 	}
 );
 

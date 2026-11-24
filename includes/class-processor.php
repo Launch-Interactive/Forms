@@ -69,7 +69,7 @@ class Processor {
 		}
 
 		if ( $this->is_rate_limited( $context['ip'] ) ) {
-			$result         = Submission_Result::failure( __( 'Too many submissions from your connection. Please wait a few minutes and try again.', 'launch-forms' ), array(), $this->validator->normalize( $form, $input ) );
+			$result         = Submission_Result::failure( __( 'Too many submissions from your connection. Please wait a few minutes and try again.', 'launch-interactive-forms' ), array(), $this->validator->normalize( $form, $input ) );
 			$result->status = 429;
 			return $this->remember( $form, $result );
 		}
@@ -93,7 +93,7 @@ class Processor {
 			$file = $files[ $field['name'] ] ?? null;
 			if ( ! Uploads::was_provided( $file ) ) {
 				if ( $field['required'] ) {
-					$errors[ $field['name'] ] = __( 'This field is required.', 'launch-forms' );
+					$errors[ $field['name'] ] = __( 'This field is required.', 'launch-interactive-forms' );
 				}
 				continue;
 			}
@@ -112,7 +112,7 @@ class Processor {
 					unset( $raw[ $field['name'] ] );
 				}
 			}
-			return $this->remember( $form, Submission_Result::failure( __( 'Please correct the errors below.', 'launch-forms' ), $errors, $raw ) );
+			return $this->remember( $form, Submission_Result::failure( __( 'Please correct the errors below.', 'launch-interactive-forms' ), $errors, $raw ) );
 		}
 
 		$stored = array();
@@ -122,7 +122,7 @@ class Processor {
 				foreach ( $stored as $done ) {
 					$this->plugin->uploads->delete( $done['file'] );
 				}
-				return $this->remember( $form, Submission_Result::failure( __( 'Please correct the errors below.', 'launch-forms' ), array( $field['name'] => $record->get_error_message() ), $validation['raw'] ) );
+				return $this->remember( $form, Submission_Result::failure( __( 'Please correct the errors below.', 'launch-interactive-forms' ), array( $field['name'] => $record->get_error_message() ), $validation['raw'] ) );
 			}
 			$stored[ $field['name'] ] = $record;
 		}
@@ -153,7 +153,7 @@ class Processor {
 				'action'  => 'mailchimp',
 				'name'    => 'Mailchimp',
 				'success' => true === $mailchimp,
-				'message' => is_wp_error( $mailchimp ) ? $mailchimp->get_error_message() : __( 'Subscribed', 'launch-forms' ),
+				'message' => is_wp_error( $mailchimp ) ? $mailchimp->get_error_message() : __( 'Subscribed', 'launch-interactive-forms' ),
 			);
 		}
 
@@ -263,7 +263,7 @@ class Processor {
 	 * @return string
 	 */
 	private static function rate_key( $ip ) {
-		return 'lf_rate_' . substr( hash_hmac( 'sha256', $ip, wp_salt( 'nonce' ) ), 0, 32 );
+		return 'launch_forms_rate_' . substr( hash_hmac( 'sha256', $ip, wp_salt( 'nonce' ) ), 0, 32 );
 	}
 
 	/**

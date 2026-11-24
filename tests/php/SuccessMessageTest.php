@@ -36,6 +36,20 @@ class SuccessMessageTest extends LF_TestCase {
 		$this->assertStringNotContainsString( '<3', $data['message_html'] );
 	}
 
+	public function test_visitor_value_in_a_link_cannot_become_a_javascript_url() {
+		$form = $this->make_form(
+			array( $this->field( 'text', 'website', array( 'label' => '' ) ) ),
+			array( 'settings' => array( 'success_message' => 'Thanks! <a href="{all_fields}">Your site</a> <a href="{page_url}">Back</a>' ) )
+		);
+		foreach ( array( 'javascript:alert(1)', 'JaVaScRiPt:alert(1)', 'javascript&#58;alert(1)', 'data:text/html,x' ) as $bad ) {
+			$data = $this->rest_submit( $form, array( 'website' => $bad ) );
+			$this->assertTrue( $data['success'] );
+			$this->assertStringNotContainsStringIgnoringCase( 'javascript', $data['message_html'], $bad );
+			$this->assertStringNotContainsString( 'data:', $data['message_html'], $bad );
+			$this->assertStringContainsString( '>Your site</a>', $data['message_html'] );
+		}
+	}
+
 	public function test_visitor_text_that_looks_like_a_tag_is_not_expanded() {
 		update_option( 'admin_email', 'secret-admin@example.org' );
 		reset_phpmailer_instance(); // Ignore WordPress's own "admin email changed" notice.

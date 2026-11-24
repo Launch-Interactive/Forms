@@ -95,6 +95,7 @@ final class Plugin {
 		}
 		$this->booted = true;
 
+		add_action( 'init', array( Upgrade::class, 'maybe_run' ), 1 );
 		$this->settings->register_hooks();
 		$this->smtp->register_hooks();
 		$this->forms->register_hooks();
@@ -108,6 +109,7 @@ final class Plugin {
 	 * Activation: create the protected upload directory.
 	 */
 	public static function activate() {
+		Upgrade::maybe_run();
 		self::instance()->uploads->get_dir();
 	}
 

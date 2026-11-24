@@ -82,6 +82,13 @@ class MailchimpTest extends LF_TestCase {
 		$this->assertTrue( ( new Mailchimp( 'k-us5' ) )->subscribe( $form, array( 'email' => 'a@example.com', 'newsletter' => '1' ) ) );
 	}
 
+	public function test_deleted_consent_field_subscribes_nobody() {
+		$this->ok();
+		$form = $this->form( array( 'consent_field' => 'removed' ) );
+		$this->assertNull( ( new Mailchimp( 'k-us5' ) )->subscribe( $form, array( 'email' => 'a@example.com' ) ) );
+		$this->assertSame( array(), $this->http_requests );
+	}
+
 	public function test_skipped_or_errors() {
 		$this->assertNull( ( new Mailchimp( 'k-us5' ) )->subscribe( $this->form( array( 'enabled' => false ) ), array( 'email' => 'a@example.com' ) ) );
 		$this->assertSame( 'lf_mailchimp_key', ( new Mailchimp( '' ) )->subscribe( $this->form(), array( 'email' => 'a@example.com' ) )->get_error_code() );

@@ -60,9 +60,9 @@ class Settings {
 	 */
 	public static function smtp_encryptions() {
 		return array(
-			'tls'  => __( 'TLS / STARTTLS (usually port 587)', 'launch-forms' ),
-			'ssl'  => __( 'SSL (usually port 465)', 'launch-forms' ),
-			'none' => __( 'None (usually port 25; not recommended)', 'launch-forms' ),
+			'tls'  => __( 'TLS / STARTTLS (usually port 587)', 'launch-interactive-forms' ),
+			'ssl'  => __( 'SSL (usually port 465)', 'launch-interactive-forms' ),
+			'none' => __( 'None (usually port 25; not recommended)', 'launch-interactive-forms' ),
 		);
 	}
 
