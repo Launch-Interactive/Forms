@@ -4,7 +4,7 @@ Tags: form, contact form, form builder, mailchimp, turnstile
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.7.2
+Stable tag: 1.7.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -109,6 +109,9 @@ Yes. Forms submit normally when JavaScript isn't available, and conditional logi
 
 == Changelog ==
 
+= 1.7.3 =
+* Changed: fields are spaced with CSS gap instead of margins. Adjust the spacing with the `--lf-row-gap` and `--lf-gap` CSS variables.
+
 = 1.7.2 =
 * Fix: forms work on sites that block the WordPress REST API for visitors (for example with a security plugin), instead of showing "You are not currently logged in." The form is sent the ordinary way.
 * Fix: Google Analytics events are also sent for forms submitted without JavaScript.
@@ -159,5 +162,5 @@ Yes. Forms submit normally when JavaScript isn't available, and conditional logi
 
 == Upgrade Notice ==
 
-= 1.7.2 =
-Fixes forms on sites that block the REST API for visitors.
+= 1.7.3 =
+Fields are now spaced with CSS gap. If your theme added margins to Launch Forms fields, check the spacing.
