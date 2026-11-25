@@ -46,7 +46,7 @@ Launch Interactive Forms is a form builder for people who want forms that look l
 * Uploaded files are stored privately under random names, outside the media library, and can only be downloaded by administrators. A Site Health check confirms your server really blocks the folder.
 * Forms still work without JavaScript.
 
-Developer documentation, hooks and filters are on [GitHub](https://github.com/Launch-Interactive/forms).
+Developer documentation, hooks and filters are on [GitHub](https://github.com/Launch-Interactive/Forms).
 
 == External services ==
 
