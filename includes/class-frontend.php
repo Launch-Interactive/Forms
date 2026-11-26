@@ -182,9 +182,10 @@ class Frontend {
 			wp_unslash( $post ),
 			Uploads::normalize_files( $files['lif'] ?? null ),
 			array(
-				'page_url' => remove_query_arg( array( 'lif_sent', 'lif_msg' ), $current ),
+				'page_url' => remove_query_arg( array( 'lif_sent', 'lif_msg', 'lif_test' ), $current ),
 				'ip'       => self::client_ip(),
 				'user_id'  => self::verified_user_id( $form->id, $post ),
+				'monitor'  => Monitor::from_server(),
 			)
 		);
 		if ( ! $result->success ) {
@@ -206,6 +207,9 @@ class Frontend {
 			return $result->redirect;
 		}
 		$args = array( 'lif_sent' => $form->id );
+		if ( null !== $result->monitor ) {
+			$args['lif_test'] = 1; // Automated test: the success page skips the analytics event.
+		}
 		if ( false !== strpos( $form->settings['success_message'], '{' ) && ! $result->spam ) {
 			// The message uses merge tags: keep the filled-in version for a few minutes under an
 			// unguessable token, since the submitted values are gone after the redirect.
@@ -220,7 +224,7 @@ class Frontend {
 			);
 			$args['lif_msg'] = $token;
 		}
-		return add_query_arg( $args, remove_query_arg( array( 'lif_sent', 'lif_msg' ), $current ) ) . '#lif-form-' . $form->id;
+		return add_query_arg( $args, remove_query_arg( array( 'lif_sent', 'lif_msg', 'lif_test' ), $current ) ) . '#lif-form-' . $form->id;
 	}
 
 	/**

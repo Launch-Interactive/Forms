@@ -44,12 +44,17 @@ class Notifications {
 				continue;
 			}
 			$result = $this->send( $notification, $form, $entries, $context );
-			$log[]  = array(
+			$entry  = array(
 				'action'  => 'email',
 				'name'    => '' !== $notification['name'] ? $notification['name'] : sprintf( 'Notification %d', $index + 1 ),
 				'success' => true === $result,
 				'message' => is_wp_error( $result ) ? $result->get_error_message() : __( 'Sent', 'launch-interactive-forms' ),
 			);
+			if ( ! empty( $context['monitor'] ) ) {
+				// Tell the monitoring script who each email went to, so it knows which inboxes to check.
+				$entry['to'] = $this->parse_addresses( $this->replace_tags( $notification['to'], $form, $entries, $context ) );
+			}
+			$log[] = $entry;
 		}
 		return $log;
 	}
@@ -75,6 +80,10 @@ class Notifications {
 			$subject = sprintf( __( 'New submission: %s', 'launch-interactive-forms' ), $form->title );
 		}
 		$message = $this->replace_tags( '' !== $notification['message'] ? $notification['message'] : '{all_fields}', $form, $entries, $context );
+		if ( ! empty( $context['monitor'] ) ) {
+			$subject = Monitor::subject( $subject, (string) $context['monitor'] );
+			$message = Monitor::note() . "\n\n" . $message;
+		}
 
 		$headers = array( 'Content-Type: text/plain; charset=UTF-8' );
 		$reply   = $this->parse_addresses( $this->replace_tags( $notification['reply_to'], $form, $entries, $context ) );

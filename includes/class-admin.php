@@ -43,6 +43,7 @@ class Admin {
 		add_action( 'admin_post_liforms_zoho_connect', array( $this, 'handle_zoho_connect' ) );
 		add_action( 'admin_post_liforms_zoho_callback', array( $this, 'handle_zoho_callback' ) );
 		add_action( 'admin_post_liforms_zoho_disconnect', array( $this, 'handle_zoho_disconnect' ) );
+		add_action( 'admin_post_liforms_monitor_key', array( $this, 'handle_monitor_key' ) );
 		add_filter( 'site_status_tests', array( $this, 'site_health_tests' ) );
 		add_filter( 'manage_' . Forms::POST_TYPE . '_posts_columns', array( $this, 'form_columns' ) );
 		add_action( 'manage_' . Forms::POST_TYPE . '_posts_custom_column', array( $this, 'form_column' ), 10, 2 );
@@ -392,6 +393,9 @@ class Admin {
 
 			<hr>
 			<?php $this->render_zoho_section(); ?>
+
+			<hr>
+			<?php $this->render_monitor_section(); ?>
 		</div>
 		<?php
 	}
@@ -618,6 +622,68 @@ class Admin {
 		$this->plugin->zoho->disconnect();
 		$this->flash( true, __( 'Disconnected from Zoho CRM.', 'launch-interactive-forms' ) );
 		wp_safe_redirect( $this->settings_url( 'lif-zoho' ) );
+		exit;
+	}
+
+	/**
+	 * Automated testing section of the settings page.
+	 */
+	private function render_monitor_section() {
+		$key = Monitor::key();
+		?>
+		<h2 id="lif-monitor"><?php esc_html_e( 'Automated testing', 'launch-interactive-forms' ); ?></h2>
+		<p><?php esc_html_e( 'Let a monitoring script submit your forms on a schedule to check that enquiries still reach your inbox. Submissions that carry this key skip the captcha and spam checks; they are emailed as usual with "[Automated test]" in the subject, but not stored or sent to Mailchimp, Zoho CRM or Google Analytics.', 'launch-interactive-forms' ); ?></p>
+		<?php if ( '' !== $key ) : ?>
+			<table class="form-table" role="presentation">
+				<tr>
+					<th scope="row"><label for="lif-monitor-key"><?php esc_html_e( 'Monitoring key', 'launch-interactive-forms' ); ?></label></th>
+					<td>
+						<?php if ( defined( 'LIFORMS_MONITOR_KEY' ) ) : ?>
+							<?php esc_html_e( 'Set in wp-config.php.', 'launch-interactive-forms' ); ?>
+						<?php else : ?>
+							<input id="lif-monitor-key" class="large-text code" type="text" readonly value="<?php echo esc_attr( $key ); ?>">
+						<?php endif; ?>
+						<p class="description">
+							<?php
+							/* translators: %s: HTTP header name. */
+							echo esc_html( sprintf( __( 'Send it in the %s request header. Keep it secret: anyone with it can submit your forms without the spam checks.', 'launch-interactive-forms' ), Monitor::HEADER ) );
+							?>
+						</p>
+					</td>
+				</tr>
+			</table>
+		<?php endif; ?>
+		<?php if ( ! defined( 'LIFORMS_MONITOR_KEY' ) ) : ?>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+				<input type="hidden" name="action" value="liforms_monitor_key">
+				<?php wp_nonce_field( 'liforms_monitor_key' ); ?>
+				<?php if ( '' === $key ) : ?>
+					<?php submit_button( __( 'Create a monitoring key', 'launch-interactive-forms' ), 'secondary', 'generate', false ); ?>
+				<?php else : ?>
+					<?php submit_button( __( 'Replace key', 'launch-interactive-forms' ), 'secondary', 'generate', false ); ?>
+					<?php submit_button( __( 'Turn off', 'launch-interactive-forms' ), 'delete', 'disable', false ); ?>
+				<?php endif; ?>
+			</form>
+		<?php endif; ?>
+		<?php
+	}
+
+	/**
+	 * Create, replace or remove the monitoring key.
+	 */
+	public function handle_monitor_key() {
+		if ( ! current_user_can( Plugin::manage_capability() ) ) {
+			wp_die( esc_html__( 'You are not allowed to do this.', 'launch-interactive-forms' ), '', array( 'response' => 403 ) );
+		}
+		check_admin_referer( 'liforms_monitor_key' );
+		if ( isset( $_POST['disable'] ) ) {
+			Monitor::disable();
+			$this->flash( true, __( 'Automated testing is off. The old key no longer works.', 'launch-interactive-forms' ) );
+		} else {
+			Monitor::generate();
+			$this->flash( true, __( 'New monitoring key created. Update your monitoring script: the old key no longer works.', 'launch-interactive-forms' ) );
+		}
+		wp_safe_redirect( $this->settings_url( 'lif-monitor' ) );
 		exit;
 	}
 }

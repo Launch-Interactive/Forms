@@ -316,13 +316,17 @@
 				}
 				setBusy( form, false );
 				if ( data && data.success ) {
+					// Automated delivery tests (see the plugin's Monitor class) aren't real enquiries.
+					var report = data.monitor ? function ( form, done ) {
+						done();
+					} : track;
 					if ( data.redirect ) {
-						track( form, function () {
+						report( form, function () {
 							window.liforms.navigate( data.redirect );
 						} );
 						return;
 					}
-					track( form, function () {} );
+					report( form, function () {} );
 					form.dispatchEvent( new window.CustomEvent( 'liforms:success', { bubbles: true, detail: data } ) );
 					if ( data.hide_form ) {
 						var box = document.createElement( 'div' );

@@ -141,6 +141,7 @@ class Rest_Api {
 			array(
 				'page_url' => esc_url_raw( (string) $request->get_header( 'referer' ) ),
 				'ip'       => Frontend::client_ip(),
+				'monitor'  => Monitor::check( (string) $request->get_header( Monitor::HEADER ), (string) $request->get_header( Monitor::RUN_HEADER ) ),
 			)
 		);
 
@@ -152,7 +153,7 @@ class Rest_Api {
 				'errors'       => (object) $result->errors,
 				'redirect'     => $result->success ? $result->redirect : '',
 				'hide_form'    => (bool) $form->settings['hide_form_on_success'],
-			),
+			) + ( null !== $result->monitor ? array( 'monitor' => $result->monitor ) : array() ),
 			$result->status ? $result->status : ( $result->success ? 200 : 422 )
 		);
 	}

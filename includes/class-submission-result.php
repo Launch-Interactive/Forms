@@ -34,6 +34,8 @@ class Submission_Result {
 	public $entries = array();
 	/** @var array Context: submission_id, page_url (for merge tags). */
 	public $context = array();
+	/** @var array|null Automated test report {run, notifications} (see Monitor), null otherwise. */
+	public $monitor = null;
 
 	/**
 	 * Build a failure result.

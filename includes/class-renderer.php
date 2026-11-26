@@ -88,7 +88,8 @@ class Renderer {
 		);
 		if ( $sent || ( $result && $result->success ) ) {
 			$message = $result && $result->success ? $this->success_message( $form, $result ) : $this->redirected_message( $form );
-			if ( $sent && '' !== $form->settings['analytics_event'] ) {
+			$test = isset( $_GET['lif_test'] ); // phpcs:ignore WordPress.Security.NonceVerification -- Only skips analytics for an automated test.
+			if ( $sent && ! $test && '' !== $form->settings['analytics_event'] ) {
 				// frontend.js sends the analytics event for a submission that didn't go through JavaScript.
 				$message_attrs['data-lif-sent']       = true;
 				$message_attrs['data-lif-form']       = $form->id;

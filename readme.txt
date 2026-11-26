@@ -4,7 +4,7 @@ Tags: form, contact form, form builder, mailchimp, turnstile
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.2.0
+Stable tag: 2.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -38,6 +38,7 @@ Launch Interactive Forms is a form builder for people who want forms that look l
 * Track submissions in Google Analytics: give a form an event name (e.g. `contact_form_submit`) and every successful submission is sent to Google Analytics or Google Tag Manager, with the form's ID and name. No code needed.
 * Optional SMTP settings send all of your site's email through your email provider. The password is stored encrypted.
 * A test email tool shows exactly why sending failed.
+* Automated testing: give a monitoring script a secret key and it can submit your forms on a schedule, past the captcha, to check that enquiries still reach your inbox. Test emails are clearly marked and never stored or sent to integrations.
 
 **Spam protection and security**
 
@@ -107,11 +108,18 @@ Yes. Under Forms → Settings, change the `*` to anything you like, for example 
 
 Yes. Forms normally send without reloading the page, through the WordPress REST API. If your site or a security plugin refuses that request, the form is sent the ordinary way instead and the page reloads with the result. To keep forms sending without a reload, allow the `liforms/v1` routes in your REST API restriction.
 
+= How do I check automatically that my forms still work? =
+
+Create a monitoring key under Forms → Settings → Automated testing. A script (for example Playwright, run weekly) opens the form page, fills it in and submits it with the key in the `X-Liforms-Monitor` request header, and an optional run code in `X-Liforms-Monitor-Run`. That submission skips the captcha, honeypot and rate limit but is validated and emailed as usual, with "[Automated test CODE]" at the start of the subject, so the script can look for it in the recipients' inboxes. It is not stored, not sent to Mailchimp or Zoho CRM, and not counted in Google Analytics. When sent through JavaScript, the response lists each notification, its recipients and whether the mail server accepted it.
+
 = Does it work without JavaScript? =
 
 Yes. Forms submit normally when JavaScript isn't available, and conditional logic is still applied on the server.
 
 == Changelog ==
+
+= 2.3.0 =
+* New: automated testing. Create a monitoring key under Forms → Settings; a script that sends it can submit forms past the captcha to check that enquiries reach the inbox. Test emails are marked "[Automated test]", aren't stored and don't reach Mailchimp, Zoho CRM, Google Analytics or submission hooks.
 
 = 2.2.0 =
 * New: Zoho CRM. Connect your Zoho account under Forms → Settings (any Zoho region), then turn on the Zoho CRM tab on a form to create a lead for each submission. Map form fields to lead fields (a single Name field can be split into First and Last Name), set a Lead Source, update existing leads by email address, choose whether Zoho workflow rules run, and optionally add all submitted fields to the Description.
@@ -183,6 +191,9 @@ Yes. Forms submit normally when JavaScript isn't available, and conditional logi
 * First release.
 
 == Upgrade Notice ==
+
+= 2.3.0 =
+Adds a monitoring key for automated form delivery tests.
 
 = 2.2.0 =
 Adds Zoho CRM lead creation.

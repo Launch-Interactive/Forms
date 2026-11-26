@@ -62,6 +62,23 @@ define( 'LIFORMS_SMTP_PASSWORD', '...' ); // Also SMTP_HOST, SMTP_PORT, SMTP_USE
 
 If the security keys (salts) in wp-config.php change, a saved SMTP password can no longer be decrypted; the settings page says so and asks for it again.
 
+## Automated delivery tests
+
+Forms → Settings → **Automated testing** creates a monitoring key (48 hex characters, stored encrypted; `LIFORMS_MONITOR_KEY` in wp-config.php overrides it). A request to the form's submit endpoint (or a plain POST of the form) that carries
+
+```
+X-Liforms-Monitor: <key>
+X-Liforms-Monitor-Run: <code>   (optional, up to 64 letters, digits and dashes)
+```
+
+skips the captcha, honeypot and rate limit, but is validated and its notifications are sent as usual, with `[Automated test <code>] ` prepended to each subject and a short note at the top of the body. It is not stored, Mailchimp/Zoho CRM/`liforms_before_actions`/`liforms_submission` don't run, and the front end doesn't send the analytics event. The REST response gains:
+
+```json
+"monitor": { "run": "<code>", "notifications": [ { "name": "Admin", "success": true, "message": "Sent", "to": [ "info@example.com" ] } ] }
+```
+
+so a script can see which addresses each notification went to and whether the mail server accepted it, then look for the subject in those inboxes. Only send the key to the site itself: with Playwright, add the headers in a route handler for the site's own origin rather than with `setExtraHTTPHeaders`, which would also send them to Google and other third parties.
+
 ## Hooks
 
 | Hook | Type | Purpose |

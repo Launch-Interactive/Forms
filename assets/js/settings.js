@@ -24,11 +24,13 @@
 		} );
 	}
 
-	// Select the whole Zoho redirect URI when it's focused, ready to copy.
-	var redirect = document.getElementById( 'lif-zoho-redirect' );
-	if ( redirect ) {
-		redirect.addEventListener( 'focus', function () {
-			redirect.select();
-		} );
-	}
+	// Select the whole Zoho redirect URI or monitoring key when it's focused, ready to copy.
+	[ 'lif-zoho-redirect', 'lif-monitor-key' ].forEach( function ( id ) {
+		var input = document.getElementById( id );
+		if ( input ) {
+			input.addEventListener( 'focus', function () {
+				input.select();
+			} );
+		}
+	} );
 } )();

@@ -54,13 +54,15 @@ class Processor {
 				'page_url' => '',
 				'ip'       => '',
 				'user_id'  => get_current_user_id(),
+				'monitor'  => '', // Run code of an automated test (see Monitor), '' otherwise.
 			),
 			$context
 		);
+		$monitor = (string) $context['monitor'];
 		$context['page_url'] = self::same_site_url( (string) $context['page_url'] );
 
 		// Honeypot: pretend everything worked so bots learn nothing.
-		if ( isset( $request['lif_hp'] ) && '' !== trim( (string) ( is_scalar( $request['lif_hp'] ) ? $request['lif_hp'] : 'x' ) ) ) {
+		if ( '' === $monitor && isset( $request['lif_hp'] ) && '' !== trim( (string) ( is_scalar( $request['lif_hp'] ) ? $request['lif_hp'] : 'x' ) ) ) {
 			$result          = new Submission_Result();
 			$result->success = true;
 			$result->spam    = true;
@@ -68,13 +70,13 @@ class Processor {
 			return $this->remember( $form, $result );
 		}
 
-		if ( $this->is_rate_limited( $context['ip'] ) ) {
+		if ( '' === $monitor && $this->is_rate_limited( $context['ip'] ) ) {
 			$result         = Submission_Result::failure( __( 'Too many submissions from your connection. Please wait a few minutes and try again.', 'launch-interactive-forms' ), array(), $this->validator->normalize( $form, $input ) );
 			$result->status = 429;
 			return $this->remember( $form, $result );
 		}
 
-		$captcha = $this->plugin->captcha->verify( $form, $request, $context['ip'] );
+		$captcha = '' === $monitor ? $this->plugin->captcha->verify( $form, $request, $context['ip'] ) : true;
 		if ( is_wp_error( $captcha ) ) {
 			// Show the error at the captcha itself as well as at the top of the form.
 			$field = $form->captcha_field();
@@ -131,6 +133,9 @@ class Processor {
 		$entries = $this->build_entries( $form, $values, $stored );
 
 		$submission_id = 0;
+		if ( '' !== $monitor ) {
+			return $this->monitor_run( $form, $values, $entries, $stored, $context );
+		}
 		if ( $form->settings['store_submissions'] ) {
 			$submission_id = $this->plugin->submissions->create( $form, $entries, $context );
 		}
@@ -199,6 +204,41 @@ class Processor {
 		);
 		$result->redirect      = $form->settings['redirect_url'];
 		$result->values        = $values;
+		return $this->remember( $form, $result );
+	}
+
+	/**
+	 * An automated delivery test (see Monitor): send the notifications, marked as a test, and
+	 * nothing else. Nothing is stored and no integration, hook or analytics event runs.
+	 *
+	 * @param Form  $form    Form.
+	 * @param array $values  Clean values.
+	 * @param array $entries Entries.
+	 * @param array $stored  Stored upload records (deleted again).
+	 * @param array $context Context.
+	 * @return Submission_Result
+	 */
+	private function monitor_run( Form $form, array $values, array $entries, array $stored, array $context ) {
+		$context['submission_id'] = 0;
+		$log                      = $this->plugin->notifications->send_all( $form, $entries, $context );
+		foreach ( $stored as $record ) {
+			$this->plugin->uploads->delete( $record['file'] );
+		}
+
+		$result           = new Submission_Result();
+		$result->success  = true;
+		$result->message  = $this->success_text( $form, $entries, $context );
+		$result->entries  = $entries;
+		$result->context  = array(
+			'submission_id' => 0,
+			'page_url'      => $context['page_url'],
+		);
+		$result->redirect = $form->settings['redirect_url'];
+		$result->values   = $values;
+		$result->monitor  = array(
+			'run'           => $context['monitor'],
+			'notifications' => $log,
+		);
 		return $this->remember( $form, $result );
 	}
 

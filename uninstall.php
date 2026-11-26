@@ -53,7 +53,7 @@ if ( ! empty( $liforms_settings['delete_data_on_uninstall'] ) ) {
 	}
 }
 
-foreach ( array( 'liforms_settings', 'liforms_db_version', 'liforms_zoho', 'launch_forms_settings', 'launch_forms_db_version' ) as $liforms_option ) {
+foreach ( array( 'liforms_settings', 'liforms_db_version', 'liforms_zoho', 'liforms_monitor_key', 'launch_forms_settings', 'launch_forms_db_version' ) as $liforms_option ) {
 	delete_option( $liforms_option );
 }
 delete_transient( 'liforms_zoho_token' );
