@@ -170,3 +170,50 @@ test( 'normalizeConfig moves the old captcha setting into a field once', () => {
 	const placed = h.normalizeConfig( { fields: [ { type: 'turnstile', name: 'turnstile' } ], settings: { captcha: 'recaptcha' } }, {} );
 	assert.deepEqual( placed.fields.map( ( f ) => f.type ), [ 'turnstile' ] );
 } );
+
+test( 'suggestZohoMap guesses lead fields from field names and types', () => {
+	const map = h.suggestZohoMap( [
+		{ type: 'text', name: 'name' },
+		{ type: 'email', name: 'your_email' },
+		{ type: 'tel', name: 'phone' },
+		{ type: 'text', name: 'company' },
+		{ type: 'textarea', name: 'message' },
+		{ type: 'recaptcha', name: 'captcha' },
+		{ type: 'text', name: 'favourite_colour' },
+	] );
+	assert.deepEqual(
+		map.map( ( m ) => [ m.zoho, m.field ] ),
+		[
+			[ h.ZOHO_FULL_NAME, 'name' ],
+			[ 'Email', 'your_email' ],
+			[ 'Phone', 'phone' ],
+			[ 'Company', 'company' ],
+			[ 'Description', 'message' ],
+		]
+	);
+} );
+
+test( 'suggestZohoMap prefers separate first and last name fields over a full name', () => {
+	const map = h.suggestZohoMap( [ { type: 'text', name: 'name' }, { type: 'text', name: 'first_name' }, { type: 'text', name: 'last_name' } ] );
+	assert.deepEqual( map.map( ( m ) => m.zoho ), [ 'First_Name', 'Last_Name' ] );
+} );
+
+test( 'missingZohoFields lists required fields nothing fills; a full name fills Last_Name', () => {
+	const zohoFields = [ { api_name: 'Last_Name', label: 'Last Name', required: true }, { api_name: 'Company', label: 'Company', required: true }, { api_name: 'Email', required: false } ];
+	assert.deepEqual( h.missingZohoFields( [], zohoFields ).map( ( z ) => z.api_name ), [ 'Last_Name', 'Company' ] );
+	assert.deepEqual( h.missingZohoFields( [ { zoho: h.ZOHO_FULL_NAME, field: 'name' }, { zoho: 'Company', field: '' } ], zohoFields ).map( ( z ) => z.api_name ), [ 'Company' ] );
+} );
+
+test( 'renaming and removing a field updates the Zoho map but keeps the consent gate', () => {
+	const config = {
+		fields: [ { name: 'a' }, { name: 'b' } ],
+		mailchimp: {},
+		zoho: { consent_field: 'a', field_map: [ { zoho: 'Email', field: 'a' }, { zoho: 'Phone', field: 'b' } ] },
+	};
+	const renamed = h.renameReferences( config, 'a', 'c' );
+	assert.equal( renamed.zoho.consent_field, 'c' );
+	assert.equal( renamed.zoho.field_map[ 0 ].field, 'c' );
+	const removed = h.removeReferences( config, 'b' );
+	assert.deepEqual( removed.zoho.field_map, [ { zoho: 'Email', field: 'a' } ] );
+	assert.equal( h.removeReferences( config, 'a' ).zoho.consent_field, 'a' );
+} );

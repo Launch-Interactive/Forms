@@ -157,6 +157,16 @@ class Processor {
 			);
 		}
 
+		$zoho = $this->plugin->zoho->create_lead( $form, $values, $entries );
+		if ( null !== $zoho ) {
+			$log[] = array(
+				'action'  => 'zoho',
+				'name'    => 'Zoho CRM',
+				'success' => ! is_wp_error( $zoho ),
+				'message' => is_wp_error( $zoho ) ? $zoho->get_error_message() : $zoho,
+			);
+		}
+
 		if ( $submission_id ) {
 			$this->plugin->submissions->add_log( $submission_id, $log );
 		} else {

@@ -93,6 +93,18 @@ class Rest_Api {
 				},
 			)
 		);
+
+		register_rest_route(
+			self::NS,
+			'/zoho/fields',
+			array(
+				'methods'             => \WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'zoho_fields' ),
+				'permission_callback' => static function () {
+					return current_user_can( 'edit_pages' );
+				},
+			)
+		);
 	}
 
 	/**
@@ -157,5 +169,19 @@ class Rest_Api {
 			return $lists;
 		}
 		return rest_ensure_response( $lists );
+	}
+
+	/**
+	 * Zoho CRM lead fields for the builder.
+	 *
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function zoho_fields() {
+		$fields = $this->plugin->zoho->lead_fields();
+		if ( is_wp_error( $fields ) ) {
+			$fields->add_data( array( 'status' => 400 ) );
+			return $fields;
+		}
+		return rest_ensure_response( $fields );
 	}
 }

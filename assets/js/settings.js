@@ -23,4 +23,12 @@
 			}
 		} );
 	}
+
+	// Select the whole Zoho redirect URI when it's focused, ready to copy.
+	var redirect = document.getElementById( 'lif-zoho-redirect' );
+	if ( redirect ) {
+		redirect.addEventListener( 'focus', function () {
+			redirect.select();
+		} );
+	}
 } )();

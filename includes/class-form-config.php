@@ -133,6 +133,15 @@ class Form_Config {
 				'tags'          => '',
 				'merge_fields'  => array(),
 			),
+			'zoho'          => array(
+				'enabled'                => false,
+				'consent_field'          => '',
+				'field_map'              => array(),
+				'lead_source'            => '',
+				'update_existing'        => true,
+				'run_workflows'          => true,
+				'description_all_fields' => false,
+			),
 		);
 	}
 
@@ -249,6 +258,7 @@ class Form_Config {
 			'settings'      => $settings,
 			'notifications' => $notifications,
 			'mailchimp'     => self::sanitize_mailchimp( (array) ( $data['mailchimp'] ?? array() ), $names ),
+			'zoho'          => self::sanitize_zoho( (array) ( $data['zoho'] ?? array() ), $names ),
 		);
 	}
 
@@ -532,6 +542,48 @@ class Form_Config {
 			'from_name'    => sanitize_text_field( (string) ( $raw['from_name'] ?? '' ) ),
 			'from_email'   => sanitize_email( (string) ( $raw['from_email'] ?? '' ) ),
 			'attach_files' => self::bool( $raw['attach_files'] ?? false ),
+		);
+	}
+
+	/**
+	 * Sanitise the Zoho CRM action settings.
+	 *
+	 * @param array    $raw   Raw settings.
+	 * @param string[] $names Existing field names.
+	 * @return array
+	 */
+	public static function sanitize_zoho( array $raw, array $names ) {
+		$defaults = self::defaults()['zoho'];
+		$raw      = array_merge( $defaults, $raw );
+
+		$map  = array();
+		$seen = array();
+		foreach ( (array) $raw['field_map'] as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			$zoho  = preg_replace( '/[^A-Za-z0-9_$]/', '', (string) ( $row['zoho'] ?? '' ) );
+			$field = self::sanitize_name( (string) ( $row['field'] ?? '' ) );
+			if ( '' === $zoho || ! in_array( $field, $names, true ) || isset( $seen[ $zoho ] ) ) {
+				continue;
+			}
+			$seen[ $zoho ] = true;
+			$map[]         = array(
+				'zoho'  => substr( $zoho, 0, 100 ),
+				'type'  => preg_replace( '/[^a-z_]/', '', strtolower( (string) ( $row['type'] ?? '' ) ) ),
+				'field' => $field,
+			);
+		}
+
+		return array(
+			'enabled'                => self::bool( $raw['enabled'] ),
+			// Kept even if the field no longer exists, so removing it never sends everyone.
+			'consent_field'          => self::sanitize_name( (string) $raw['consent_field'] ),
+			'field_map'              => $map,
+			'lead_source'            => mb_substr( sanitize_text_field( (string) $raw['lead_source'] ), 0, 120 ),
+			'update_existing'        => self::bool( $raw['update_existing'] ),
+			'run_workflows'          => self::bool( $raw['run_workflows'] ),
+			'description_all_fields' => self::bool( $raw['description_all_fields'] ),
 		);
 	}
 

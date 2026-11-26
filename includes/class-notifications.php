@@ -175,6 +175,16 @@ class Notifications {
 	 * @return string
 	 */
 	public function all_fields( array $entries ) {
+		return self::all_fields_text( $entries );
+	}
+
+	/**
+	 * Static version of all_fields(), for integrations.
+	 *
+	 * @param array $entries Entries.
+	 * @return string
+	 */
+	public static function all_fields_text( array $entries ) {
 		$lines = array();
 		foreach ( $entries as $entry ) {
 			$label   = '' !== $entry['label'] ? $entry['label'] : $entry['name'];

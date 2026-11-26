@@ -26,6 +26,8 @@ class Form {
 	public $notifications;
 	/** @var array */
 	public $mailchimp;
+	/** @var array */
+	public $zoho;
 
 	/**
 	 * Constructor.
@@ -42,6 +44,7 @@ class Form {
 		$this->settings      = $config['settings'];
 		$this->notifications = $config['notifications'];
 		$this->mailchimp     = $config['mailchimp'];
+		$this->zoho          = $config['zoho'];
 	}
 
 	/**
@@ -113,6 +116,7 @@ class Form {
 			'settings'      => $this->settings,
 			'notifications' => $this->notifications,
 			'mailchimp'     => $this->mailchimp,
+			'zoho'          => $this->zoho,
 		);
 	}
 }

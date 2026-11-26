@@ -47,6 +47,8 @@ final class Plugin {
 	public $smtp;
 	/** @var Admin */
 	public $admin;
+	/** @var Zoho */
+	public $zoho;
 
 	/**
 	 * Whether hooks are registered.
@@ -84,6 +86,7 @@ final class Plugin {
 		$this->smtp          = new Smtp( $this->settings );
 		$this->test_email    = new Test_Email( $this->smtp );
 		$this->admin         = new Admin( $this );
+		$this->zoho          = new Zoho( $this->settings );
 	}
 
 	/**

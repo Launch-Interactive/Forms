@@ -4,7 +4,7 @@ Tags: form, contact form, form builder, mailchimp, turnstile
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.1.0
+Stable tag: 2.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -34,6 +34,7 @@ Launch Interactive Forms is a form builder for people who want forms that look l
 * Email notifications, as many per form as you need, with merge tags such as `{field:email}` and `{all_fields}`. Send autoresponders to the visitor.
 * Success messages can use merge tags too: "A confirmation email was sent to {field:email}."
 * Add subscribers to a Mailchimp audience, with merge fields, tags, double opt-in and an optional consent checkbox.
+* Create leads in Zoho CRM: connect your Zoho account once, then map form fields to lead fields per form. Existing leads can be updated by email address, and each result is logged on the submission.
 * Track submissions in Google Analytics: give a form an event name (e.g. `contact_form_submit`) and every successful submission is sent to Google Analytics or Google Tag Manager, with the form's ID and name. No code needed.
 * Optional SMTP settings send all of your site's email through your email provider. The password is stored encrypted.
 * A test email tool shows exactly why sending failed.
@@ -60,6 +61,9 @@ Cloudflare [Website and Online Services Terms of Use](https://www.cloudflare.com
 
 **Mailchimp** adds people who submit a form to your mailing list. It is used only when you enter a Mailchimp API key under Forms → Settings and turn on Mailchimp for a form. When that form is submitted (and, if you chose one, its consent checkbox is ticked), your site sends the email address, the fields you mapped to merge fields, your chosen tags and the subscription status to the Mailchimp Marketing API (your-datacenter.api.mailchimp.com). The form editor also fetches the names of your audiences from Mailchimp so you can pick one.
 Intuit Mailchimp [Terms of Use](https://mailchimp.com/legal/terms/) and [Privacy Policy](https://mailchimp.com/legal/privacy/).
+
+**Zoho CRM** creates a lead when a form is submitted. It is used only when you connect a Zoho account under Forms → Settings and turn on Zoho CRM for a form. Connecting sends you to Zoho's sign-in (accounts.zoho.com or your region's accounts server) to approve access; your site then exchanges the approval code, your Zoho client ID and client secret for access tokens. When the form is submitted (and, if you chose one, its consent checkbox is ticked), your site sends the fields you mapped, your chosen Lead Source and, if you turned it on, a summary of all submitted fields to the Zoho CRM API (www.zohoapis.com or your region's API domain). The form editor also fetches the names of your Zoho lead fields so you can map them.
+Zoho [Terms of Service](https://www.zoho.com/terms.html) and [Privacy Policy](https://www.zoho.com/privacy.html).
 
 **Your SMTP server.** If you turn on Use Custom SMTP, all email your site sends, including form notifications, goes through the SMTP server you enter. Its terms and privacy policy are those of your email provider.
 
@@ -108,6 +112,9 @@ Yes. Forms normally send without reloading the page, through the WordPress REST 
 Yes. Forms submit normally when JavaScript isn't available, and conditional logic is still applied on the server.
 
 == Changelog ==
+
+= 2.2.0 =
+* New: Zoho CRM. Connect your Zoho account under Forms → Settings (any Zoho region), then turn on the Zoho CRM tab on a form to create a lead for each submission. Map form fields to lead fields (a single Name field can be split into First and Last Name), set a Lead Source, update existing leads by email address, choose whether Zoho workflow rules run, and optionally add all submitted fields to the Description.
 
 = 2.1.0 =
 * Changed: one prefix throughout. PHP names, options, hooks, post types, the REST namespace, the block and the shortcode use `liforms` (`liforms_settings`, `liforms_form_html`, `liforms/v1`, `liforms/form`, `[liforms]`); constants use `LIFORMS_`; the namespace is `LaunchInteractiveForms`. CSS classes, HTML ids, data attributes, CSS variables and form field names use `lif-` / `lif_`. Spacing is one variable, `--lif-gap`, for rows and side-by-side fields.
@@ -176,6 +183,9 @@ Yes. Forms submit normally when JavaScript isn't available, and conditional logi
 * First release.
 
 == Upgrade Notice ==
+
+= 2.2.0 =
+Adds Zoho CRM lead creation.
 
 = 2.1.0 =
 New prefix: update theme CSS (`.lf-*` → `.lif-*`, `--lf-row-gap` / `--lf-gap` → `--lif-gap`), hooks (`launch_forms_*` → `liforms_*`) and wp-config.php constants (`LAUNCH_FORMS_*` → `LIFORMS_*`). Forms, submissions, blocks and shortcodes are updated automatically.

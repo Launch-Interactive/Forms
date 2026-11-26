@@ -40,6 +40,9 @@ class Admin {
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_block_editor' ) );
 		add_action( 'admin_post_liforms_test_email', array( $this, 'handle_test_email' ) );
+		add_action( 'admin_post_liforms_zoho_connect', array( $this, 'handle_zoho_connect' ) );
+		add_action( 'admin_post_liforms_zoho_callback', array( $this, 'handle_zoho_callback' ) );
+		add_action( 'admin_post_liforms_zoho_disconnect', array( $this, 'handle_zoho_disconnect' ) );
 		add_filter( 'site_status_tests', array( $this, 'site_health_tests' ) );
 		add_filter( 'manage_' . Forms::POST_TYPE . '_posts_columns', array( $this, 'form_columns' ) );
 		add_action( 'manage_' . Forms::POST_TYPE . '_posts_custom_column', array( $this, 'form_column' ), 10, 2 );
@@ -89,6 +92,7 @@ class Admin {
 				'turnstile' => $this->plugin->captcha->is_configured( 'turnstile' ),
 			),
 			'mailchimpConfigured' => '' !== (string) $this->plugin->settings->get( 'mailchimp_api_key' ),
+			'zohoConnected'       => $this->plugin->zoho->is_connected(),
 			'settingsUrl'         => current_user_can( Plugin::manage_capability() ) ? admin_url( 'edit.php?post_type=' . Forms::POST_TYPE . '&page=' . self::SETTINGS_PAGE ) : '',
 			'formsUrl'            => admin_url( 'edit.php?post_type=' . Forms::POST_TYPE ),
 		);
@@ -385,6 +389,9 @@ class Admin {
 					?>
 				</p>
 			</form>
+
+			<hr>
+			<?php $this->render_zoho_section(); ?>
 		</div>
 		<?php
 	}
@@ -454,6 +461,163 @@ class Admin {
 		$result = $this->plugin->test_email->send( $to );
 		set_transient( 'liforms_test_email_' . get_current_user_id(), $result, 60 );
 		wp_safe_redirect( admin_url( 'edit.php?post_type=' . Forms::POST_TYPE . '&page=' . self::SETTINGS_PAGE . '#lif-test-email' ) );
+		exit;
+	}
+
+	/**
+	 * Settings URL with an anchor.
+	 *
+	 * @param string $anchor Anchor without #.
+	 * @return string
+	 */
+	private function settings_url( $anchor ) {
+		return admin_url( 'edit.php?post_type=' . Forms::POST_TYPE . '&page=' . self::SETTINGS_PAGE . '#' . $anchor );
+	}
+
+	/**
+	 * Show a one-off notice on the settings page.
+	 *
+	 * @param bool   $success Success.
+	 * @param string $message Message.
+	 */
+	private function flash( $success, $message ) {
+		set_transient(
+			'liforms_test_email_' . get_current_user_id(),
+			array(
+				'success' => (bool) $success,
+				'message' => (string) $message,
+			),
+			60
+		);
+	}
+
+	/**
+	 * Zoho CRM section of the settings page (its own forms, outside the main settings form).
+	 */
+	private function render_zoho_section() {
+		$zoho       = $this->plugin->zoho;
+		$connection = $zoho->connection();
+		$regions    = Zoho::region_labels();
+		?>
+		<h2 id="lif-zoho"><?php esc_html_e( 'Zoho CRM', 'launch-interactive-forms' ); ?></h2>
+		<?php if ( $zoho->is_connected() ) : ?>
+			<p>
+				<?php
+				echo esc_html(
+					sprintf(
+						/* translators: 1: Zoho region, 2: date. */
+						__( 'Connected to Zoho CRM (%1$s) since %2$s. Turn on "Create a Zoho CRM lead" on a form\'s Zoho CRM tab.', 'launch-interactive-forms' ),
+						$regions[ $connection['region'] ] ?? $connection['region'],
+						wp_date( get_option( 'date_format' ), (int) $connection['connected_at'] )
+					)
+				);
+				?>
+			</p>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+				<input type="hidden" name="action" value="liforms_zoho_disconnect">
+				<?php wp_nonce_field( 'liforms_zoho_disconnect' ); ?>
+				<?php submit_button( __( 'Disconnect', 'launch-interactive-forms' ), 'secondary', 'submit', false ); ?>
+				<p class="description"><?php esc_html_e( 'Forms stop sending leads until you connect again. To revoke access completely, also remove the app under Connected Apps in your Zoho account.', 'launch-interactive-forms' ); ?></p>
+			</form>
+		<?php else : ?>
+			<p><?php esc_html_e( 'Create leads in Zoho CRM when a form is submitted. You need a Zoho API client for this site:', 'launch-interactive-forms' ); ?></p>
+			<ol>
+				<li><?php esc_html_e( 'Open the Zoho API Console for your region (e.g. api-console.zoho.com or api-console.zoho.com.au) and choose Add Client → Server-based Applications.', 'launch-interactive-forms' ); ?></li>
+				<li><?php esc_html_e( 'Enter your site address as the Homepage URL and paste the Redirect URI below as the Authorized Redirect URI.', 'launch-interactive-forms' ); ?></li>
+				<li><?php esc_html_e( 'Copy the Client ID and Client Secret here, then click Connect to Zoho and approve access.', 'launch-interactive-forms' ); ?></li>
+			</ol>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+				<input type="hidden" name="action" value="liforms_zoho_connect">
+				<?php wp_nonce_field( 'liforms_zoho_connect_form' ); ?>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row"><label for="lif-zoho-redirect"><?php esc_html_e( 'Redirect URI', 'launch-interactive-forms' ); ?></label></th>
+						<td><input id="lif-zoho-redirect" class="large-text code" type="text" readonly value="<?php echo esc_attr( Zoho::redirect_uri() ); ?>"></td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="lif-zoho-region"><?php esc_html_e( 'Zoho region', 'launch-interactive-forms' ); ?></label></th>
+						<td><select id="lif-zoho-region" name="region">
+							<?php foreach ( $regions as $key => $label ) : ?>
+								<option value="<?php echo esc_attr( $key ); ?>" <?php selected( $connection['region'], $key ); ?>><?php echo esc_html( $label ); ?></option>
+							<?php endforeach; ?>
+						</select>
+						<p class="description"><?php esc_html_e( 'Where your Zoho account is hosted: the domain you use to sign in to Zoho.', 'launch-interactive-forms' ); ?></p></td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="lif-zoho-client-id"><?php esc_html_e( 'Client ID', 'launch-interactive-forms' ); ?></label></th>
+						<td>
+							<?php if ( defined( 'LIFORMS_ZOHO_CLIENT_ID' ) ) : ?>
+								<?php esc_html_e( 'Set in wp-config.php.', 'launch-interactive-forms' ); ?>
+							<?php else : ?>
+								<input id="lif-zoho-client-id" class="regular-text" type="text" autocomplete="off" name="client_id" value="<?php echo esc_attr( $connection['client_id'] ); ?>">
+							<?php endif; ?>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="lif-zoho-client-secret"><?php esc_html_e( 'Client secret', 'launch-interactive-forms' ); ?></label></th>
+						<td>
+							<?php if ( defined( 'LIFORMS_ZOHO_CLIENT_SECRET' ) ) : ?>
+								<?php esc_html_e( 'Set in wp-config.php.', 'launch-interactive-forms' ); ?>
+							<?php else : ?>
+								<input id="lif-zoho-client-secret" class="regular-text" type="password" autocomplete="new-password" name="client_secret" value="" placeholder="<?php echo '' !== (string) $connection['client_secret'] ? esc_attr__( 'Saved. Leave blank to keep it.', 'launch-interactive-forms' ) : ''; ?>">
+							<?php endif; ?>
+						</td>
+					</tr>
+				</table>
+				<?php submit_button( __( 'Connect to Zoho', 'launch-interactive-forms' ), 'primary', 'submit', false ); ?>
+				<p class="description"><?php esc_html_e( 'The secret and Zoho\'s tokens are stored encrypted. You can also define LIFORMS_ZOHO_CLIENT_ID and LIFORMS_ZOHO_CLIENT_SECRET in wp-config.php.', 'launch-interactive-forms' ); ?></p>
+			</form>
+		<?php endif; ?>
+		<?php
+	}
+
+	/**
+	 * Save the Zoho client and send the admin to Zoho to approve access.
+	 */
+	public function handle_zoho_connect() {
+		if ( ! current_user_can( Plugin::manage_capability() ) ) {
+			wp_die( esc_html__( 'You are not allowed to do this.', 'launch-interactive-forms' ), '', array( 'response' => 403 ) );
+		}
+		check_admin_referer( 'liforms_zoho_connect_form' );
+		$region = isset( $_POST['region'] ) ? sanitize_text_field( wp_unslash( $_POST['region'] ) ) : 'com';
+		$id     = isset( $_POST['client_id'] ) ? preg_replace( '/[^A-Za-z0-9._\-]/', '', wp_unslash( $_POST['client_id'] ) ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Reduced to safe characters.
+		$secret = isset( $_POST['client_secret'] ) ? preg_replace( '/[^A-Za-z0-9._\-]/', '', wp_unslash( $_POST['client_secret'] ) ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Reduced to safe characters.
+		$url    = $this->plugin->zoho->start_connect( $region, (string) $id, (string) $secret );
+		if ( is_wp_error( $url ) ) {
+			$this->flash( false, $url->get_error_message() );
+			wp_safe_redirect( $this->settings_url( 'lif-zoho' ) );
+			exit;
+		}
+		wp_redirect( $url ); // phpcs:ignore WordPress.Security.SafeRedirect.wp_redirect_wp_redirect -- Zoho's own accounts server, from a fixed list.
+		exit;
+	}
+
+	/**
+	 * Zoho sends the admin back here with an authorisation code.
+	 */
+	public function handle_zoho_callback() {
+		if ( ! current_user_can( Plugin::manage_capability() ) ) {
+			wp_die( esc_html__( 'You are not allowed to do this.', 'launch-interactive-forms' ), '', array( 'response' => 403 ) );
+		}
+		// The state parameter carries a nonce, checked in finish_connect().
+		$query  = array_map( 'sanitize_text_field', wp_unslash( $_GET ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$result = $this->plugin->zoho->finish_connect( $query );
+		$this->flash( ! is_wp_error( $result ), is_wp_error( $result ) ? $result->get_error_message() : __( 'Connected to Zoho CRM.', 'launch-interactive-forms' ) );
+		wp_safe_redirect( $this->settings_url( 'lif-zoho' ) );
+		exit;
+	}
+
+	/**
+	 * Forget the Zoho tokens.
+	 */
+	public function handle_zoho_disconnect() {
+		if ( ! current_user_can( Plugin::manage_capability() ) ) {
+			wp_die( esc_html__( 'You are not allowed to do this.', 'launch-interactive-forms' ), '', array( 'response' => 403 ) );
+		}
+		check_admin_referer( 'liforms_zoho_disconnect' );
+		$this->plugin->zoho->disconnect();
+		$this->flash( true, __( 'Disconnected from Zoho CRM.', 'launch-interactive-forms' ) );
+		wp_safe_redirect( $this->settings_url( 'lif-zoho' ) );
 		exit;
 	}
 }

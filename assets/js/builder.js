@@ -219,6 +219,13 @@
 			mc.merge_fields = ( mc.merge_fields || [] ).map( function ( m ) {
 				return m.field === oldName ? Object.assign( {}, m, { field: newName } ) : m;
 			} );
+			var zoho = Object.assign( {}, config.zoho || {} );
+			if ( zoho.consent_field === oldName ) {
+				zoho.consent_field = newName;
+			}
+			zoho.field_map = ( zoho.field_map || [] ).map( function ( m ) {
+				return m.field === oldName ? Object.assign( {}, m, { field: newName } ) : m;
+			} );
 			return Object.assign( {}, config, {
 				fields: ( config.fields || [] ).map( function ( f ) {
 					if ( ! f.conditions || ! f.conditions.rules ) {
@@ -242,6 +249,7 @@
 					} );
 				} ),
 				mailchimp: mc,
+				zoho: zoho,
 				settings: Object.assign( {}, config.settings || {}, {
 					success_message: replaceTag( ( config.settings || {} ).success_message ),
 				} ),
@@ -259,6 +267,11 @@
 			mc.merge_fields = ( mc.merge_fields || [] ).filter( function ( m ) {
 				return m.field !== name;
 			} );
+			// As with Mailchimp, a removed Zoho consent field is kept so nothing is sent without it.
+			var zoho = Object.assign( {}, config.zoho || {} );
+			zoho.field_map = ( zoho.field_map || [] ).filter( function ( m ) {
+				return m.field !== name;
+			} );
 			return Object.assign( {}, config, {
 				fields: ( config.fields || [] ).map( function ( f ) {
 					if ( ! f.conditions || ! f.conditions.rules ) {
@@ -272,6 +285,79 @@
 					} );
 				} ),
 				mailchimp: mc,
+				zoho: zoho,
+			} );
+		}
+
+		/** Zoho "field" that splits one Name field into First_Name and Last_Name (Zoho::FULL_NAME). */
+		var ZOHO_FULL_NAME = '__full_name';
+
+		/**
+		 * A starting Zoho field map guessed from the form's fields (email → Email, a "name"
+		 * field → First/Last name, and so on). The admin reviews it in the builder.
+		 */
+		function suggestZohoMap( fields ) {
+			var rules = [
+				[ /^(first_?name|fname|given_?name)$/, 'First_Name' ],
+				[ /^(last_?name|lname|surname|family_?name)$/, 'Last_Name' ],
+				[ /^(full_?)?name$/, ZOHO_FULL_NAME ],
+				[ /^(company|organisation|organization|business)(_?name)?$/, 'Company' ],
+				[ /^(mobile|cell)(_?phone)?$/, 'Mobile' ],
+				[ /^(phone|telephone|tel)(_?number)?$/, 'Phone' ],
+				[ /^(website|web|url|site)$/, 'Website' ],
+				[ /^(message|enquiry|inquiry|comments?|details|description)$/, 'Description' ],
+				[ /^(country)$/, 'Country' ],
+				[ /^(city|town|suburb)$/, 'City' ],
+				[ /^(state|region|province)$/, 'State' ],
+				[ /^(postcode|post_?code|zip|zip_?code)$/, 'Zip_Code' ],
+				[ /^(job_?title|title|position|role)$/, 'Designation' ],
+			];
+			var used = {};
+			var map = [];
+			var add = function ( zoho, field ) {
+				if ( ! used[ zoho ] ) {
+					used[ zoho ] = true;
+					map.push( { zoho: zoho, type: '', field: field.name } );
+				}
+			};
+			( fields || [] ).filter( isInput ).forEach( function ( f ) {
+				if ( f.type === 'email' ) {
+					add( 'Email', f );
+					return;
+				}
+				if ( f.type === 'tel' && ! /mobile|cell/.test( f.name ) ) {
+					add( 'Phone', f );
+					return;
+				}
+				for ( var i = 0; i < rules.length; i++ ) {
+					if ( rules[ i ][ 0 ].test( f.name ) ) {
+						add( rules[ i ][ 1 ], f );
+						return;
+					}
+				}
+			} );
+			// A full-name field isn't needed when first and last names have their own fields.
+			if ( used.First_Name && used.Last_Name ) {
+				map = map.filter( function ( m ) {
+					return m.zoho !== ZOHO_FULL_NAME;
+				} );
+			}
+			return map;
+		}
+
+		/** Required Zoho fields (from the field list) that nothing in the map fills. */
+		function missingZohoFields( map, zohoFields ) {
+			var mapped = {};
+			( map || [] ).forEach( function ( m ) {
+				if ( m.field ) {
+					mapped[ m.zoho ] = true;
+				}
+			} );
+			if ( mapped[ ZOHO_FULL_NAME ] ) {
+				mapped.Last_Name = true;
+			}
+			return ( zohoFields || [] ).filter( function ( z ) {
+				return z.required && ! mapped[ z.api_name ];
 			} );
 		}
 
@@ -290,6 +376,7 @@
 				settings: settings,
 				notifications: Array.isArray( config.notifications ) ? config.notifications : ( defaults.notifications || [] ).slice(),
 				mailchimp: Object.assign( {}, defaults.mailchimp || {}, config.mailchimp || {} ),
+				zoho: Object.assign( {}, defaults.zoho || {}, config.zoho || {} ),
 			};
 		}
 
@@ -321,6 +408,9 @@
 			movedIndex: movedIndex,
 			renameReferences: renameReferences,
 			removeReferences: removeReferences,
+			ZOHO_FULL_NAME: ZOHO_FULL_NAME,
+			suggestZohoMap: suggestZohoMap,
+			missingZohoFields: missingZohoFields,
 			normalizeConfig: normalizeConfig,
 			parseConfig: parseConfig,
 		};
@@ -1616,6 +1706,232 @@
 			);
 		}
 
+		/* ---------------- Zoho CRM */
+		function ZohoPanel( props ) {
+			var config = props.config;
+			var zoho = config.zoho;
+			var map = zoho.field_map || [];
+			var fieldsState = useState( null );
+			var errorState = useState( '' );
+			var zohoFields = fieldsState[ 0 ];
+			var change = function ( key, value ) {
+				props.onChange( Object.assign( {}, config, { zoho: set( zoho, key, value ) } ) );
+			};
+			var consentMissing =
+				!! zoho.consent_field &&
+				! ( config.fields || [] ).some( function ( f ) {
+					return f.name === zoho.consent_field;
+				} );
+
+			useEffect(
+				function () {
+					if ( ! data.zohoConnected || ! zoho.enabled || fieldsState[ 0 ] !== null || ! wp.apiFetch ) {
+						return;
+					}
+					wp.apiFetch( { path: '/liforms/v1/zoho/fields' } ).then(
+						function ( list ) {
+							fieldsState[ 1 ]( list );
+						},
+						function ( err ) {
+							fieldsState[ 1 ]( [] );
+							errorState[ 1 ]( ( err && err.message ) || 'Error' );
+						}
+					);
+				},
+				[ zoho.enabled ]
+			);
+
+			if ( ! data.zohoConnected ) {
+				return el(
+					c.Notice,
+					{ status: 'info', isDismissible: false },
+					__( 'Connect Zoho CRM in Forms → Settings to create a lead when someone submits this form.', 'launch-interactive-forms' ),
+					data.settingsUrl ? el( Fragment, null, ' ', el( 'a', { href: data.settingsUrl + '#lif-zoho', target: '_blank', rel: 'noreferrer' }, __( 'Open settings', 'launch-interactive-forms' ) ) ) : null
+				);
+			}
+
+			var typeOf = function ( apiName ) {
+				var found = ( zohoFields || [] ).filter( function ( z ) {
+					return z.api_name === apiName;
+				} )[ 0 ];
+				return found ? found.type : '';
+			};
+			var zohoChoices = [ { label: '—', value: '' }, { label: __( 'Full name (split into First and Last Name)', 'launch-interactive-forms' ), value: h.ZOHO_FULL_NAME } ].concat(
+				( zohoFields || [] ).map( function ( z ) {
+					return { label: z.label + ( z.required ? ' *' : '' ) + ' (' + z.api_name + ')', value: z.api_name };
+				} )
+			);
+			var setRow = function ( i, next ) {
+				var rows = map.slice();
+				rows[ i ] = next;
+				change( 'field_map', rows );
+			};
+			var missing = zohoFields && zohoFields.length ? h.missingZohoFields( map, zohoFields ) : [];
+
+			return el(
+				'div',
+				{ className: 'lif-builder__panel' },
+				el( c.ToggleControl, {
+					__nextHasNoMarginBottom: true,
+					label: __( 'Create a Zoho CRM lead', 'launch-interactive-forms' ),
+					checked: !! zoho.enabled,
+					onChange: function ( v ) {
+						// First time on: start from a mapping guessed from the field names.
+						props.onChange(
+							Object.assign( {}, config, {
+								zoho: Object.assign( {}, zoho, { enabled: v }, v && ! map.length ? { field_map: h.suggestZohoMap( config.fields ) } : {} ),
+							} )
+						);
+					},
+				} ),
+				zoho.enabled &&
+					el(
+						Fragment,
+						null,
+						errorState[ 0 ] && el( c.Notice, { status: 'error', isDismissible: false }, errorState[ 0 ] ),
+						missing.length > 0 &&
+							el(
+								c.Notice,
+								{ status: 'warning', isDismissible: false },
+								wp.i18n.sprintf(
+									/* translators: %s: list of Zoho field names. */
+									__( 'Zoho requires: %s. Map a form field to each, or the lead may be rejected (a missing Last Name is filled with the email address).', 'launch-interactive-forms' ),
+									missing
+										.map( function ( z ) {
+											return z.label;
+										} )
+										.join( ', ' )
+								)
+							),
+						el( 'h4', null, __( 'Field mapping', 'launch-interactive-forms' ) ),
+						zohoFields === null && el( 'p', { className: 'lif-builder__hint' }, __( 'Loading Zoho fields…', 'launch-interactive-forms' ) ),
+						map.map( function ( m, i ) {
+							return el(
+								'div',
+								{ className: 'lif-builder__row lif-builder__rule', key: i },
+								el( c.SelectControl, {
+									__nextHasNoMarginBottom: true,
+									__next40pxDefaultSize: true,
+									label: __( 'Form field', 'launch-interactive-forms' ),
+									value: m.field,
+									options: fieldChoices( config.fields, null, '—' ),
+									onChange: function ( v ) {
+										setRow( i, set( m, 'field', v ) );
+									},
+								} ),
+								zohoFields && zohoFields.length
+									? el( c.SelectControl, {
+											__nextHasNoMarginBottom: true,
+											__next40pxDefaultSize: true,
+											label: __( 'Zoho field', 'launch-interactive-forms' ),
+											value: m.zoho,
+											options: zohoChoices.some( function ( o ) {
+												return o.value === m.zoho;
+											} )
+												? zohoChoices
+												: zohoChoices.concat( [ { label: m.zoho, value: m.zoho } ] ),
+											onChange: function ( v ) {
+												setRow( i, Object.assign( {}, m, { zoho: v, type: typeOf( v ) } ) );
+											},
+									  } )
+									: el( c.TextControl, {
+											__nextHasNoMarginBottom: true,
+											__next40pxDefaultSize: true,
+											label: __( 'Zoho field (API name)', 'launch-interactive-forms' ),
+											placeholder: 'Last_Name',
+											value: m.zoho,
+											onChange: function ( v ) {
+												setRow( i, set( m, 'zoho', v.replace( /[^A-Za-z0-9_$]/g, '' ) ) );
+											},
+									  } ),
+								el( c.Button, {
+									icon: 'no-alt',
+									label: __( 'Remove', 'launch-interactive-forms' ),
+									isDestructive: true,
+									onClick: function () {
+										change(
+											'field_map',
+											map.filter( function ( x, j ) {
+												return j !== i;
+											} )
+										);
+									},
+								} )
+							);
+						} ),
+						el(
+							c.Button,
+							{
+								variant: 'secondary',
+								onClick: function () {
+									change( 'field_map', map.concat( [ { zoho: '', type: '', field: '' } ] ) );
+								},
+							},
+							__( 'Add field', 'launch-interactive-forms' )
+						),
+						el( 'h4', null, __( 'Options', 'launch-interactive-forms' ) ),
+						el( c.TextControl, {
+							__nextHasNoMarginBottom: true,
+							__next40pxDefaultSize: true,
+							label: __( 'Lead Source', 'launch-interactive-forms' ),
+							help: __( 'Sets the lead\'s Lead Source, e.g. "Website" (must match one of the choices in Zoho). Leave blank to skip.', 'launch-interactive-forms' ),
+							value: zoho.lead_source,
+							onChange: function ( v ) {
+								change( 'lead_source', v );
+							},
+						} ),
+						el( c.SelectControl, {
+							__nextHasNoMarginBottom: true,
+							__next40pxDefaultSize: true,
+							label: __( 'Only create a lead when this field is ticked', 'launch-interactive-forms' ),
+							value: zoho.consent_field,
+							options: fieldChoices(
+								config.fields,
+								function ( f ) {
+									return f.type === 'consent' || f.type === 'checkbox';
+								},
+								__( 'Always', 'launch-interactive-forms' )
+							).concat(
+								consentMissing
+									? [ { label: wp.i18n.sprintf( /* translators: %s: field name. */ __( 'Removed field (%s)', 'launch-interactive-forms' ), zoho.consent_field ), value: zoho.consent_field } ]
+									: []
+							),
+							help: consentMissing
+								? __( 'This field no longer exists, so no leads are created. Choose another field, or "Always".', 'launch-interactive-forms' )
+								: undefined,
+							onChange: function ( v ) {
+								change( 'consent_field', v );
+							},
+						} ),
+						el( c.ToggleControl, {
+							__nextHasNoMarginBottom: true,
+							label: __( 'Update the existing lead when the email address matches', 'launch-interactive-forms' ),
+							checked: !! zoho.update_existing,
+							onChange: function ( v ) {
+								change( 'update_existing', v );
+							},
+						} ),
+						el( c.ToggleControl, {
+							__nextHasNoMarginBottom: true,
+							label: __( 'Run Zoho workflow rules for the new lead', 'launch-interactive-forms' ),
+							checked: !! zoho.run_workflows,
+							onChange: function ( v ) {
+								change( 'run_workflows', v );
+							},
+						} ),
+						el( c.ToggleControl, {
+							__nextHasNoMarginBottom: true,
+							label: __( 'Add all submitted fields to the lead\'s Description', 'launch-interactive-forms' ),
+							checked: !! zoho.description_all_fields,
+							onChange: function ( v ) {
+								change( 'description_all_fields', v );
+							},
+						} ),
+						el( 'p', { className: 'lif-builder__hint' }, __( 'The result of each attempt is shown on the submission under Forms → Submissions.', 'launch-interactive-forms' ) )
+					)
+			);
+		}
+
 		/* ---------------- root */
 		function Builder( props ) {
 			var config = h.normalizeConfig( props.config, data.defaults );
@@ -1632,6 +1948,7 @@
 							{ name: 'settings', title: __( 'Settings', 'launch-interactive-forms' ) },
 							{ name: 'notifications', title: __( 'Notifications', 'launch-interactive-forms' ) },
 							{ name: 'mailchimp', title: __( 'Mailchimp', 'launch-interactive-forms' ) },
+							{ name: 'zoho', title: __( 'Zoho CRM', 'launch-interactive-forms' ) },
 						],
 					},
 					function ( tab ) {
@@ -1644,6 +1961,9 @@
 						}
 						if ( tab.name === 'mailchimp' ) {
 							return el( MailchimpPanel, panelProps );
+						}
+						if ( tab.name === 'zoho' ) {
+							return el( ZohoPanel, panelProps );
 						}
 						return el( FieldsPanel, panelProps );
 					}
