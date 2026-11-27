@@ -142,6 +142,39 @@ class MonitorTest extends LF_TestCase {
 		$this->assertSame( 0, $hooks, 'Submission hooks don\'t run.' );
 	}
 
+	public function test_autoresponders_are_not_sent_during_a_test() {
+		$notifications = array(
+			array(
+				'enabled' => true,
+				'name'    => 'Client',
+				'to'      => 'info@client.example',
+				'subject' => 'New enquiry',
+			),
+			array(
+				'enabled' => true,
+				'name'    => 'Submission Confirmation',
+				'to'      => '{field:email}',
+				'subject' => 'Thanks for your enquiry',
+			),
+		);
+		$form = $this->protected_form( array( 'notifications' => $notifications ) );
+
+		$data = $this->rest_submit( $form, array( 'name' => 'Ann', 'email' => 'Test@Example.invalid' ), $this->monitor_headers() )->get_data();
+		$sent = tests_retrieve_phpmailer_instance()->mock_sent;
+		$this->assertCount( 1, $sent, 'Only the client notification is sent.' );
+		$this->assertSame( 'info@client.example', $sent[0]['to'][0][0] );
+		$auto = $data['monitor']['notifications'][1];
+		$this->assertTrue( $auto['skipped'] );
+		$this->assertSame( array( 'Test@Example.invalid' ), $auto['to'] );
+
+		// A real submission still gets its confirmation.
+		reset_phpmailer_instance();
+		liforms()->processor->reset();
+		liforms()->settings->update( array( 'recaptcha_site_key' => '', 'recaptcha_secret_key' => '' ) );
+		$this->rest_submit( $form, array( 'name' => 'Ann', 'email' => 'ann@example.com' ) );
+		$this->assertCount( 2, tests_retrieve_phpmailer_instance()->mock_sent );
+	}
+
 	public function test_a_monitored_submission_is_still_validated() {
 		$response = $this->rest_submit( $this->protected_form(), array( 'name' => '', 'email' => 'not-an-email' ), $this->monitor_headers() );
 		$this->assertSame( 422, $response->get_status() );

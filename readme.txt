@@ -4,7 +4,7 @@ Tags: form, contact form, form builder, mailchimp, turnstile
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.3.0
+Stable tag: 2.3.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -118,6 +118,9 @@ Yes. Forms submit normally when JavaScript isn't available, and conditional logi
 
 == Changelog ==
 
+= 2.3.1 =
+* Fixed: automated tests no longer send autoresponders. An email that would only go to the address typed into the test (e.g. a "Thanks for your enquiry" confirmation) bounced from the monitoring script's made-up address, which harms the site's sending reputation. It is now listed as not sent in the test report.
+
 = 2.3.0 =
 * New: automated testing. Create a monitoring key under Forms → Settings; a script that sends it can submit forms past the captcha to check that enquiries reach the inbox. Test emails are marked "[Automated test]", aren't stored and don't reach Mailchimp, Zoho CRM, Google Analytics or submission hooks.
 
@@ -191,6 +194,9 @@ Yes. Forms submit normally when JavaScript isn't available, and conditional logi
 * First release.
 
 == Upgrade Notice ==
+
+= 2.3.1 =
+Stops automated tests sending autoresponders to the test's made-up address.
 
 = 2.3.0 =
 Adds a monitoring key for automated form delivery tests.

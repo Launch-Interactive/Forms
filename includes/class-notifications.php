@@ -39,14 +39,38 @@ class Notifications {
 	 */
 	public function send_all( Form $form, array $entries, array $context = array() ) {
 		$log = array();
+		// Addresses typed into the form (used by autoresponders), for automated tests below.
+		$submitted = array();
+		foreach ( $entries as $entry ) {
+			if ( 'email' === $entry['type'] && is_string( $entry['value'] ) && '' !== $entry['value'] ) {
+				$submitted[] = strtolower( $entry['value'] );
+			}
+		}
 		foreach ( $form->notifications as $index => $notification ) {
 			if ( empty( $notification['enabled'] ) ) {
 				continue;
 			}
+			$name = '' !== $notification['name'] ? $notification['name'] : sprintf( 'Notification %d', $index + 1 );
+			if ( ! empty( $context['monitor'] ) ) {
+				// An automated test's autoresponder would go to the monitoring script's made-up
+				// address and bounce, which harms the site's sending reputation. Skip it.
+				$to = $this->parse_addresses( $this->replace_tags( $notification['to'], $form, $entries, $context ) );
+				if ( $to && $submitted && ! array_diff( array_map( 'strtolower', $to ), $submitted ) ) {
+					$log[] = array(
+						'action'  => 'email',
+						'name'    => $name,
+						'success' => true,
+						'skipped' => true,
+						'message' => __( 'Not sent: it would go to the address entered in the automated test', 'launch-interactive-forms' ),
+						'to'      => $to,
+					);
+					continue;
+				}
+			}
 			$result = $this->send( $notification, $form, $entries, $context );
 			$entry  = array(
 				'action'  => 'email',
-				'name'    => '' !== $notification['name'] ? $notification['name'] : sprintf( 'Notification %d', $index + 1 ),
+				'name'    => $name,
 				'success' => true === $result,
 				'message' => is_wp_error( $result ) ? $result->get_error_message() : __( 'Sent', 'launch-interactive-forms' ),
 			);

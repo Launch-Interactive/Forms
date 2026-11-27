@@ -71,7 +71,7 @@ X-Liforms-Monitor: <key>
 X-Liforms-Monitor-Run: <code>   (optional, up to 64 letters, digits and dashes)
 ```
 
-skips the captcha, honeypot and rate limit, but is validated and its notifications are sent as usual, with `[Automated test <code>] ` prepended to each subject and a short note at the top of the body. It is not stored, Mailchimp/Zoho CRM/`liforms_before_actions`/`liforms_submission` don't run, and the front end doesn't send the analytics event. The REST response gains:
+skips the captcha, honeypot and rate limit, but is validated and its notifications are sent as usual, with `[Automated test <code>] ` prepended to each subject and a short note at the top of the body. It is not stored, Mailchimp/Zoho CRM/`liforms_before_actions`/`liforms_submission` don't run, and the front end doesn't send the analytics event. Notifications whose only recipients are email addresses entered in the form (autoresponders) aren't sent, since they would go back to the monitoring script; they appear in the report with `"skipped": true`. The REST response gains:
 
 ```json
 "monitor": { "run": "<code>", "notifications": [ { "name": "Admin", "success": true, "message": "Sent", "to": [ "info@example.com" ] } ] }
