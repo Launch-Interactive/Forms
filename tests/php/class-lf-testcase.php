@@ -31,12 +31,13 @@ abstract class LF_TestCase extends WP_UnitTestCase {
 		liforms()->forms->register();
 		$this->http_requests = array();
 
-		$this->private_dir = trailingslashit( get_temp_dir() ) . 'lif-private-' . wp_generate_password( 8, false );
-		$dir               = $this->private_dir;
+		// Each test gets its own private folder inside the uploads directory.
+		$folder            = 'lif-private-test-' . strtolower( wp_generate_password( 8, false ) );
+		$this->private_dir = trailingslashit( wp_upload_dir( null, false )['basedir'] ) . $folder;
 		add_filter(
-			'liforms_private_dir',
-			static function () use ( $dir ) {
-				return $dir;
+			'liforms_private_folder',
+			static function () use ( $folder ) {
+				return $folder;
 			}
 		);
 		// Fixture files are not real HTTP uploads.

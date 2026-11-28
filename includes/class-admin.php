@@ -433,22 +433,20 @@ class Admin {
 			'actions'     => '',
 			'test'        => 'liforms_private_uploads',
 		);
-		if ( 'outside' === $status ) {
-			$result['description'] = '<p>' . esc_html__( 'Form uploads are stored outside the public web folder, so they cannot be downloaded directly.', 'launch-interactive-forms' ) . '</p>';
-		} elseif ( 'exposed' === $status ) {
+		$folder = '/' . ltrim( (string) wp_parse_url( $this->plugin->uploads->public_url_for_dir( $this->plugin->uploads->get_dir() ), PHP_URL_PATH ), '/' );
+		if ( 'exposed' === $status ) {
 			$result['status']      = 'critical';
 			$result['badge']['color'] = 'red';
 			$result['label']       = __( 'Files uploaded through forms can be downloaded without logging in', 'launch-interactive-forms' );
 			$result['description'] = '<p>' . esc_html__( 'Your web server ignores the .htaccess rules that protect the upload folder (common on nginx). Stored files have unguessable names, but they should still be blocked.', 'launch-interactive-forms' ) . '</p>'
 				. '<p>' . esc_html__( 'Fix it by adding this rule to the nginx server block:', 'launch-interactive-forms' ) . '</p>'
-				. '<p><code>location ~* /wp-content/uploads/launch-interactive-forms/ { deny all; }</code></p>'
-				. '<p>' . esc_html__( 'Or move uploads outside the web folder by adding this to wp-config.php, with a folder of your choice:', 'launch-interactive-forms' ) . '</p>'
-				. '<p><code>define( \'LIFORMS_PRIVATE_DIR\', \'/path/outside/public_html/liforms\' );</code></p>';
+				. '<p><code>location ^~ ' . esc_html( $folder ) . ' { deny all; }</code></p>';
 		} elseif ( 'unknown' === $status ) {
 			$result['status']      = 'recommended';
 			$result['badge']['color'] = 'orange';
 			$result['label']       = __( 'Launch Interactive Forms could not check whether uploaded files are private', 'launch-interactive-forms' );
-			$result['description'] = '<p>' . esc_html__( 'The site could not request a test file from itself (loopback requests may be blocked). If the site runs on nginx, make sure the launch-forms-private upload folder is denied, or set LIFORMS_PRIVATE_DIR to a folder outside the web root.', 'launch-interactive-forms' ) . '</p>';
+			$result['description'] = '<p>' . esc_html__( 'The site could not request a test file from itself (loopback requests may be blocked). If the site runs on nginx, make sure web access to the private upload folder is denied:', 'launch-interactive-forms' ) . '</p>'
+				. '<p><code>location ^~ /wp-content/uploads/' . esc_html( Uploads::DIR_NAME ) . '/ { deny all; }</code></p>';
 		}
 		return $result;
 	}

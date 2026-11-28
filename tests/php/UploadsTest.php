@@ -31,7 +31,7 @@ class UploadsTest extends LF_TestCase {
 	}
 
 	public function test_default_dir_is_in_uploads_not_media_library_path() {
-		remove_all_filters( 'liforms_private_dir' );
+		remove_all_filters( 'liforms_private_folder' );
 		$dir = $this->uploads->get_dir();
 		$this->assertSame( trailingslashit( wp_upload_dir()['basedir'] ) . 'launch-interactive-forms/', $dir );
 		$this->assertFileExists( $dir . '.htaccess' );

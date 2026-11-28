@@ -26,16 +26,14 @@ if ( ! empty( $liforms_settings['delete_data_on_uninstall'] ) ) {
 	}
 
 	$liforms_base = trailingslashit( wp_upload_dir( null, false )['basedir'] );
-	$liforms_dirs = defined( 'LIFORMS_PRIVATE_DIR' ) && LIFORMS_PRIVATE_DIR
-		? array( LIFORMS_PRIVATE_DIR )
-		: array( $liforms_base . 'launch-interactive-forms', $liforms_base . 'launch-forms-private' );
+	$liforms_dirs = array( $liforms_base . 'launch-interactive-forms', $liforms_base . 'launch-forms-private' );
 	foreach ( $liforms_dirs as $liforms_dir ) {
 		$liforms_dir = trailingslashit( $liforms_dir );
 		if ( ! is_dir( $liforms_dir ) ) {
 			continue;
 		}
 		// Only remove files this plugin wrote (random 32-character names and the three
-		// protection files), in case LIFORMS_PRIVATE_DIR points at a shared folder.
+		// protection files), so nothing else a site keeps there is touched.
 		foreach ( (array) scandir( $liforms_dir ) as $liforms_file ) {
 			$liforms_marks = array(
 				'.htaccess'  => 'Forms: deny all direct access.',

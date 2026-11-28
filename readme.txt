@@ -4,7 +4,7 @@ Tags: form, contact form, form builder, mailchimp, turnstile
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.3.1
+Stable tag: 2.3.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -75,7 +75,7 @@ Zoho [Terms of Service](https://www.zoho.com/terms.html) and [Privacy Policy](ht
 3. Add a Form block to any page and choose "Create new form", or go to Forms → Add New.
 4. Optional: enter reCAPTCHA or Turnstile keys, a Mailchimp API key and SMTP details under Forms → Settings, then use Send a test email to check delivery.
 
-If your site runs on nginx, block web access to `wp-content/uploads/launch-interactive-forms/` or move uploads outside the web root (see the FAQ). Tools → Site Health tells you whether the folder is protected.
+If your site runs on nginx, block web access to `wp-content/uploads/launch-interactive-forms/` (see the FAQ). Tools → Site Health tells you whether the folder is protected.
 
 == Frequently Asked Questions ==
 
@@ -94,7 +94,7 @@ Use the shortcode shown on the form's edit screen, e.g. `[liforms id="123"]`.
 
 = Are uploaded files public? =
 
-No. They are stored in a private folder under random names with no file extension, and only administrators can download them, through a logged-in, nonce-checked link. Apache and IIS are protected automatically. On nginx, add `location ^~ /wp-content/uploads/launch-interactive-forms/ { deny all; }` to your server config, or add `define( 'LIFORMS_PRIVATE_DIR', '/path/outside/webroot' );` to wp-config.php.
+No. They are stored in a private folder under random names with no file extension, and only administrators can download them, through a logged-in, nonce-checked link. Apache and IIS are protected automatically. On nginx, add `location ^~ /wp-content/uploads/launch-interactive-forms/ { deny all; }` to your server config. Tools → Site Health checks that the folder is really blocked.
 
 = Can I keep API keys out of the database? =
 
@@ -117,6 +117,10 @@ Create a monitoring key under Forms → Settings → Automated testing. A script
 Yes. Forms submit normally when JavaScript isn't available, and conditional logic is still applied on the server.
 
 == Changelog ==
+
+= 2.3.2 =
+* Changed: uploaded files always stay in the uploads directory (`wp-content/uploads/launch-interactive-forms/`, located with `wp_upload_dir()`). The `LIFORMS_PRIVATE_DIR` setting and the `liforms_private_dir` filter, which could move them elsewhere, are removed; the `liforms_private_folder` filter can rename the folder inside uploads. If you used `LIFORMS_PRIVATE_DIR`, move its files into that folder.
+* Changed: the Site Health check works out the folder's web address from the uploads directory only, and reports "could not check" otherwise.
 
 = 2.3.1 =
 * Fixed: automated tests no longer send autoresponders. An email that would only go to the address typed into the test (e.g. a "Thanks for your enquiry" confirmation) bounced from the monitoring script's made-up address, which harms the site's sending reputation. It is now listed as not sent in the test report.
@@ -194,6 +198,9 @@ Yes. Forms submit normally when JavaScript isn't available, and conditional logi
 * First release.
 
 == Upgrade Notice ==
+
+= 2.3.2 =
+Uploads always stay in the uploads directory. If you set LIFORMS_PRIVATE_DIR, move those files into wp-content/uploads/launch-interactive-forms/.
 
 = 2.3.1 =
 Stops automated tests sending autoresponders to the test's made-up address.

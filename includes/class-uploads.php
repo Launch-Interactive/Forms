@@ -3,9 +3,9 @@
  * Private file storage for uploads.
  *
  * Security model:
- *  - Files are stored in a dedicated directory (outside the web root when LIFORMS_PRIVATE_DIR
- *    is defined, otherwise wp-content/uploads/launch-interactive-forms) that is locked with .htaccess,
- *    web.config and index.php.
+ *  - Files are stored in a dedicated folder in the uploads directory (resolved with
+ *    wp_upload_dir(), normally wp-content/uploads/launch-interactive-forms) that is locked with
+ *    .htaccess, web.config and index.php.
  *  - Stored names are 128-bit random hex strings with no extension, so even on servers that ignore
  *    .htaccess (nginx) files cannot be guessed, listed or executed.
  *  - Files are never added to the media library and are only served through an authenticated,
@@ -46,18 +46,18 @@ class Uploads {
 	 * @return string Absolute path with trailing slash.
 	 */
 	public function get_dir() {
-		if ( defined( 'LIFORMS_PRIVATE_DIR' ) && LIFORMS_PRIVATE_DIR ) {
-			$dir = LIFORMS_PRIVATE_DIR;
-		} else {
-			$uploads = wp_upload_dir( null, false );
-			$dir     = $uploads['basedir'] . '/' . self::DIR_NAME;
-		}
 		/**
-		 * Filters the private upload directory. Point this outside the web root for best security.
+		 * Filters the name of the private folder inside the uploads directory. Only a single folder
+		 * name is accepted: the files always stay in the uploads directory.
 		 *
-		 * @param string $dir Directory.
+		 * @param string $folder Folder name (default 'launch-interactive-forms').
 		 */
-		$dir = trailingslashit( (string) apply_filters( 'liforms_private_dir', $dir ) );
+		$folder = sanitize_file_name( (string) apply_filters( 'liforms_private_folder', self::DIR_NAME ) );
+		if ( '' === $folder || '.' === $folder[0] ) {
+			$folder = self::DIR_NAME;
+		}
+		$uploads = wp_upload_dir( null, false );
+		$dir     = trailingslashit( $uploads['basedir'] ) . $folder . '/';
 
 		if ( ! is_dir( $dir ) ) {
 			wp_mkdir_p( $dir );
@@ -286,7 +286,7 @@ class Uploads {
 	}
 
 	/**
-	 * Public URL of the private directory, or '' when it is outside the web root.
+	 * Public URL of a folder in the uploads directory, or '' when it can't be worked out.
 	 *
 	 * @param string $dir Directory with trailing slash.
 	 * @return string
@@ -295,12 +295,8 @@ class Uploads {
 		$uploads = wp_upload_dir( null, false );
 		$base    = trailingslashit( wp_normalize_path( $uploads['basedir'] ) );
 		$dir     = wp_normalize_path( $dir );
-		if ( 0 === strpos( $dir, $base ) ) {
+		if ( 0 === strpos( $dir, $base ) && ! empty( $uploads['baseurl'] ) ) {
 			return trailingslashit( $uploads['baseurl'] ) . substr( $dir, strlen( $base ) );
-		}
-		$root = trailingslashit( wp_normalize_path( ABSPATH ) );
-		if ( 0 === strpos( $dir, $root ) ) {
-			return site_url( '/' . substr( $dir, strlen( $root ) ) );
 		}
 		return '';
 	}
@@ -309,13 +305,13 @@ class Uploads {
 	 * Check whether a stored file can be downloaded straight from the web server, by writing a
 	 * harmless probe file and requesting it over HTTP.
 	 *
-	 * @return string 'protected', 'exposed', 'outside' (not under the web root) or 'unknown'.
+	 * @return string 'protected', 'exposed' or 'unknown'.
 	 */
 	public function public_access_status() {
 		$dir = $this->get_dir();
 		$url = $this->public_url_for_dir( $dir );
 		if ( '' === $url ) {
-			return 'outside';
+			return 'unknown';
 		}
 		$name   = bin2hex( random_bytes( 16 ) );
 		$marker = 'liforms-probe-' . $name;

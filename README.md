@@ -32,10 +32,7 @@ A lightweight WordPress form builder that outputs minimal, semantic HTML and tak
 - Each field has its own size limit, capped by the server limit.
 - Files are stored in `wp-content/uploads/launch-interactive-forms/` under random 128-bit names with no extension. They never enter the media library. The folder is locked with `.htaccess` (Apache), `web.config` (IIS) and `index.php`.
 - Files can only be downloaded through a nonce-checked admin handler that requires the manage capability. They are served as `application/octet-stream` attachments with `nosniff` and a sandbox CSP.
-- **nginx ignores `.htaccess`.** On nginx, either add `location ^~ /wp-content/uploads/launch-interactive-forms/ { deny all; }` or, better, store files outside the web root:
-  ```php
-  define( 'LIFORMS_PRIVATE_DIR', '/var/private/liforms' ); // wp-config.php
-  ```
+- **nginx ignores `.htaccess`.** On nginx, add `location ^~ /wp-content/uploads/launch-interactive-forms/ { deny all; }` to the server block. (Files always stay in the uploads directory, as WordPress.org requires; 2.3.2 removed the `LIFORMS_PRIVATE_DIR` option that could move them elsewhere.)
 - Files are deleted when a submission is permanently deleted, when a submission fails validation, and right after emails are sent if storage is turned off.
 - **Tools → Site Health** includes a "Launch Interactive Forms uploads are private" check. It writes a harmless test file to the private folder and requests it over HTTP, so it tells you whether your server actually blocks the folder.
 
@@ -91,7 +88,7 @@ so a script can see which addresses each notification went to and whether the ma
 | `liforms_zoho_lead` | filter | Modify the Zoho CRM lead before it's sent (`$record, $form, $values`) |
 | `liforms_zoho_scopes` | filter | OAuth scopes requested when connecting Zoho |
 | `liforms_form_html` | filter | Modify rendered form HTML |
-| `liforms_private_dir` | filter | Change the private upload folder |
+| `liforms_private_folder` | filter | Name of the private folder inside the uploads directory (default `launch-interactive-forms`) |
 | `liforms_manage_capability` | filter | Capability for submissions, downloads and settings (default `manage_options`) |
 | `liforms_rate_limit` | filter | `array( 'max' => 10, 'window' => 600 )`, or `false` to disable |
 | `liforms_required_marker` | filter | Text after required field labels (default from settings, `*`) |
@@ -114,7 +111,7 @@ Version 2.1.0 uses the `liforms` prefix throughout (`lif-` for CSS classes, HTML
    - uploaded files (`uploads/launch-forms-private/` → `uploads/launch-interactive-forms/`).
 3. On a 1.x site, remove the old `wp-content/plugins/launch-forms` folder over SFTP or your host's file manager. **Don't use Delete on the Plugins screen**: the old uninstall routine deletes the settings.
 4. Update anything outside the plugin by hand:
-   - constants in wp-config.php: `LAUNCH_FORMS_*` → `LIFORMS_*` (e.g. `LIFORMS_PRIVATE_DIR`, `LIFORMS_SMTP_PASSWORD`, `LIFORMS_MAILCHIMP_API_KEY`);
+   - constants in wp-config.php: `LAUNCH_FORMS_*` → `LIFORMS_*` (e.g. `LIFORMS_SMTP_PASSWORD`, `LIFORMS_MAILCHIMP_API_KEY`; `LAUNCH_FORMS_PRIVATE_DIR` no longer exists, so move any files from that folder into `wp-content/uploads/launch-interactive-forms/`);
    - hooks: `launch_forms_*` → `liforms_*`;
    - REST exceptions in themes or security plugins: `launch-forms/v1` → `liforms/v1`;
    - theme CSS: `.lf-*` → `.lif-*`, `--lf-row-gap` / `--lf-gap` → `--lif-gap` (one variable now sets both directions);

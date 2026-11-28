@@ -137,55 +137,45 @@ class SecurityTest extends LF_TestCase {
 
 	public function test_site_health_reports_exposed_uploads() {
 		$uploads = wp_upload_dir( null, false );
-		$dir     = $uploads['basedir'] . '/launch-forms-private-test-' . wp_generate_password( 6, false );
-		add_filter(
-			'liforms_private_dir',
-			static function () use ( $dir ) {
-				return $dir;
-			},
-			20
-		);
-		$this->private_dir = $dir;
-
 		$this->fake_web_server( 200 );
 		$result = liforms()->admin->site_health_private_uploads();
 		$this->assertSame( 'critical', $result['status'] );
-		$this->assertStringContainsString( 'deny all', $result['description'] );
-		$this->assertStringStartsWith( $uploads['baseurl'] . '/launch-forms-private-test-', $this->http_requests[0]['url'] );
-		$this->assertSame( array( '.htaccess', 'index.php', 'web.config' ), array_values( array_diff( scandir( $dir ), array( '.', '..' ) ) ), 'The probe file is removed.' );
+		$folder = basename( $this->private_dir );
+		$this->assertStringContainsString( 'location ^~ ' . wp_parse_url( $uploads['baseurl'], PHP_URL_PATH ) . '/' . $folder . '/ { deny all; }', $result['description'] );
+		$this->assertStringNotContainsString( 'LIFORMS_PRIVATE_DIR', $result['description'], 'Files are never stored outside uploads.' );
+		$this->assertStringStartsWith( $uploads['baseurl'] . '/' . $folder . '/', $this->http_requests[0]['url'] );
+		$this->assertSame( array( '.htaccess', 'index.php', 'web.config' ), array_values( array_diff( scandir( $this->private_dir ), array( '.', '..' ) ) ), 'The probe file is removed.' );
 	}
 
 	public function test_site_health_passes_when_server_blocks_uploads() {
-		$uploads = wp_upload_dir( null, false );
-		$dir     = $uploads['basedir'] . '/launch-forms-private-test-' . wp_generate_password( 6, false );
-		add_filter(
-			'liforms_private_dir',
-			static function () use ( $dir ) {
-				return $dir;
-			},
-			20
-		);
-		$this->private_dir = $dir;
-
 		$this->fake_web_server( 403 );
 		$this->assertSame( 'good', liforms()->admin->site_health_private_uploads()['status'] );
 	}
 
-	public function test_site_health_passes_when_uploads_are_outside_the_web_root() {
-		// The base test case already points the private folder at the system temp dir.
-		$this->mock_http(
-			static function () {
-				return array( 'code' => 200, 'body' => '' );
+	public function test_private_folder_always_stays_in_uploads() {
+		$base = trailingslashit( wp_upload_dir( null, false )['basedir'] );
+		foreach ( array( '../../etc', '/var/private', '.hidden', '' ) as $attempt ) {
+			add_filter(
+				'liforms_private_folder',
+				static function () use ( $attempt ) {
+					return $attempt;
+				},
+				30
+			);
+			$dir = liforms()->uploads->get_dir();
+			remove_all_filters( 'liforms_private_folder', 30 );
+			$this->assertStringStartsWith( $base, $dir, $attempt );
+			$this->assertSame( 1, substr_count( substr( $dir, strlen( $base ) ), '/' ), "One folder directly in uploads for '$attempt'." );
+			if ( is_dir( $dir ) && $dir !== $base . 'launch-interactive-forms/' && $dir !== trailingslashit( $this->private_dir ) ) {
+				array_map( 'unlink', glob( $dir . '{,.}[!.,!..]*', GLOB_BRACE ) ?: array() );
+				rmdir( $dir );
 			}
-		);
-		$this->assertSame( 'outside', liforms()->uploads->public_access_status() );
-		$this->assertSame( 'good', liforms()->admin->site_health_private_uploads()['status'] );
-		$this->assertSame( array(), $this->http_requests, 'No request needed.' );
+		}
 	}
 
-	public function test_site_health_test_is_registered() {
-		$tests = apply_filters( 'site_status_tests', array( 'direct' => array(), 'async' => array() ) );
-		$this->assertArrayHasKey( 'liforms_private_uploads', $tests['direct'] );
+	public function test_a_folder_with_no_web_address_is_reported_as_unknown() {
+		$this->assertSame( '', liforms()->uploads->public_url_for_dir( '/srv/somewhere-else/' ), 'Only the uploads directory is mapped to a URL.' );
+		$this->assertStringStartsWith( wp_upload_dir( null, false )['baseurl'] . '/', liforms()->uploads->public_url_for_dir( trailingslashit( $this->private_dir ) ) );
 	}
 
 	public function test_uninstall_only_deletes_files_the_plugin_created() {

@@ -166,14 +166,11 @@ final class Upgrade {
 
 	/**
 	 * Move uploaded files from the 1.x default folder (uploads/launch-forms-private) to the
-	 * current one. Folders set with LIFORMS_PRIVATE_DIR are left alone.
+	 * current one, both in the uploads directory.
 	 *
 	 * @return bool Whether nothing is left to move.
 	 */
 	private static function move_private_dir() {
-		if ( defined( 'LIFORMS_PRIVATE_DIR' ) && LIFORMS_PRIVATE_DIR ) {
-			return true;
-		}
 		$base = trailingslashit( wp_upload_dir( null, false )['basedir'] );
 		$old  = $base . Uploads::LEGACY_DIR_NAME . '/';
 		$new  = $base . Uploads::DIR_NAME . '/';

@@ -3,7 +3,7 @@
  * Plugin Name:       Launch Interactive Forms
  * Plugin URI:        https://github.com/Launch-Interactive/Forms
  * Description:       Lightweight form builder that outputs minimal HTML and inherits your theme's styling. Build forms in the block editor or the Forms screen, reuse them anywhere with a block or shortcode.
- * Version:           2.3.1
+ * Version:           2.3.2
  * Requires at least: 6.5
  * Requires PHP:      7.4
  * Author:            Launch Interactive
@@ -17,7 +17,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'LIFORMS_VERSION', '2.3.1' );
+define( 'LIFORMS_VERSION', '2.3.2' );
 define( 'LIFORMS_FILE', __FILE__ );
 define( 'LIFORMS_DIR', plugin_dir_path( __FILE__ ) );
 define( 'LIFORMS_URL', plugin_dir_url( __FILE__ ) );
